@@ -8,7 +8,7 @@ module Caracal
   class Utilities
 
     def self.extract_options!(args)
-      if args.last.is_a?(Hash)
+      if args.last.is_a? Hash
         args.pop.dup
       else
         {}

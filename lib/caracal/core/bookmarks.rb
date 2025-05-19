@@ -27,9 +27,9 @@ module Caracal
 
           def bookmark_start(*args, &block)
             options = Caracal::Utilities.extract_options!(args)
-            options.merge!(start: true, id: next_bookmark_id)
+            options.merge! start: true, id: next_bookmark_id
 
-            model = Caracal::Core::Models::BookmarkModel.new(options, &block)
+            model = Caracal::Core::Models::BookmarkModel.new options, &block
             if model.valid?
               contents << model
             else

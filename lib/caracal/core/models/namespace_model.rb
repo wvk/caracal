@@ -31,7 +31,6 @@ module Caracal
         def option_keys
           [:prefix, :href]
         end
-
       end
 
     end

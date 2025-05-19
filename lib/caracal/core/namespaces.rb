@@ -56,9 +56,9 @@ module Caracal
           #============== ATTRIBUTES ==========================
 
           def namespace(options={}, &block)
-            model = Caracal::Core::Models::NamespaceModel.new(options, &block)
+            model = Caracal::Core::Models::NamespaceModel.new options, &block
             if model.valid?
-              ns = register_namespace(model)
+              ns = register_namespace model
             else
               raise Caracal::Errors::InvalidModelError, 'namespace must specify the :prefix and :href attributes.'
             end
@@ -73,14 +73,14 @@ module Caracal
           end
 
           def find_namespace(prefix)
-            namespaces.find { |ns| ns.matches?(prefix) }
+            namespaces.find { |ns| ns.matches? prefix }
           end
 
 
           #============== REGISTRATION ========================
 
           def register_namespace(model)
-            unless (ns = find_namespace(model.namespace_prefix))
+            unless (ns = find_namespace model.namespace_prefix)
               namespaces << model
               ns = model
             end
@@ -88,9 +88,8 @@ module Caracal
           end
 
           def unregister_namespace(prefix)
-            if (ns = find_namespace(prefix))
-              namespaces.delete(ns)
-            end
+            ns = find_namespace(prefix)
+            namespaces.delete ns if ns
           end
 
         end

@@ -7,7 +7,6 @@ module Caracal
     module Ignorables
       def self.included(base)
         base.class_eval do
-
           #-------------------------------------------------------------
           # Public Methods
           #-------------------------------------------------------------
@@ -15,9 +14,8 @@ module Caracal
           #============== ATTRIBUTES ==========================
 
           def ignorable(prefix)
-            register_ignorable(prefix)
+            register_ignorable prefix
           end
-
 
           #============== GETTERS =============================
 
@@ -29,14 +27,14 @@ module Caracal
           #============== REGISTRATION ========================
 
           def register_ignorable(prefix)
-            unless ignorables.include?(prefix)
+            unless ignorables.include? prefix
               ignorables << prefix
               prefix
             end
           end
 
           def unregister_ignorable(prefix)
-            ignorables.delete(prefix)
+            ignorables.delete prefix
           end
 
         end

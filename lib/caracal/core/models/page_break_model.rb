@@ -15,7 +15,6 @@ module Caracal
       # trouble end users with this issue.
       #
       class PageBreakModel < BaseModel
-
         #-------------------------------------------------------------
         # Configuration
         #-------------------------------------------------------------
@@ -33,7 +32,6 @@ module Caracal
           super options, &block
         end
 
-
         #-------------------------------------------------------------
         # Public Methods
         #-------------------------------------------------------------
@@ -44,7 +42,6 @@ module Caracal
           @page_break_wrap = !!value
         end
 
-
         #-------------------------------------------------------------
         # Private Instance Methods
         #-------------------------------------------------------------
@@ -53,7 +50,6 @@ module Caracal
         def option_keys
           [:wrap]
         end
-
       end
 
     end

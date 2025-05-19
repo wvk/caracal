@@ -1,5 +1,5 @@
 require 'caracal/core/models/base_model'
-require 'caracal/core/models/has_run_attributes'
+require 'caracal/core/models/concerns/has_run_attributes'
 require 'ostruct'
 
 module Caracal

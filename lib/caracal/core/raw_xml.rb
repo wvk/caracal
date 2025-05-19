@@ -16,7 +16,7 @@ module Caracal
           #============== PARAGRAPHS ==========================
 
           def raw_xml(str, &block)
-            model = Caracal::Core::Models::RawXmlModel.new(str, &block)
+            model = Caracal::Core::Models::RawXmlModel.new str, &block
             contents << model
             model
           end

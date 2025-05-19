@@ -31,7 +31,6 @@ module Caracal
           # By ignoring method missing errors here, we can pass the entire paragraph
           # block in the initial, built-in call to :text.
         #end
-
       end
 
     end

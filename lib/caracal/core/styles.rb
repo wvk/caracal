@@ -50,11 +50,10 @@ module Caracal
 
           def style(options={}, &block)
             if %(table table_row table_cell).include? options[:type].to_s
-              model = Caracal::Core::Models::TableStyleModel.new(options, &block)
+              model = Caracal::Core::Models::TableStyleModel.new options, &block
             else
-              model = Caracal::Core::Models::StyleModel.new(options, &block)
+              model = Caracal::Core::Models::StyleModel.new options, &block
             end
-            # raise model.inspect if model.style_id == 'TableHeading'
 
             if model.valid?
               register_style model

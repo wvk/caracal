@@ -11,16 +11,15 @@ module Caracal
     module IFrames
       def self.included(base)
         base.class_eval do
-
           #-------------------------------------------------------------
           # Public Methods
           #-------------------------------------------------------------
 
           def iframe(options={}, &block)
-            model = Caracal::Core::Models::IFrameModel.new(options.merge(document: self), &block)
+            model = Caracal::Core::Models::IFrameModel.new options.merge(document: self), &block
             if model.valid?
               model.preprocess!
-              model.namespaces.each do |(prefix, href)|
+              model.namespaces.each do |prefix, href|
                 namespace prefix: prefix, href: href
               end
 

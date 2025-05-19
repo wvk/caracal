@@ -1,7 +1,7 @@
 require 'ostruct'
 require 'caracal/core/models/base_model'
-require 'caracal/core/models/has_margins'
-require 'caracal/core/models/has_run_attributes'
+require 'caracal/core/models/concerns/has_margins'
+require 'caracal/core/models/concerns/has_run_attributes'
 
 
 module Caracal

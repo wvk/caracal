@@ -10,7 +10,6 @@ module Caracal
           self.has_integer_attribute :right,  default: right
           self.has_integer_attribute :bottom, default: bottom
         end
-
       end
     end
   end

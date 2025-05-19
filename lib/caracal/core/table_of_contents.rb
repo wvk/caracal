@@ -17,7 +17,7 @@ module Caracal
           #-------------------------------------------------------------
 
           def table_of_contents(options={}, &block)
-            model = Caracal::Core::Models::TableOfContentModel.new(options, &block)
+            model = Caracal::Core::Models::TableOfContentModel.new options, &block
             unless model.valid?
               raise Caracal::Errors::InvalidModelError, \
                 'Table of contents start_level and end_level must be between 0 and 6, \

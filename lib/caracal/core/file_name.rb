@@ -13,7 +13,7 @@ module Caracal
           #-------------------------------------------------------------
 
           # constants
-          const_set(:DEFAULT_FILE_NAME, 'caracal.docx')
+          const_set :DEFAULT_FILE_NAME, 'caracal.docx'
 
           # accessors
           attr_reader :name
@@ -33,7 +33,7 @@ module Caracal
           #
           def file_name(value=nil)
             v = value.to_s.strip
-            a = v.split('/')
+            a = v.split '/'
 
             @name = (v == '') ? self.class::DEFAULT_FILE_NAME : a.last
             @path = (a.size > 1) ? v : "./#{ v }"

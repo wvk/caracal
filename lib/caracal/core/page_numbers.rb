@@ -17,7 +17,7 @@ module Caracal
           #-------------------------------------------------------------
 
           # constants
-          const_set(:DEFAULT_PAGE_NUMBER_ALIGN,  :center)
+          const_set :DEFAULT_PAGE_NUMBER_ALIGN,  :center
 
           # accessors
           attr_reader :page_number_align
@@ -35,10 +35,10 @@ module Caracal
           # on the document.
           #
           def page_numbers(*args, &block)
-            options = Caracal::Utilities.extract_options!(args)
-            options.merge!({ show: !!args.first }) unless args.first.nil?  # careful: just `args.first` is falsey
+            options = Caracal::Utilities.extract_options! args
+            options.merge! show: !!args.first unless args.first.nil?  # careful: just `args.first` is falsey
 
-            model = Caracal::Core::Models::PageNumberModel.new(options, &block)
+            model = Caracal::Core::Models::PageNumberModel.new options, &block
             if model.valid?
               @page_number_align        = model.page_number_align
               @page_number_label        = model.page_number_label

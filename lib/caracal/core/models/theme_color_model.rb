@@ -35,7 +35,7 @@ module Caracal
         end
 
         def val(arg)
-          self.color(arg)
+          self.color arg
         end
 
         def valid?

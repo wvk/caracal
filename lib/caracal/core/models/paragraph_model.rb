@@ -3,8 +3,8 @@ require 'caracal/core/models/bookmark_model'
 require 'caracal/core/models/link_model'
 require 'caracal/core/models/text_model'
 require 'caracal/core/models/theme_color_model'
-require 'caracal/core/models/has_margins'
-require 'caracal/core/models/has_run_attributes'
+require 'caracal/core/models/concerns/has_margins'
+require 'caracal/core/models/concerns/has_run_attributes'
 require 'caracal/errors'
 require 'ostruct'
 
@@ -178,7 +178,7 @@ module Caracal
           options.merge! self.run_attributes.to_h.except(:hide_mark)
           options.merge! content: args.first if args.first
 
-          model = Caracal::Core::Models::TextModel.new(options, &block)
+          model = Caracal::Core::Models::TextModel.new options, &block
           if model.valid?
             runs << model
           else

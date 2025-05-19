@@ -5,7 +5,7 @@ module Caracal
     end
 
     def save_as(name)
-      file_name(name)
+      file_name name
       save
     end
 
@@ -16,17 +16,17 @@ module Caracal
     end
 
     def update(&block)
-      instance_eval(&block)
+      instance_eval &block
     end
 
     def method_missing(method_name, *arguments, &block)
-      return super unless docx.respond_to?(method_name)
+      return super unless docx.respond_to? method_name
 
-      docx.send(method_name, *arguments, &block)
+      docx.send method_name, *arguments, &block
     end
 
     def respond_to_missing?(method_name, _include_private = false)
-      docx.respond_to?(method_name)
+      docx.respond_to? method_name
     end
   end
 end

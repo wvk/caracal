@@ -1,10 +1,10 @@
 require 'caracal/core/models/base_model'
 require 'caracal/core/models/border_model'
 require 'caracal/core/models/paragraph_model'
-require 'caracal/core/models/has_background'
-require 'caracal/core/models/has_color'
-require 'caracal/core/models/has_borders'
-require 'caracal/core/models/has_run_attributes'
+require 'caracal/core/models/concerns/has_background'
+require 'caracal/core/models/concerns/has_color'
+require 'caracal/core/models/concerns/has_borders'
+require 'caracal/core/models/concerns/has_run_attributes'
 
 module Caracal
   module Core

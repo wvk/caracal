@@ -1,6 +1,6 @@
-require 'caracal/core/models/has_background'
-require 'caracal/core/models/has_color'
-require 'caracal/core/models/has_borders'
+require 'caracal/core/models/concerns/has_background'
+require 'caracal/core/models/concerns/has_color'
+require 'caracal/core/models/concerns/has_borders'
 
 module Caracal
   module Core
@@ -86,7 +86,6 @@ module Caracal
         def initialize_run_attributes
           # so far, no defaults to be set here.
         end
-
       end
     end
   end

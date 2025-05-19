@@ -7,7 +7,6 @@ module Caracal
       # method.
       #
       class RawXmlModel < BorderModel
-
         #-------------------------------------------------------------
         # Configuration
         #-------------------------------------------------------------
@@ -21,7 +20,6 @@ module Caracal
         def to_s
           @raw_xml.to_s
         end
-
       end
 
     end

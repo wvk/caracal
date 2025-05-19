@@ -21,10 +21,10 @@ module Caracal
           #============== PARAGRAPHS ==========================
 
           def p(*args, &block)
-            options = Caracal::Utilities.extract_options!(args)
-            options.merge!({ content: args.first }) if args.first
+            options = Caracal::Utilities.extract_options! args
+            options.merge! content: args.first if args.first
 
-            model = Caracal::Core::Models::ParagraphModel.new(options, &block)
+            model = Caracal::Core::Models::ParagraphModel.new options, &block
             if model.valid?
               contents << model
             else
@@ -41,9 +41,9 @@ module Caracal
           #
           [:h1, :h2, :h3, :h4, :h5, :h6].each do |cmd|
             define_method "#{ cmd }" do |*args, &block|
-              options = Caracal::Utilities.extract_options!(args)
-              options.merge!({ style: style_id_for_header(cmd) })
-              p(args.first, options, &block)
+              options = Caracal::Utilities.extract_options! args
+              options.merge! style: style_id_for_header(cmd)
+              p args.first, options, &block
             end
           end
 

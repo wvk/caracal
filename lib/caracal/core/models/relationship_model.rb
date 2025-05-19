@@ -72,7 +72,6 @@ module Caracal
           @relationship_key    = value.to_s.downcase
         end
 
-
         #=================== STATE ===============================
 
         # FIXME: this only takes the key into account, not the type
@@ -99,7 +98,6 @@ module Caracal
               validate_inclusion :type, within: TYPE_MAP.keys
         end
 
-
         #-------------------------------------------------------------
         # Private Instance Methods
         #-------------------------------------------------------------
@@ -108,7 +106,6 @@ module Caracal
         def option_keys
           [:id, :type, :target, :data, :owner]
         end
-
       end
 
     end

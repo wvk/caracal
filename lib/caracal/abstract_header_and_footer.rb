@@ -52,7 +52,7 @@ module Caracal
       page_margins top: 1440, bottom: 1440, left: 1440, right: 1440
 
       [:font, :list_style, :namespace, :style].each do |method|
-        collection = self.class.send("default_#{ method }s")
+        collection = self.class.send "default_#{ method }s"
         collection.each do |item|
           send(method, item)
         end

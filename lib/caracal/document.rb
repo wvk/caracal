@@ -86,7 +86,7 @@ module Caracal
     # a string.
     #
     def self.render(f_name = nil, &block)
-      docx   = new(f_name, &block)
+      docx   = new f_name, &block
       buffer = docx.render
 
       buffer.rewind
@@ -97,13 +97,13 @@ module Caracal
     # file system.
     #
     def self.save(f_name = nil, &block)
-      docx = new(f_name, &block)
+      docx = new f_name, &block
       docx.save
     end
 
     def header(&block)
       if @header.nil?
-        @header = Header.new(index: 1, type: 'default', &block)
+        @header = Header.new index: 1, type: 'default', &block
         relationship @header.relationship_params
       end
       @header
@@ -111,7 +111,7 @@ module Caracal
 
     def footer(&block)
       if @footer.nil?
-        @footer = Footer.new(index: 1, type: 'default', &block)
+        @footer = Footer.new index: 1, type: 'default', &block
         relationship @footer.relationship_params
       end
       @footer
@@ -124,16 +124,16 @@ module Caracal
     # This method instantiates a new word document.
     #
     def initialize(name = nil, &block)
-      file_name(name)
+      file_name name
 
       page_size
       page_margins top: 1440, bottom: 1440, left: 1440, right: 1440
       page_numbers
 
       [:font, :list_style, :namespace, :relationship, :style].each do |method|
-        collection = self.class.send("default_#{method}s")
+        collection = self.class.send "default_#{method}s"
         collection.each do |item|
-          if (item[:if] and send(item[:if])) or not item[:if]
+          if (item[:if] and send item[:if]) or not item[:if]
             send(method, item)
           end
         end
@@ -173,7 +173,7 @@ module Caracal
     def save
       buffer = render
 
-      File.open(path, 'wb') { |f| f.write(buffer.string) }
+      File.open(path, 'wb') { |f| f.write buffer.string }
     end
 
 

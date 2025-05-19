@@ -2,8 +2,8 @@ require 'caracal/core/models/base_model'
 require 'caracal/core/models/border_model'
 require 'caracal/core/models/table_cell_model'
 require 'caracal/core/models/table_look_model'
-require 'caracal/core/models/has_background'
-require 'caracal/core/models/has_borders'
+require 'caracal/core/models/concerns/has_background'
+require 'caracal/core/models/concerns/has_borders'
 
 module Caracal
   module Core
@@ -55,7 +55,6 @@ module Caracal
           super options, &block
         end
 
-
         #-------------------------------------------------------------
         # Public Methods
         #-------------------------------------------------------------
@@ -91,7 +90,6 @@ module Caracal
           @table_data || [[]]
         end
 
-
         #=============== STYLES ===============================
 
         # This method sets explicit widths on all wrapped cells
@@ -124,13 +122,11 @@ module Caracal
           end
         end
 
-
         #=============== GETTERS ==============================
 
         def find_style(*args)
           self.document.find_style *args
         end
-
 
         #=============== SETTERS ==============================
 

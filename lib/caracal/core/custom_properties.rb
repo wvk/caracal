@@ -19,20 +19,18 @@ module Caracal
           # This method controls the custom properties.
           #
           def custom_property(options={}, &block)
-            model = Caracal::Core::Models::CustomPropertyModel.new(options, &block)
+            model = Caracal::Core::Models::CustomPropertyModel.new options, &block
             if model.valid?
-              register_property(model)
+              register_property model
             end
             model
           end
-
 
           #============== GETTERS =============================
 
           def custom_props
             @custom_props ||= []
           end
-
 
           #============== REGISTRATION ========================
 

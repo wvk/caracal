@@ -219,6 +219,8 @@ In forthcoming versions of Caracal, we'll be looking to expand the `InvalidModel
 
 ## Installation
 
+Caracal requires Ruby 3.2 or later.
+
 Add this line to your application's Gemfile:
 
 ```ruby

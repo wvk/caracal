@@ -93,6 +93,7 @@ module Caracal
             underline:       self.style_underline,
             caps:            self.style_caps,
             small_caps:      self.style_small_caps,
+            strike:          self.style_strike,
             bgcolor:         self.style_bgcolor,
             theme_bgcolor:   self.style_theme_bgcolor,
             bgstyle:         self.style_bgstyle,

@@ -26,13 +26,13 @@ module Caracal
             attr_reader_name = :"#{border_reader_name}_#{attr}" # e.g. self.table_border_color
             # ATTRS << bdr_attr
 
-            define_method attr_writer_name do |value, &block|
+            base.define_method attr_writer_name do |value, &block|
               model = self.send(border_reader_name) || self.send(border_writer_name)
               model.send attr, value
             end
 
             # reader for attribute of 'default' border
-            define_method attr_reader_name do # e.g. table_border_color
+            base.define_method attr_reader_name do # e.g. table_border_color
               self.send(border_reader_name)&.send bdr_attr
             end
           end

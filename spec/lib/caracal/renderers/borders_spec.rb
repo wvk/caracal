@@ -89,4 +89,53 @@ describe 'border rendering' do
     it { expect(xml.at_xpath('//w:tblPr/w:tblCellSpacing/@w:w', ns).value).to eq '3' }
     it { expect(table_borders(xml).values.map { |b| b['space'] }.uniq).to eq %w(3) }
   end
+
+  describe 'paragraph borders' do
+    def p_borders(**options, &block)
+      xml = document_xml { |docx| docx.p 'x', **options, &block }
+      xml.xpath('//w:p/w:pPr/w:pBdr/*', ns).to_h { |n| [n.name, attrs(n)] }
+    end
+
+    it 'draws a box from border_color' do
+      expect(p_borders border_color: 'ff0000').to eq %w(top left bottom right).to_h { |e| [e, { 'val' => 'single', 'sz' => '4', 'space' => '0', 'color' => 'ff0000' }] }
+    end
+
+    it 'renders border_theme_color with its hex fallback' do
+      expect(p_borders(border_theme_color: :accent1)['top']).to eq('val' => 'single', 'sz' => '4', 'space' => '0', 'themeColor' => 'accent1', 'color' => '00539B')
+    end
+
+    it 'renders border_line, border_size and border_spacing' do
+      expect(p_borders(border_line: :double, border_size: 8, border_spacing: 4)['left']).to eq('val' => 'double', 'sz' => '8', 'space' => '4', 'color' => 'auto')
+    end
+
+    it 'renders a border hash' do
+      expect(p_borders(border: { color: '0000ff' }).keys).to eq %w(top left bottom right)
+    end
+
+    it 'renders per-edge borders' do
+      expect(p_borders(border_bottom: { size: 12 })).to eq('bottom' => { 'val' => 'single', 'sz' => '12', 'space' => '0', 'color' => 'auto' })
+    end
+
+    it 'renders per-edge shorthands in a block' do
+      expect(p_borders { border_top_color 'ff0000' }).to eq('top' => { 'val' => 'single', 'sz' => '4', 'space' => '0', 'color' => 'ff0000' })
+    end
+
+    it 'renders an explicit horizontal border as between' do
+      expect(p_borders(border_color: 'ff0000', border_horizontal: { line: :dashed }).keys).to eq %w(top left bottom right between)
+    end
+  end
+
+  describe 'paragraph style borders' do
+    let(:xml) do
+      Nokogiri::XML Caracal::Renderers::StylesRenderer.render(Caracal::Document.new { |docx| docx.style id: 'Boxed', name: 'Boxed', border_color: '00ff00' })
+    end
+
+    it { expect(xml.xpath("//w:style[@w:styleId='Boxed']/w:pPr/w:pBdr/*", ns).map(&:name)).to eq %w(top left bottom right) }
+  end
+
+  describe 'cell with a border color only' do
+    let(:xml) { document_xml { |docx| docx.table(data) { cell_style rows[0][0], border_color: 'ff0000' } } }
+
+    it { expect(xml.xpath('//w:tcBorders/w:top', ns).map { |n| attrs n }).to eq [{ 'val' => 'single', 'sz' => '4', 'space' => '0', 'color' => 'ff0000' }] }
+  end
 end

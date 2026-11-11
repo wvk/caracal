@@ -469,6 +469,8 @@ end
 
 `highlight_color` accepts `black`, `blue`, `cyan`, `green`, `magenta`, `red`, `yellow`, `white`, `darkBlue`, `darkCyan`, `darkGreen`, `darkMagenta`, `darkRed`, `darkYellow`, `darkGray`, `lightGray` and `none` for paragraphs, text runs, links and styles. Other values raise `Caracal::Errors::InvalidModelError`.
 
+Paragraphs and paragraph styles accept the table border options (see Tables), e.g. `docx.p 'Boxed', border_color: '666666'` or `border_bottom: { size: 12 }`. `border_horizontal` sets the line between consecutive paragraphs with the same borders.
+
 More complex paragraph runs can be accomplished by using the `text` method instead the paragraph's block.
 
 ```ruby

@@ -23,9 +23,13 @@ module Caracal
       end
 
       def render_borders(w, model, border_type, type)
-        borders = %w(top left bottom right horizontal vertical).select do |dir|
-          method_name = "#{type}_border_#{dir}_line"
-          v = model.send method_name #if model.respond_to? method_name
+        paragraph = border_type == 'pBdr'
+        # pBdr has no inside borders: an explicit horizontal border becomes `between`
+        dirs = %w(top left bottom right horizontal vertical)
+        dirs = %w(top left bottom right) + (model.send("#{type}_border_horizontal") ? %w(horizontal) : []) if paragraph
+
+        borders = dirs.select do |dir|
+          v = model.send "#{type}_border_#{dir}_line"
           v and v != :none
         end
 
@@ -39,7 +43,8 @@ module Caracal
               }
               color_opts = theme_color_options model.send("#{type}_border_#{dir}_theme_color"), model.send("#{type}_border_#{dir}_color"), 'w:color'
 
-              w.send Caracal::Core::Models::BorderModel.formatted_type(dir), options.merge(color_opts)
+              name = (paragraph and dir == 'horizontal') ? 'between' : Caracal::Core::Models::BorderModel.formatted_type(dir)
+              w.send name, options.merge(color_opts)
             end
           end
         end

@@ -8,35 +8,51 @@ require 'caracal/renderers/xml_renderer'
 module Caracal
   module Renderers
     class NumberingRenderer < XmlRenderer
-
-      #-------------------------------------------------------------
-      # Public Methods
-      #-------------------------------------------------------------
-
-      # This method produces the xml required for the `word/numbering.xml`
-      # sub-document.
-      #
+      # This method produces the xml required for the `word/numbering.xml` sub-document.
       def to_xml
         builder = ::Nokogiri::XML::Builder.with(declaration_xml) do |xml|
-          xml['w'].numbering root_options do
-            
-            # add abstract definitions
-            document.toplevel_lists.each_with_index do |model, i|
-              xml['w'].abstractNum({ 'w:abstractNumId' => i + 1 }) do
-                xml['w'].multiLevelType({ 'w:val' => 'hybridMultilevel' })
+          w = xml['w']
+
+          w.numbering root_options do
+            document.with_heading_numbering do |model|
+              w.abstractNum 'w:abstractNumId' => model.id do
+                w.multiLevelType 'w:val' => 'multilevel'
+                w.name 'w:val' => model.heading_numbering_name
+
+                model.heading_numberings.each_value do |num|
+                  w.lvl 'w:ilvl' => num[:ilvl] do
+                    w.start      'w:val' => 1
+                    w.numFmt     'w:val' => num[:fmt]
+                    # no lvlRestart: by default, a level restarts whenever a higher level is used
+                    w.pStyle     'w:val' => num[:style_id]
+                    w.suff       'w:val' => num[:suff]
+                    w.lvlText    'w:val' => num[:lvl_text]
+                    w.lvlJc      'w:val' => 'left'
+                    w.pPr do
+                      w.ind 'w:left' => 0, 'w:hanging' => 0
+                    end
+                  end
+                end
+              end
+            end
+
+            # add abstract numbering definitions
+            document.toplevel_lists.each do |model|
+              w.abstractNum 'w:abstractNumId' => model.numbering_id do
+                w.multiLevelType 'w:val' => 'hybridMultilevel'
                 model.level_map.each do |(level, type)|
                   if s = document.find_list_style(type, level)
-                    xml['w'].lvl({ 'w:ilvl' => s.style_level }) do
-                      xml['w'].start({ 'w:val' => s.style_start })
-                      xml['w'].numFmt({ 'w:val' => s.style_format })
-                      xml['w'].lvlRestart({ 'w:val' => s.style_restart })
-                      xml['w'].lvlText({ 'w:val' => s.style_value })
-                      xml['w'].lvlJc({ 'w:val' => s.style_align })
-                      xml['w'].pPr do
-                        xml['w'].ind({ 'w:left' => s.style_left, 'w:firstLine' => s.style_indent })
+                    w.lvl          'w:ilvl' => s.style_level do
+                      w.start      'w:val' => s.style_start
+                      w.numFmt     'w:val' => s.style_format
+                      w.lvlRestart 'w:val' => s.style_restart
+                      w.lvlText    'w:val' => s.style_value
+                      w.lvlJc      'w:val' => s.style_align
+                      w.pPr do
+                        w.ind 'w:left' => s.style_left, 'w:firstLine' => s.style_indent
                       end
-                      xml['w'].rPr do
-                        xml['w'].u({ 'w:val' => 'none' })
+                      w.rPr do
+                        w.u 'w:val' => 'none'
                       end
                     end
                   end
@@ -44,23 +60,20 @@ module Caracal
               end
             end
 
-            # bind individual tables to abstract definitions
-            document.toplevel_lists.each_with_index do |model, i|
-              xml['w'].num({ 'w:numId' => i + 1 }) do
-                xml['w'].abstractNumId({ 'w:val' => i + 1 })
+            # bind concrete numberings to abstract definitions. Both share the same id.
+            numbering_ids = document.toplevel_lists.map(&:numbering_id)
+            document.with_heading_numbering {|model| numbering_ids.unshift model.id }
+            numbering_ids.each do |i|
+              w.num 'w:numId' => i do
+                w.abstractNumId 'w:val' => i
               end
             end
           end
-
         end
+
         builder.to_xml(save_options)
       end
 
-
-
-      #-------------------------------------------------------------
-      # Private Methods
-      #-------------------------------------------------------------
       private
 
       def root_options

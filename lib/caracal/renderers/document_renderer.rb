@@ -305,11 +305,11 @@ module Caracal
       def render_list(xml, model, **options)
         if model.list_level == 0
           document.toplevel_lists << model
-          list_num = document.toplevel_lists.length   # numbering uses 1-based index
+          model.numbering_id = document.next_numbering_id
         end
 
         model.recursive_items.each do |item|
-          render_listitem(xml, item, list_num)
+          render_listitem(xml, item, model.numbering_id)
         end
       end
 
@@ -452,8 +452,8 @@ module Caracal
             w.tblCaption          'w:val'  => model.table_caption unless model.table_caption.nil?
           end
 
+          column_widths = model.table_column_widths
           w.tblGrid do
-            column_widths = model.table_column_widths
             column_widths ||= model.rows.first.map do |tc|
               if tc.cell_width
                 [tc.cell_width] * (tc.cell_colspan || 1) # FIXME: this blatantly ignores defined column widths combined with merged cells!
@@ -469,7 +469,7 @@ module Caracal
             end
           end
 
-          rowspan_hash = {}
+          rowspan_hash = {} # stores the remaining rowspans per table cell index
           model.rows.each_with_index do |row, index|
             w.tr do
               w.trPr do
@@ -485,36 +485,53 @@ module Caracal
                 w.tc do
                   w.tcPr do
                     cnf_style = tc.cnf_style(model, index, tc_index)
+                    # conditional styling rules
                     unless cnf_style.nil?
                       tc.apply_styles cnf_style.style_hash, reverse: true
                       w.cnfStyle 'w:val' => cnf_style.bitmask
                     end
 
                     # applying colspan
-                    if tc.cell_colspan
+                    if tc.cell_colspan and tc.cell_colspan > 1
                       w.gridSpan 'w:val' => tc.cell_colspan
                     end
 
                     # applying rowspan
-                    if tc.cell_rowspan and tc.cell_rowspan > 0
-                      rowspan_hash[tc_index] = tc.cell_rowspan - 1
-                      w.vMerge 'w:val' => 'restart'
-                    elsif rowspan_hash[tc_index] and rowspan_hash[tc_index] > 0
-                      w.vMerge 'w:val' => 'continue'
+                    if tc.cell_rowspan and tc.cell_rowspan > 1 # start new cell with rowspan
+                      rowspan_hash[tc_index] = tc.cell_rowspan - 1 # set rowspan info for next table rows: n-1 rows left to merge
+                      w.vMerge 'w:val' => 'restart' # start new merged range
+                    elsif rowspan_hash[tc_index] and rowspan_hash[tc_index] > 1 # before end of merged range
+                      w.vMerge 'w:val' => 'continue' # continue merged range
                       rowspan_hash[tc_index] -= 1
-                    elsif rowspan_hash[tc_index] == 0
-                      w.vMerge
-                      rowspan_hash[tc_index] = nil
+                    elsif rowspan_hash[tc_index] == 1 # last cell in merged range
+                      w.vMerge 'w:val' => 'continue'
+                      rowspan_hash.delete tc_index # remove rowspan info, next row will not get vMerge
                     end
+
                     render_borders    w, tc, 'tcBorders', :cell
                     render_background w, tc, :cell
                     render_margins    w, tc, 'tcMar', :cell
-                    w.vAlign 'w:val' => tc.cell_content_vertical_align unless tc.cell_content_vertical_align.nil?
+
+                    # if column_widths[tc_index] and column_widths[tc_index] > 0
+                    #   w.tcW 'w:w' => column_widths[tc_index], 'w:type' => 'auto'
+                    # end
+
+                    if tc.cell_content_vertical_align
+                      w.vAlign 'w:val' => tc.cell_content_vertical_align
+                    end
                   end
 
-                  tc.contents.each do |table_cell_content|
-                    method = render_method_for_model table_cell_content
-                    send method, xml, table_cell_content, in_table: true
+                  if tc.contents.any?
+                    tc.contents.each do |table_cell_content|
+                      method = render_method_for_model table_cell_content
+                      send method, xml, table_cell_content, in_table: true
+                    end
+                  else # table cells ALWAYS need at least an empty paragraph
+                    w.p do
+                      w.r do
+                        w.t ''
+                      end
+                    end
                   end
                 end
 

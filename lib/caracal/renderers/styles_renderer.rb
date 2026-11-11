@@ -142,6 +142,16 @@ module Caracal
             w.keepLines    'w:val' => model.style_keep_lines    unless model.style_keep_lines.nil?
             # w.pageBreakBefore # TODO: Start Paragraph on Next Page
             w.widowControl 'w:val' => model.style_widow_control unless model.style_widow_control.nil?
+            # if heading numbering is active on the document, associate heading styles with it
+            document.with_heading_numbering do |numbering_model|
+              if ilvl = numbering_model.ilvl_for(model.style_id)
+                model.numbering_id = numbering_model.id
+                w.numPr do
+                  w.ilvl  'w:val' => ilvl
+                  w.numId 'w:val' => numbering_model.id
+                end
+              end
+            end
             render_borders    w, model, 'pBdr', :style
             render_background w, model, :style
             # w.tabs # TODO List of tabs
@@ -151,8 +161,8 @@ module Caracal
             w.spacing spacing unless spacing.nil?
             w.ind indentation unless indentation.nil?
             # w.contextualSpacing # TODO: Ignore Spacing Above and Below When Using Identical Styles
-            w.jc            'w:val' => model.style_align.to_s       unless model.style_align.nil?
-            w.outlineLvl    'w:val' => (model.style_outline_lvl - 1).to_s unless model.style_outline_lvl.nil?
+            w.jc           'w:val' => model.style_align.to_s        unless model.style_align.nil?
+            w.outlineLvl   'w:val' => (model.style_outline_lvl - 1) unless model.style_outline_lvl.nil?
           end
 
           # run properties

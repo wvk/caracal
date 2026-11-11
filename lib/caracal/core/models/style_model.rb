@@ -11,6 +11,8 @@ module Caracal
       # This class encapsulates the logic needed to store and manipulate
       # paragraph style data.
       class StyleModel < BaseModel
+        attr_accessor :numbering_id # identifies the abstract numbering scheme. Set during document rendering.
+
         use_prefix :style
 
         include HasRunAttributes
@@ -77,7 +79,7 @@ module Caracal
         def style_outline_lvl
           # outline levels in Word are zero-based, but we use 1-based levels within our models
           # this will be taken into account in the renderer
-          style_id.match(/Heading(\d)\Z/) {|match| match[1].to_i}
+          style_id.match(/Heading(\d)\Z/) {|match| match[1].to_i }
         end
 
         def run_attributes

@@ -673,7 +673,10 @@ module Caracal
         hsh = {}
         hsh['w:before'] = opts[:top].to_i    unless opts[:top].nil?
         hsh['w:after']  = opts[:bottom].to_i unless opts[:bottom].nil?
-        hsh['w:line']   = opts[:line].to_i   unless opts[:line].nil?
+        unless opts[:line].nil?
+          hsh['w:line']     = opts[:line].to_i
+          hsh['w:lineRule'] = line_rule_value opts[:line_rule]
+        end
         if hsh.empty?
           nil
         else

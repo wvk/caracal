@@ -9,6 +9,36 @@ module Caracal
     # paragraph styles.
     #
     module Styles
+
+      # Records the calls of a style block.
+      class StyleRecorder < BasicObject
+        def initialize
+          @calls = []
+        end
+
+        def __record(block)
+          block.arity < 1 ? instance_exec(&block) : block[self]
+        end
+
+        def __type
+          type_call = @calls.reverse.find { |name, *| name == :type }
+          type_call[1].first if type_call
+        end
+
+        def __replay(model)
+          @calls.each { |name, args, kwargs, block| model.send name, *args, **kwargs, &block }
+        end
+
+        def method_missing(name, *args, **kwargs, &block)
+          @calls << [name, args, kwargs, block]
+          nil
+        end
+
+        def respond_to_missing?(*)
+          true
+        end
+      end
+
       def self.included(base)
         base.class_eval do
 
@@ -50,11 +80,18 @@ module Caracal
           #============== ATTRIBUTES ==========================
 
           def style(options={}, &block)
-            if %(table table_row table_cell).include? options[:type].to_s
-              model = Caracal::Core::Models::TableStyleModel.new options, &block
+            # the type may be set inside the block, so record the block
+            # before choosing the model class, then replay it on the model
+            recorder = StyleRecorder.new
+            recorder.__record block if block
+            type = recorder.__type || options[:type]
+
+            klass = if %w(table table_row table_cell).include? type.to_s
+              Caracal::Core::Models::TableStyleModel
             else
-              model = Caracal::Core::Models::StyleModel.new options, &block
+              Caracal::Core::Models::StyleModel
             end
+            model = klass.new(options) { |m| recorder.__replay m }
 
             if model.valid?
               register_style model

@@ -278,7 +278,7 @@ module Caracal
 
         if [top, bottom, line].compact.size > 0
           options               = {}
-          options['w:lineRule'] = model.style_line_rule unless model.style_line_rule.nil?
+          options['w:lineRule'] = line_rule_value model.style_line_rule unless line.nil?
           options['w:before']   = top                   unless top.nil?
           options['w:after']    = bottom                unless bottom.nil?
           options['w:line']     = line                  unless line.nil?

@@ -2,6 +2,11 @@ module Caracal
   module Renderers
     module RenderHelpers
 
+      # line_rule defaults to a minimum line height
+      def line_rule_value(rule)
+        Caracal::Core::Models::StyleModel::LINE_RULES[rule || :at_least]
+      end
+
       def render_margins(w, model, margin_type, type)
         margins = %w(top left bottom right).select do |dir|
           v = model.send "#{type}_#{dir}"

@@ -193,7 +193,7 @@ describe Caracal::Core::Models::ParagraphModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:align, :bgcolor, :bgstyle, :bold, :border, :border_color, :border_line, :border_size, :border_spacing, :border_theme_color, :bottom, :bottom, :color, :content, :italic, :keep_lines, :keep_next, :left, :line, :right, :size, :style, :tabs, :theme_bgcolor, :theme_color, :top, :top, :underline, :widow_control, :border_bottom, :border_horizontal, :border_vertical, :border_top, :border_left, :border_right, :whitespace, :vertical_align, :strike, :small_caps, :caps, :rtl, :highlight_color, :font, :hide_mark].sort }
+      let(:expected) { [:align, :bgcolor, :bgstyle, :bold, :border, :border_color, :border_line, :border_size, :border_spacing, :border_theme_color, :bottom, :bottom, :color, :content, :italic, :keep_lines, :keep_next, :left, :line, :right, :size, :style, :tabs, :theme_bgcolor, :theme_color, :top, :top, :underline, :widow_control, :border_bottom, :border_horizontal, :border_vertical, :border_top, :border_left, :border_right, :whitespace, :vertical_align, :strike, :small_caps, :caps, :rtl, :highlight_color, :font, :hide_mark, :line_rule].sort }
 
       it { expect(actual).to eq expected }
     end

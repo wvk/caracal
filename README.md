@@ -385,7 +385,8 @@ docx.style do
   underline       false       # sets whether or not to underline the text.
   caps            false       # sets whether or not text should be rendered in all capital letters.
   align           :left       # sets the alignment. accepts :left, :center, :right, and :both.
-  line            360         # sets the line height. units in twips.
+  line            360         # sets the minimum line height. units in twips.
+  line_rule       :at_least   # accepts :at_least, :exact and :auto (line in 240ths of a line).
   top             100         # sets the spacing above the paragraph. units in twips.
   bottom          0           # sets the spacing below the paragraph. units in twips.
   indent_left     360         # sets the left indent. units in twips.
@@ -459,6 +460,8 @@ docx.p 'Sample text.' do
   highlight_color 'yellow'          # sets the highlight color. accepts the names listed below.
   vertical_align  'superscript'     # sets the vertical alignment.
   keep_next       false             # sets whether or not to keep this paragraph with the next paragraph when separated by page break.
+  line            360               # sets the minimum line height. units in twips.
+  line_rule       :at_least         # accepts :at_least, :exact and :auto (line in 240ths of a line).
 end
 ```
 

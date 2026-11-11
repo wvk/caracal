@@ -174,8 +174,8 @@ module Caracal
 
         # .text
         def text(*args, &block)
-          options = Caracal::Utilities.extract_options! args
-          options.merge! self.run_attributes.to_h.except(:hide_mark)
+          options = self.run_attributes.to_h.except(:hide_mark)
+          options.merge! Caracal::Utilities.extract_options!(args)
           options.merge! content: args.first if args.first
 
           model = Caracal::Core::Models::TextModel.new options, &block

@@ -55,6 +55,18 @@ describe 'headers and footers' do
       expect(header.root.elements.map(&:name)).to eq %w(tbl p)
     end
 
+    it 'numbers lists through the document' do
+      docx = Caracal::Document.new do
+        header.ul { li 'header item' }
+        ol { li 'body item' }
+      end
+      num_id   = ->(part) { xml(docx, part).at_xpath('//w:numPr/w:numId/@w:val', ns).value }
+      numbered = xml(docx, 'word/numbering.xml').xpath('//w:num/@w:numId', ns).map(&:value)
+      expect(texts xml(docx, 'word/header1.xml')).to eq ['header item']
+      expect(numbered).to include num_id['word/header1.xml'], num_id['word/document.xml']
+      expect(num_id['word/header1.xml']).not_to eq num_id['word/document.xml']
+    end
+
     it 'renders an empty paragraph when empty' do
       docx = Caracal::Document.new { header }
       header = xml docx, 'word/header1.xml'

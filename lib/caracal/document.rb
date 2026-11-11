@@ -222,7 +222,7 @@ module Caracal
         raise Caracal::Errors::InvalidModelError, "#{klass.name.split('::').last.downcase} type must be one of #{HEADER_FOOTER_TYPES.inspect}"
       end
 
-      part = parts[type] ||= klass.new(index: parts.size + 1, type: type).tap {|hf| relationship hf.relationship_params }
+      part = parts[type] ||= klass.new(index: parts.size + 1, type: type, document: self).tap {|hf| relationship hf.relationship_params }
       part.configure(&block)
     end
 

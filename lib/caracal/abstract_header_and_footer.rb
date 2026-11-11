@@ -41,11 +41,12 @@ module Caracal
     include Caracal::Core::Text
     include Caracal::Core::RawXml
 
-    attr_reader :index, :type
+    attr_reader :index, :type, :document
 
-    def initialize(index: 1, type: :default, &block)
+    def initialize(index: 1, type: :default, document: nil, &block)
       @index = index
       @type = type
+      @document = document
       page_size
       page_margins top: 1440, bottom: 1440, left: 1440, right: 1440
 
@@ -67,6 +68,19 @@ module Caracal
 
     def contents
       @contents ||= []
+    end
+
+    # Lists are numbered by the document, which owns numbering.xml.
+    def toplevel_lists
+      document.toplevel_lists
+    end
+
+    def next_numbering_id
+      document.next_numbering_id
+    end
+
+    def find_list_style(type, level)
+      document.find_list_style type, level
     end
   end
 end

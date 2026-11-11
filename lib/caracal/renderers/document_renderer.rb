@@ -602,7 +602,10 @@ module Caracal
           'w:top'    => document.page_margin_top,
           'w:bottom' => document.page_margin_bottom,
           'w:left'   => document.page_margin_left,
-          'w:right'  => document.page_margin_right
+          'w:right'  => document.page_margin_right,
+          'w:header' => 720,
+          'w:footer' => 720,
+          'w:gutter' => 0
         }
       end
 

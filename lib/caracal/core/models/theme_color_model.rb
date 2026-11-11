@@ -30,11 +30,6 @@ module Caracal
           @theme_color_color ||= DEFAULT_THEME_COLOR_COLOR
         end
 
-        def calculate_color(theme)
-          # TODO: apply tint and shade, if present
-          theme.send "color_#{self.theme_color_ref}"
-        end
-
         def theme_color_val
           self.theme_color_color
         end
@@ -58,10 +53,6 @@ module Caracal
 
         def option_keys
           [:ref, :tint, :shade, :color, :val]
-        end
-
-        def hex_to_angle
-          raise NotImplementedError
         end
 
       end

@@ -51,7 +51,7 @@ module Caracal
             'w:themeColor' => theme.theme_color_ref,
             'w:themeTint'  => theme.theme_color_tint,
             'w:themeShade' => theme.theme_color_shade,
-            attr           => theme.theme_color_val
+            attr           => theme_color_value(theme)
           }.compact
         elsif color
           {attr => color}
@@ -60,13 +60,22 @@ module Caracal
         end
       end
 
+      # the theme color's hex value, the fallback for consumers that ignore themes
+      def theme_color_value(theme)
+        val = theme.theme_color_val
+        return val unless val.nil? or val == 'auto'
+
+        doc_theme = document.document_theme || (@default_theme ||= Caracal::Core::Models::ThemeModel.new)
+        doc_theme.color_for(theme.theme_color_ref) || 'auto'
+      end
+
       def render_color(w, model, type = nil)
         if theme = type ? model.send("#{type}_theme_color") : model[:theme_color]
           attrs = {
             'w:themeColor' => theme.theme_color_ref,
             'w:themeTint'  => theme.theme_color_tint,
             'w:themeShade' => theme.theme_color_shade,
-            'w:val'        => theme.theme_color_val
+            'w:val'        => theme_color_value(theme)
           }.compact
           w.color attrs unless attrs.empty?
         elsif color = type ? model.send("#{type}_color") : model[:color]
@@ -81,7 +90,7 @@ module Caracal
           bgstyle = type ? model.send("#{type}_bgstyle") : model[:bgstyle]
           attrs = {
             'w:val'        => (bgstyle || 'solid'),
-            'w:color'      => theme.theme_color_val,
+            'w:color'      => theme_color_value(theme),
             'w:themeColor' => theme.theme_color_ref,
             'w:themeTint'  => theme.theme_color_tint,
             'w:themeShade' => theme.theme_color_shade

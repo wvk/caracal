@@ -283,7 +283,7 @@ Both the `width` and `height` attributes require positive integer values.
 
 ### Page Margins
 
-Page margins can be set using the `page_margins` method.  The method accepts four parameters for controlling the margins of the document.
+Page margins can be set using the `page_margins` method.  The method accepts four parameters for controlling the margins of the document. Sides not given keep their current value.
 
 *Margins default to 1.0in for all sides.*
 
@@ -296,7 +296,7 @@ docx.page_margins do
 end
 ```
 
-All attributes require positive integer values. Additionally, the combined size of the margins on either axis cannot exceed the page size on that axis (e.g., the sum of the `left` and `right` values must be less than the `page_width`).
+All attributes require positive integer values. The margins on either axis must sum to less than the page size on that axis (e.g., `left` + `right` < page width); `page_margins` and `page_size` raise `Caracal::Errors::InvalidModelError` otherwise.
 
 
 ### Page Breaks

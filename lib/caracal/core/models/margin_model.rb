@@ -11,10 +11,10 @@ module Caracal
       class MarginModel < BaseModel
         use_prefix :margin
 
-        has_integer_attribute :top,    default: 0
-        has_integer_attribute :bottom, default: 0
-        has_integer_attribute :left,   default: 0
-        has_integer_attribute :right,  default: 0
+        has_integer_attribute :top
+        has_integer_attribute :bottom
+        has_integer_attribute :left
+        has_integer_attribute :right
 
         # initialization
         def initialize(options={}, &block)
@@ -29,7 +29,7 @@ module Caracal
         #=============== VALIDATION ==============================
 
         def valid?
-          [:bottom, :left, :right, :top].all? {|a| validate_size a, at_least: 0 }
+          [:bottom, :left, :right, :top].all? {|a| validate_size a, at_least: 0, allow_nil: true }
         end
 
         private

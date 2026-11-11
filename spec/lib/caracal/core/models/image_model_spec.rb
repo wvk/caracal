@@ -26,8 +26,8 @@ describe Caracal::Core::Models::ImageModel do
     # constants
     describe 'constants' do
       it { expect(described_class::DEFAULT_IMAGE_PPI).to eq 72 }
-      it { expect(described_class::DEFAULT_IMAGE_WIDTH).to eq 0 }
-      it { expect(described_class::DEFAULT_IMAGE_HEIGHT).to eq 0 }
+      it { expect(described_class::DEFAULT_IMAGE_WIDTH).to eq nil }
+      it { expect(described_class::DEFAULT_IMAGE_HEIGHT).to eq nil }
       it { expect(described_class::DEFAULT_IMAGE_ALIGN).to eq :left }
       it { expect(described_class::DEFAULT_IMAGE_TOP).to eq 8 }
       it { expect(described_class::DEFAULT_IMAGE_BOTTOM).to eq 8 }

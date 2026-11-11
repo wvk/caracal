@@ -650,15 +650,16 @@ end
 
 ### Images
 
-Images can be added by using the `img` method. `width` and `height` (in pixels) are required; the other parameters control the style and placement of the asset.
+Images can be added by using the `img` method. The other parameters control the size, style and placement of the asset.
 
 *Caracal will automatically embed the image in the Word document.*
 
 ```ruby
 docx.img 'https://www.example.com/logo.png' do
   data    raw_data  # sets the file data directly instead of opening the url
-  width   396       # sets the image width. units specified in pixels.
-  height  216       # sets the image height. units specified in pixels.
+  width   396       # sets the image width. units specified in pixels. defaults to the image's own width.
+  height  216       # sets the image height. units specified in pixels. defaults to the image's own height.
+  ppi     96        # sets the pixels per inch. default is 72.
   align   :right    # controls the justification of the image. default is :left.
   top     10        # sets the top margin. units specified in pixels.
   bottom  10        # sets the bottom margin. units specified in pixels.
@@ -666,6 +667,8 @@ docx.img 'https://www.example.com/logo.png' do
   right   10        # sets the right margin. units specified in pixels.
 end
 ```
+
+*Width and height are read from PNG, JPEG and GIF data; give one of them to scale the image keeping its aspect ratio. Other formats need both.*
 
 *Note: If you provide the image data, you should still supply a URL. I know this
 is a bit hacky, but it allows the library to key the image more effectively and

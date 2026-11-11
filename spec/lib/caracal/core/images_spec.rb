@@ -1,5 +1,6 @@
 require 'spec_helper'
 require 'zlib'
+require 'tmpdir'
 
 describe Caracal::Core::Images do
   subject { Caracal::Document.new }
@@ -31,6 +32,95 @@ describe Caracal::Core::Images do
       it { expect(subject.contents.last.image_data).to be_truthy}
     end
 
+  end
+
+
+  describe 'intrinsic size' do
+    # PNG header only; enough to read the size
+    def png_of(w, h)
+      "\x89PNG\r\n\x1a\n".b + [13].pack('N') + 'IHDR' + [w, h, 8, 2, 0, 0, 0].pack('NNC5') + [0].pack('N')
+    end
+
+    let(:model) { subject.contents.last }
+    let(:size)  { [model.image_width, model.image_height] }
+
+    context 'without width and height' do
+      before { subject.img 'image.png', data: png_of(400, 300) }
+
+      it { expect(size).to eq [400, 300] }
+      it { expect(model.formatted_width).to eq 400 * 12700 }
+    end
+
+    context 'with a width only' do
+      before { subject.img 'image.png', data: png_of(400, 300), width: 200 }
+
+      it { expect(size).to eq [200, 150] }
+    end
+
+    context 'with a height only' do
+      before { subject.img 'image.png', data: png_of(400, 300), height: 100 }
+
+      it { expect(size).to eq [133, 100] }
+    end
+
+    context 'with width and height' do
+      before { subject.img 'image.png', data: png_of(400, 300), width: 10, height: 50 }
+
+      it { expect(size).to eq [10, 50] }
+    end
+
+    context 'in a block' do
+      before do
+        img_data = png_of(400, 300)
+        subject.img('image.png') { data img_data; width 40 }
+      end
+
+      it { expect(size).to eq [40, 30] }
+    end
+
+    context 'from a local file' do
+      let(:path) { File.join Dir.mktmpdir, 'image.png' }
+
+      before do
+        File.binwrite path, png_of(5, 7)
+        subject.img path
+      end
+      after { FileUtils.rm_rf File.dirname(path) }
+
+      it { expect(size).to eq [5, 7] }
+      it { expect(model.image_data).to eq png_of(5, 7) }
+    end
+
+    context 'from a remote url' do
+      let(:url) { 'https://example.com/image.png' }
+
+      before do
+        allow(URI).to receive(:open) { |*_, &block| block.call StringIO.new(png_of(8, 9)) }
+        subject.img url
+      end
+
+      it { expect(size).to eq [8, 9] }
+
+      it 'downloads the image only once' do
+        subject.render
+        expect(URI).to have_received(:open).once
+      end
+
+      it 'embeds the downloaded data' do
+        subject.render
+        expect(subject.relationships_by_type(:image).first.relationship_data).to eq png_of(8, 9)
+      end
+    end
+
+    context 'with an unsupported format' do
+      it { expect { subject.img 'image.bmp', data: 'BM....' }.to raise_error(Caracal::Errors::InvalidModelError, /could not determine the size of image\.bmp/) }
+      it { expect { subject.img 'image.bmp', data: 'BM....', width: 10 }.to raise_error(Caracal::Errors::InvalidModelError, /could not determine/) }
+      it { expect { subject.img 'image.bmp', data: 'BM....', width: 10, height: 10 }.not_to raise_error }
+    end
+
+    context 'with an unreadable file' do
+      it { expect { subject.img '/nonexistent/image.png' }.to raise_error(Caracal::Errors::InvalidModelError, /could not read \/nonexistent\/image\.png/) }
+    end
   end
 
 

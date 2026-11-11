@@ -1,4 +1,6 @@
+require 'open-uri'
 require 'caracal/core/models/base_model'
+require 'caracal/image_size'
 
 
 module Caracal
@@ -14,8 +16,8 @@ module Caracal
         WRAPS        = [:square, :top_and_bottom, :none, :behind]
 
         has_integer_attribute :ppi,    default: 72 # pixels per inch
-        has_integer_attribute :width,  default: 0  # units in pixels. (will cause error)
-        has_integer_attribute :height, default: 0  # units in pixels. (will cause error)
+        has_integer_attribute :width               # units in pixels. defaults to the image's own size.
+        has_integer_attribute :height              # units in pixels. defaults to the image's own size.
         has_integer_attribute :top,    default: 8  # units in pixels.
         has_integer_attribute :bottom, default: 8  # units in pixels.
         has_integer_attribute :left,   default: 8  # units in pixels.
@@ -50,6 +52,7 @@ module Caracal
           @image_wrap   = DEFAULT_IMAGE_WRAP
 
           super(options, &block).tap do
+            complete_size
             formatted_width
             formatted_height
           end
@@ -91,13 +94,48 @@ module Caracal
         #=============== VALIDATION ==============================
 
         def valid?
-          [:ppi, :width, :height].all? { |a| validate_size a, at_least: 0 } and
+          validate(@size_error.to_s) { @size_error.nil? } and
+            [:ppi, :width, :height].all? { |a| validate_size a, at_least: 0 } and
             [:top, :bottom, :left, :right].all? { |a| validate("#{a} must not be negative") { send("image_#{a}").to_i >= 0 } } and
             [:relative_to, :relative_to_x, :relative_to_y].all? { |a| validate_inclusion a, within: RELATIVE_TOS } and
             validate_inclusion(:wrap, within: WRAPS, allow_nil: false)
         end
 
         private
+
+        # Fills in a missing width and/or height from the image data, keeping
+        # the aspect ratio. Data read from the url is kept for the media part.
+        def complete_size
+          return if image_width and image_height
+
+          if image_data.to_s.empty? and image_url
+            begin
+              @image_data = read_url
+            rescue StandardError => e
+              return @size_error = "could not read #{image_url} to determine its size (#{e.message}); pass width and height"
+            end
+          end
+
+          w, h = Caracal::ImageSize.read image_data
+          if w.nil?
+            @size_error = "could not determine the size of #{image_url || 'the image data'} (PNG, JPEG and GIF are supported); pass width and height"
+          elsif image_width
+            @image_height = (image_width * h / w.to_f).round
+          elsif image_height
+            @image_width = (image_height * w / h.to_f).round
+          else
+            @image_width, @image_height = w, h
+          end
+        end
+
+        # NOTICE: this potentially opens a web resource!
+        def read_url
+          if image_url.match? %r{\A[a-z][a-z0-9+.-]*://}i
+            URI.open(image_url, 'rb') { |io| io.read }
+          else
+            File.binread image_url
+          end
+        end
 
         def option_keys
           [:url, :width, :height, :align, :top, :bottom, :left, :right, :data, :anchor, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap]

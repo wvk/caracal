@@ -37,10 +37,11 @@ module Caracal
             end
 
             # add abstract numbering definitions
-            document.toplevel_lists.each do |model|
-              w.abstractNum 'w:abstractNumId' => model.numbering_id do
+            list_numberings = document.toplevel_lists.map(&:numberings).reduce({}, :merge)
+            list_numberings.each do |id, level_map|
+              w.abstractNum 'w:abstractNumId' => id do
                 w.multiLevelType 'w:val' => 'hybridMultilevel'
-                model.level_map.each do |(level, type)|
+                level_map.sort.each do |(level, type)|
                   if s = document.find_list_style(type, level)
                     w.lvl          'w:ilvl' => s.style_level do
                       w.start      'w:val' => s.style_start
@@ -61,7 +62,7 @@ module Caracal
             end
 
             # bind concrete numberings to abstract definitions. Both share the same id.
-            numbering_ids = document.toplevel_lists.map(&:numbering_id)
+            numbering_ids = list_numberings.keys
             document.with_heading_numbering {|model| numbering_ids.unshift model.id }
             numbering_ids.each do |i|
               w.num 'w:numId' => i do

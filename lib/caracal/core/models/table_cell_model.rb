@@ -184,15 +184,22 @@ module Caracal
           }.compact
         end
 
+        # col is the cell's first grid column, so colspans count
         def cnf_style(table_ref, row, col)
           current_table_style = document.find_style table_ref.table_style
           if current_table_style
             ConditionalFormat.new current_table_style, table_ref.table_look,
                 row: row,
                 col: col,
+                span: grid_span,
                 rows: table_ref.rows.size,
-                cols: table_ref.rows.map(&:size).max
+                cols: table_ref.grid_column_count
           end
+        end
+
+        # number of grid columns this cell covers
+        def grid_span
+          cell_colspan.to_i > 0 ? cell_colspan : 1
         end
 
         #=============== VALIDATION ===========================
@@ -236,9 +243,10 @@ module Caracal
 
         attr_reader :table_style
 
-        def initialize(table_style, table_look, rows: nil, cols: nil, row: nil, col: nil)
+        def initialize(table_style, table_look, rows: nil, cols: nil, row: nil, col: nil, span: 1)
           @table_style, @table_look = table_style, table_look
           @rows, @row, @cols, @col = rows, row, cols, col
+          @last_col = col && col + span - 1
           set_bitmask
         end
 
@@ -270,7 +278,7 @@ module Caracal
             if @table_look.table_look_first_col and @col == 0
               @bm[:nwCell] = 1
             end
-            if @table_look.table_look_last_col and @col == max_col
+            if @table_look.table_look_last_col and @last_col == max_col
               @bm[:neCell] = 1
             end
           end
@@ -280,7 +288,7 @@ module Caracal
             if @table_look.table_look_first_col and @col == 0
               @bm[:swCell] = 1
             end
-            if @table_look.table_look_last_col and @col == max_col
+            if @table_look.table_look_last_col and @last_col == max_col
               @bm[:seCell] = 1
             end
           end
@@ -289,7 +297,7 @@ module Caracal
             @bm[:firstCol] = 1
           end
 
-          if @table_look.table_look_last_col and @col == max_col
+          if @table_look.table_look_last_col and @last_col == max_col
             @bm[:lastCol] = 1
           end
 

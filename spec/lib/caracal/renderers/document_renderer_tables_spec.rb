@@ -52,6 +52,106 @@ describe Caracal::Renderers::DocumentRenderer do
     end
   end
 
+  describe 'table widths' do
+    let(:rows)      { xml.xpath('//w:tbl/w:tr', ns) }
+    let(:grid)      { xml.xpath('//w:tblGrid/w:gridCol/@w:w', ns).map {|w| w.value.to_i } }
+    let(:tbl_width) { xml.at_xpath('//w:tblPr/w:tblW/@w:w', ns).value.to_i }
+
+    def tc_widths(row)
+      row.xpath('w:tc/w:tcPr/w:tcW', ns).map {|tc_w| [tc_w['w:w'].to_i, tc_w['w:type']] }
+    end
+
+    describe 'without explicit widths' do
+      let(:document) { Caracal::Document.new {|docx| docx.table [['a', 'b', 'c'], ['d', 'e', 'f']] } }
+
+      it { expect(grid).to eq [3120, 3120, 3120] }
+      it { expect(rows.map {|r| tc_widths(r) }).to all eq [[3120, 'dxa']] * 3 }
+    end
+
+    describe 'with a spanning cell width' do
+      let(:document) do
+        Caracal::Document.new do |docx|
+          docx.table [['ab', 'c'], ['a', 'b', 'c']] do
+            cell_style rows[0][0], colspan: 2, width: 4000
+          end
+        end
+      end
+
+      it { expect(tbl_width).to eq 9360 }
+      it { expect(grid).to eq [2000, 2000, 5360] }
+      it { expect(grid.sum).to eq tbl_width }
+      it { expect(tc_widths(rows[0])).to eq [[4000, 'dxa'], [5360, 'dxa']] }
+      it { expect(tc_widths(rows[1])).to eq [[2000, 'dxa'], [2000, 'dxa'], [5360, 'dxa']] }
+    end
+
+    describe 'with single and spanning cell widths' do
+      let(:document) do
+        Caracal::Document.new do |docx|
+          docx.table [['ab', 'c'], ['a', 'b', 'c']] do
+            cell_style rows[0][0], colspan: 2, width: 4000
+            cell_style rows[1][0], width: 1000
+          end
+        end
+      end
+
+      it { expect(grid).to eq [1000, 3000, 5360] }
+      it { expect(tc_widths(rows[0])).to eq [[4000, 'dxa'], [5360, 'dxa']] }
+    end
+
+    describe 'with column widths' do
+      let(:document) do
+        Caracal::Document.new do |docx|
+          docx.table [['ab', 'c'], ['a', 'b', 'c']] do
+            column_widths [1000, 2000, 3000]
+            cell_style rows[0][0], colspan: 2, width: 4000
+          end
+        end
+      end
+
+      it { expect(grid).to eq [1000, 2000, 3000] }
+      it { expect(tc_widths(rows[0])).to eq [[3000, 'dxa'], [3000, 'dxa']] }
+      it { expect(tc_widths(rows[1])).to eq [[1000, 'dxa'], [2000, 'dxa'], [3000, 'dxa']] }
+    end
+
+    describe 'tcPr order' do
+      let(:document) do
+        Caracal::Document.new do |docx|
+          docx.table [['ab', 'c'], ['a', 'b', 'c']] do
+            cell_style rows[0][0], colspan: 2, rowspan: 2, bgcolor: 'cccccc', margins: { top: 100 }, content_vertical_align: :center
+          end
+        end
+      end
+
+      it { expect(rows[0].xpath('w:tc[1]/w:tcPr/*', ns).map(&:name)).to eq %w(tcW gridSpan vMerge shd tcMar vAlign) }
+    end
+  end
+
+  describe 'conditional formatting with colspans' do
+    let(:rows) { xml.xpath('//w:tbl/w:tr', ns) }
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.style id: 'Grid', name: 'grid', type: :table do
+          conditional_format type: 'lastCol', id: 'GridLastCol', name: 'grid last col', bold: true
+        end
+        docx.table [['ab', 'c'], ['a', 'b', 'c'], ['a', 'bc']], style: 'Grid' do
+          look first_row: true, first_col: true, last_col: true
+          cell_style rows[0][0], colspan: 2
+          cell_style rows[2][1], colspan: 2
+        end
+      end
+    end
+
+    # bitmask positions: firstRow lastRow firstCol lastCol ... neCell nwCell
+    def cnf(row)
+      row.xpath('w:tc/w:tcPr/w:cnfStyle/@w:val', ns).map(&:value)
+    end
+
+    it { expect(cnf(rows[0])).to eq %w(101000000100 100100001000) }
+    it { expect(cnf(rows[1])).to eq %w(001000000000 000000000000 000100000000) }
+    it { expect(cnf(rows[2])).to eq %w(001000000000 000100000000) }
+    it { expect(rows[2].xpath('w:tc', ns).map {|tc| tc.at_xpath('.//w:r/w:rPr/w:b', ns).nil? }).to eq [true, false] }
+  end
+
   describe 'procs as table cells' do
     let(:document) do
       Caracal::Document.new do |docx|

@@ -338,11 +338,12 @@ module Caracal
       def render_list(xml, model, **options)
         if model.list_level == 0
           document.toplevel_lists << model
-          model.numbering_id = document.next_numbering_id
+          model.assign_numbering { document.next_numbering_id }
         end
 
-        model.recursive_items.each do |item|
-          render_listitem(xml, item, model.numbering_id)
+        model.items.each do |item|
+          render_listitem xml, item, model.numbering_id
+          render_list xml, item.nested_list if item.nested_list
         end
       end
 
@@ -486,14 +487,8 @@ module Caracal
             w.tblCaption          'w:val'  => model.table_caption unless model.table_caption.nil?
           end
 
-          column_widths = model.table_column_widths
+          column_widths = model.grid_column_widths
           w.tblGrid do
-            column_widths ||= model.rows.first.map do |tc|
-              if tc.cell_width
-                [tc.cell_width] * (tc.cell_colspan || 1) # FIXME: this blatantly ignores defined column widths combined with merged cells!
-              end
-            end.flatten
-
             column_widths.each do |width|
               if width
                 w.gridCol 'w:w' => width
@@ -516,14 +511,19 @@ module Caracal
               end
 
               grid_col = 0
-              row.each_with_index do |tc, tc_index|
+              row.each do |tc|
                 w.tc do
                   w.tcPr do
-                    cnf_style = tc.cnf_style(model, index, tc_index)
+                    cnf_style = tc.cnf_style(model, index, grid_col)
                     # conditional styling rules
                     unless cnf_style.nil?
                       tc.apply_styles cnf_style.style_hash, reverse: true
                       w.cnfStyle 'w:val' => cnf_style.bitmask
+                    end
+
+                    spanned = column_widths[grid_col, tc.grid_span].to_a
+                    if spanned.size == tc.grid_span and spanned.all?
+                      w.tcW 'w:w' => spanned.sum, 'w:type' => 'dxa'
                     end
 
                     # applying colspan
@@ -547,10 +547,6 @@ module Caracal
                     render_background w, tc, :cell
                     render_margins    w, tc, 'tcMar', :cell
 
-                    # if column_widths[tc_index] and column_widths[tc_index] > 0
-                    #   w.tcW 'w:w' => column_widths[tc_index], 'w:type' => 'auto'
-                    # end
-
                     if tc.cell_content_vertical_align
                       w.vAlign 'w:val' => tc.cell_content_vertical_align
                     end
@@ -570,7 +566,7 @@ module Caracal
                   end
                 end
 
-                grid_col += (tc.cell_colspan and tc.cell_colspan > 0) ? tc.cell_colspan : 1
+                grid_col += tc.grid_span
               end
             end
           end

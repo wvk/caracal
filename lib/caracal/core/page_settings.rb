@@ -53,9 +53,10 @@ module Caracal
           end
 
           # This method controls the physical width and height of the printed page. Defaults
-          # to US standard A4 portrait size.
+          # to US Letter portrait size. Options not given keep their current value.
           def page_size(options={}, &block)
-            model = Caracal::Core::Models::PageSizeModel.new options, &block
+            current = { width: page_width, height: page_height, orientation: page_orientation }.compact
+            model   = Caracal::Core::Models::PageSizeModel.new current.merge(options), &block
 
             if model.valid?
               validate_page_fit! model.page_width, model.page_height,

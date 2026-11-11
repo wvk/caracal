@@ -90,16 +90,62 @@ module Caracal
           @table_data || [[]]
         end
 
+        # number of grid columns, counting colspans
+        def grid_column_count
+          rows.map {|row| row.sum(&:grid_span) }.max
+        end
+
         #=============== STYLES ===============================
 
-        # This method sets explicit widths on all wrapped cells
-        # that do not already have widths asided.
+        # This method sets the width of every wrapped cell to the
+        # sum of the grid columns it spans.
         #
         def calculate_width(container_width, container)
           self.width container_width if self.table_width.to_i.zero?
 
-          # now that we know the whole table's width, automatically calculate the cell's widths.
-          self.cells.each { |c| c.calculate_width self.default_cell_width, self }
+          # now that we know the whole table's width, fix the grid and size the cells to it.
+          @grid_column_widths = nil
+          @grid_column_widths = grid_column_widths
+          each_cell_with_grid_column do |cell, col|
+            cell_width = @grid_column_widths[col, cell.grid_span].sum(&:to_i)
+            cell.width cell_width
+            cell.calculate_width cell_width, self
+          end
+        end
+
+        # Widths of the table grid columns. Explicit column_widths win.
+        # Otherwise explicit cell widths fix the columns they span, a
+        # spanning cell's width being spread over its columns, and the
+        # rest of the table width is shared by the remaining columns.
+        def grid_column_widths
+          return @grid_column_widths if @grid_column_widths
+
+          widths = Array.new grid_column_count
+          if table_column_widths
+            table_column_widths.first(widths.size).each_with_index {|w, i| widths[i] = w }
+          else
+            sized = []
+            each_cell_with_grid_column {|cell, col| sized << [cell, col] if cell.cell_width.to_i > 0 }
+            sized.sort_by.with_index {|(cell, _), i| [cell.grid_span, i] }.each do |cell, col|
+              span = (col...col + cell.grid_span)
+              free = span.select {|i| widths[i].nil? }
+              distribute widths, free, cell.cell_width - span.sum {|i| widths[i].to_i } if free.any?
+            end
+          end
+
+          free = widths.each_index.select {|i| widths[i].nil? }
+          distribute widths, free, table_width - widths.sum(&:to_i) if table_width and free.any?
+          widths
+        end
+
+        # yields each cell with the index of its first grid column
+        def each_cell_with_grid_column
+          rows.each do |row|
+            row.reduce(0) do |col, cell|
+              yield cell, col
+              col + cell.grid_span
+            end
+          end
         end
 
         # This method allows tables to be styled several cells
@@ -200,13 +246,11 @@ module Caracal
         #   end
         # end
 
-        # sums up all fixed cell widths, subtracts that from the total table with and divides it by the "flexible" cell count
-        # this gives us the total space available per cell, *including* borders, spacings, paddings etc.
-        def default_cell_width
-          cell_widths     = self.rows.first.map { |c| c.cell_width.to_i }
-          remaining_width = self.table_width - cell_widths.reduce(&:+).to_i
-          remaining_cols  = cols.size - cell_widths.reject(&:zero?).size
-          default_width   = remaining_cols.zero? ? 0 : (remaining_width / remaining_cols)
+        # shares total evenly among the given columns, the last one taking the remainder
+        def distribute(widths, cols, total)
+          share, rest = [total, 0].max.divmod cols.size
+          cols.each {|i| widths[i] = share }
+          widths[cols.last] += rest
         end
 
         def option_keys

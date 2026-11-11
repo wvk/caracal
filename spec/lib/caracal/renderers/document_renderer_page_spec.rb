@@ -10,4 +10,17 @@ describe Caracal::Renderers::DocumentRenderer do
       it { expect(pg_mar["w:#{attr}"]).to eq value }
     end
   end
+  describe 'page size given in steps' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.page_size width: 15840, height: 12240, orientation: :landscape
+        docx.page_size height: 12000
+      end
+    end
+    let(:pg_sz) { Nokogiri::XML(described_class.render(document)).at_xpath('//w:sectPr/w:pgSz', ns) }
+
+    {w: '15840', h: '12000', orient: 'landscape'}.each do |attr, value|
+      it { expect(pg_sz["w:#{attr}"]).to eq value }
+    end
+  end
 end

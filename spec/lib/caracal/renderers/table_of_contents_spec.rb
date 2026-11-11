@@ -40,4 +40,26 @@ describe 'table of contents rendering' do
       expect(xml.xpath("//w:br[@w:type='page']", ns).size).to eq 1
     end
   end
+
+  describe 'settings' do
+    def settings_xml(&block)
+      Nokogiri::XML Caracal::Renderers::SettingsRenderer.new(Caracal::Document.new(&block)).to_xml
+    end
+
+    it 'asks Word to update fields on open when there is a TOC' do
+      xml = settings_xml {|docx| docx.toc; docx.h1 'Introduction' }
+      expect(xml.at_xpath('//w:updateFields/@w:val', ns)&.value).to eq 'true'
+    end
+
+    it 'places updateFields before compat, as CT_Settings requires' do
+      xml = settings_xml {|docx| docx.toc }
+      names = xml.root.element_children.map(&:name)
+      expect(names.index('updateFields')).to eq names.index('compat') - 1
+    end
+
+    it 'omits updateFields without a TOC' do
+      xml = settings_xml {|docx| docx.h1 'Introduction' }
+      expect(xml.at_xpath('//w:updateFields', ns)).to be_nil
+    end
+  end
 end

@@ -14,6 +14,8 @@ module Caracal
             HasBorders::ATTRS
 
         VERTICAL_ALIGNS   = %i(subscript superscript baseline)
+        HIGHLIGHT_COLORS  = %w(black blue cyan green magenta red yellow white darkBlue darkCyan
+            darkGreen darkMagenta darkRed darkYellow darkGray lightGray none)
 
         def self.included(base)
           base.include HasBackground
@@ -63,7 +65,11 @@ module Caracal
         private
 
         def valid_run_attributes?
-          self.valid_whitespace? and self.valid_vertical_align? and self.valid_caps?
+          self.valid_whitespace? and self.valid_vertical_align? and self.valid_caps? and self.valid_highlight_color?
+        end
+
+        def valid_highlight_color?
+          validate_inclusion :highlight_color, within: HIGHLIGHT_COLORS, allow_nil: true
         end
 
         def valid_caps?

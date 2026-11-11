@@ -449,11 +449,13 @@ docx.p 'Sample text.' do
   italic          false             # sets whether or not render the text in italic style.
   underline       false             # sets whether or not to underline the text.
   bgcolor         'cccccc'          # sets the background color.
-  highlight_color 'yellow'          # sets the highlight color. only accepts OOXML enumerations. see http://www.datypic.com/sc/ooxml/t-w_ST_HighlightColor.html.
+  highlight_color 'yellow'          # sets the highlight color. accepts the names listed below.
   vertical_align  'superscript'     # sets the vertical alignment.
   keep_next       false             # sets whether or not to keep this paragraph with the next paragraph when separated by page break.
 end
 ```
+
+`highlight_color` accepts `black`, `blue`, `cyan`, `green`, `magenta`, `red`, `yellow`, `white`, `darkBlue`, `darkCyan`, `darkGreen`, `darkMagenta`, `darkRed`, `darkYellow`, `darkGray`, `lightGray` and `none` for paragraphs, text runs, links and styles. Other values raise `Caracal::Errors::InvalidModelError`.
 
 More complex paragraph runs can be accomplished by using the `text` method instead the paragraph's block.
 
@@ -485,7 +487,7 @@ p do
     italic          false             # sets whether or not the text will be italic. defaults to false.
     underline       true              # sets whether or not the text will be underlined. defaults to true.
     bgcolor         'cccccc'          # sets the background color.
-    highlight_color 'yellow'          # sets the highlight color. only accepts OOXML enumerations. see http://www.datypic.com/sc/ooxml/t-w_ST_HighlightColor.html.
+    highlight_color 'yellow'          # sets the highlight color. accepts the names listed under Paragraphs.
   end
 end
 ```

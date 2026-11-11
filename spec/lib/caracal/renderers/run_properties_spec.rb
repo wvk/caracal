@@ -59,4 +59,33 @@ describe 'run properties rendering' do
 
     it { expect(xml.xpath('//w:hyperlink/w:r/w:rPr/w:u/@w:val', ns).map(&:value)).to eq %w(single none none) }
   end
+
+  describe 'highlight color' do
+    let(:xml) do
+      document_xml do |docx|
+        docx.p highlight_color: 'yellow', size: 24, underline: true do
+          text 'paragraph'
+          text 'run', highlight_color: :darkBlue
+          link 'link', 'https://example.com', highlight_color: 'green'
+        end
+      end
+    end
+
+    it { expect(run_values xml, 'w:highlight/@w:val').to eq %w(yellow darkBlue) }
+    it { expect(xml.xpath('//w:pPr/w:rPr/w:highlight/@w:val', ns).map(&:value)).to eq %w(yellow) }
+    it { expect(xml.xpath('//w:hyperlink/w:r/w:rPr/w:highlight/@w:val', ns).map(&:value)).to eq %w(green) }
+    it { expect(xml.xpath('//w:body/w:p/w:r[1]/w:rPr/*', ns).map(&:name)).to eq %w(sz highlight u) }
+
+    it 'renders style highlights' do
+      docx = Caracal::Document.new
+      docx.style id: 'Marked', name: 'marked', highlight_color: 'cyan'
+      styles = Nokogiri::XML Caracal::Renderers::StylesRenderer.render(docx)
+      expect(styles.at_xpath("//w:style[@w:styleId='Marked']/w:rPr/w:highlight/@w:val", ns).value).to eq 'cyan'
+    end
+
+    it { expect { Caracal::Document.new.p 'x', highlight_color: 'ffff00' }.to raise_error Caracal::Errors::InvalidModelError }
+    it { expect { Caracal::Document.new.p { text 'x', highlight_color: 'orange' } }.to raise_error Caracal::Errors::InvalidModelError }
+    it { expect { Caracal::Document.new.p { link 'x', 'y', highlight_color: 'orange' } }.to raise_error Caracal::Errors::InvalidModelError }
+    it { expect { Caracal::Document.new.style id: 'X', name: 'x', highlight_color: 'orange' }.to raise_error Caracal::Errors::InvalidModelError }
+  end
 end

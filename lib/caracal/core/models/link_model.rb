@@ -46,7 +46,7 @@ module Caracal
         #========== VALIDATION ============================
 
         def valid?
-          [:content, :href].all? {|a| validate_presence a }
+          [:content, :href].all? {|a| validate_presence a } and self.valid_highlight_color?
         end
 
         private

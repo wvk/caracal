@@ -115,7 +115,7 @@ module Caracal
               w.strike     'w:val' => attrs.strike                          unless attrs.strike.nil?
               render_color  w, attrs
               w.sz         'w:val' => attrs.size                            unless attrs.size.nil?
-              # w.highlight  'w:val' => attrs.highlight_color                 unless attrs.highlight_color.nil?
+              w.highlight  'w:val' => attrs.highlight_color                 unless attrs.highlight_color.nil?
               w.u          'w:val' => (attrs.underline ? 'single' : 'none') unless attrs.underline.nil?
               # TODO: w.bdr
               render_background w, attrs

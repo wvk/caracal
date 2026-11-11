@@ -564,7 +564,7 @@ module Caracal
             text:  heading.plain_text,
             # outline levels in Word are zero-based, but we use 1-based levels within our models
             # this will be taken into account in the renderer
-            level: heading.try(:paragraph_style).match(/Heading(\d)\Z/) { |m| m[1].to_i || 1 }
+            level: heading.paragraph_style.match(/Heading(\d)\Z/) { |m| m[1].to_i || 1 }
           }
         end
         bookmarks

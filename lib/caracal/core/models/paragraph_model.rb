@@ -61,7 +61,7 @@ module Caracal
         end
 
         def plain_text
-          runs.collect { |run| run.try(:text_content).to_s }.join(' ').strip
+          runs.collect { |run| (run.text_content if run.respond_to? :text_content).to_s }.join(' ').strip
         end
 
         def spacing_options

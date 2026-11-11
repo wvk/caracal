@@ -18,7 +18,7 @@ module Caracal
       end
 
       def use_theme?
-        @theme.present?
+        not @theme.nil?
       end
 
       def document_theme

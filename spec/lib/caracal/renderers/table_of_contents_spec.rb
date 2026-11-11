@@ -41,6 +41,28 @@ describe 'table of contents rendering' do
     end
   end
 
+  describe 'field structure' do
+    # field char types in document order, each begin with its instruction
+    def field_chars(xml)
+      xml.xpath('//w:fldChar | //w:instrText', ns).map {|node| node.name == 'instrText' ? node.text.split.first : node['w:fldCharType'] }
+    end
+
+    it 'nests the PAGEREF fields in the TOC field' do
+      xml = document_xml {|docx| docx.toc; docx.h1 'Introduction' }
+      expect(field_chars(xml)).to eq %w(begin TOC separate begin PAGEREF separate end end)
+    end
+
+    it 'is balanced without matching headings' do
+      xml = document_xml {|docx| docx.toc start_level: 2, end_level: 3; docx.h1 'Introduction' }
+      expect(field_chars(xml)).to eq %w(begin TOC separate end)
+    end
+
+    it 'is balanced without any headings' do
+      xml = document_xml {|docx| docx.toc }
+      expect(field_chars(xml)).to eq %w(begin TOC separate end)
+    end
+  end
+
   describe 'settings' do
     def settings_xml(&block)
       Nokogiri::XML Caracal::Renderers::SettingsRenderer.new(Caracal::Document.new(&block)).to_xml

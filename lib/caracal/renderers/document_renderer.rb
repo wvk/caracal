@@ -228,18 +228,7 @@ module Caracal
             end
 
             unless fieldstart_rendered
-              w.r do
-                w.fldChar 'w:fldCharType' => 'begin'
-              end
-              w.r do
-                w.instrText(
-                  { 'xml:space' => 'preserve' },
-                  " TOC \\o \"#{model.toc_start_level}-#{model.toc_end_level}\" \\h \\z \\u "
-                )
-              end
-              w.r do
-                w.fldChar 'w:fldCharType' => 'separate'
-              end
+              render_tableofcontent_field_start xml, model
               fieldstart_rendered = true
             end
 
@@ -276,9 +265,26 @@ module Caracal
         end
 
         w.p paragraph_options do
+          render_tableofcontent_field_start xml, model unless fieldstart_rendered # keeps the field balanced without entries
           w.r do
             w.fldChar 'w:fldCharType' => 'end'
           end
+        end
+      end
+
+      def render_tableofcontent_field_start(xml, model)
+        w = xml['w']
+        w.r do
+          w.fldChar 'w:fldCharType' => 'begin'
+        end
+        w.r do
+          w.instrText(
+            { 'xml:space' => 'preserve' },
+            " TOC \\o \"#{model.toc_start_level}-#{model.toc_end_level}\" \\h \\z \\u "
+          )
+        end
+        w.r do
+          w.fldChar 'w:fldCharType' => 'separate'
         end
       end
 

@@ -16,12 +16,14 @@ describe Caracal::Core::Models::TableOfContentModel do
     describe 'constants' do
       it { expect(described_class::DEFAULT_TOC_START_LEVEL).to eq 1 }
       it { expect(described_class::DEFAULT_TOC_END_LEVEL).to   eq 3 }
+      it { expect(described_class::DEFAULT_TOC_PLACEHOLDER).to eq '#' }
     end
 
     # accessors
     describe 'accessors' do
       it { expect(subject.toc_start_level).to eq described_class::DEFAULT_TOC_START_LEVEL }
       it { expect(subject.toc_end_level).to   eq described_class::DEFAULT_TOC_END_LEVEL }
+      it { expect(subject.toc_placeholder).to eq described_class::DEFAULT_TOC_PLACEHOLDER }
     end
 
   end
@@ -118,7 +120,7 @@ describe Caracal::Core::Models::TableOfContentModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)     { subject.send(:option_keys).sort }
-      let(:expected)  { [:start_level, :end_level, :legend].sort }
+      let(:expected)  { [:start_level, :end_level, :legend, :placeholder].sort }
 
       it { expect(actual).to eq expected }
     end

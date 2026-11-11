@@ -269,7 +269,7 @@ module Caracal
                 w.fldChar 'w:fldCharType' => 'separate'
               end
               w.r do
-                w.t '{bitte aktualisieren}' # fake number
+                w.t model.toc_placeholder
               end
               w.r do
                 w.fldChar 'w:fldCharType' => 'end'

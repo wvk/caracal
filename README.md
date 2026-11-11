@@ -800,7 +800,7 @@ end
 
 Instead of specifying a `color` or `bgcolor` value in your styles or other models, you may use their theme counterparts `theme_color` or `theme_bgcolor`, respectively. This combined with a custom color theme allows the consumers of your DOCX file to switch to their own color theme and have all your styles magically honor them.
 
-Word allows the following theme colors: dark1, light1, dark2, light1, accent1 ... accent1, hyperlink, visited_hyperlink. Define your color thime like so:
+`theme_color` and `theme_bgcolor` accept dark1, light1, dark2, light2, accent1 to accent6, hyperlink, visited_hyperlink (or followedHyperlink), text1, background1, text2, background2 and none. Define your color theme like so:
 
 ```ruby
 docx.theme do

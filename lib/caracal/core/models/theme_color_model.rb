@@ -8,6 +8,11 @@ module Caracal
       class ThemeColorModel < BaseModel
         use_prefix :theme_color
 
+        # ST_ThemeColor values
+        REFS = %i(dark1 light1 dark2 light2 accent1 accent2 accent3 accent4 accent5 accent6
+                  hyperlink followedHyperlink background1 text1 background2 text2 none)
+        REF_ALIASES = { visited_hyperlink: :followedHyperlink, followed_hyperlink: :followedHyperlink, background: :background1 }
+
         has_symbol_attribute :ref
 
         has_string_attribute :shade
@@ -38,9 +43,14 @@ module Caracal
           self.color arg
         end
 
+        def ref(value)
+          value = value.to_s.to_sym unless value.nil?
+          @theme_color_ref = REF_ALIASES.fetch(value, value)
+        end
+
         def valid?
           validate_presence :color and
-              validate_inclusion :ref, within: ThemeModel::COLORS.map(&:to_sym) + ['none'], allow_nil: false
+              validate_inclusion :ref, within: REFS, allow_nil: false
         end
 
 

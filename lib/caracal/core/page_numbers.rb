@@ -46,7 +46,7 @@ module Caracal
               @page_number_number_size  = model.page_number_number_size
               @page_number_show         = model.page_number_show
             else
-              raise Caracal::Errors::InvalidModelError, 'page_numbers :align parameter must be :left, :center, or :right'
+              raise Caracal::Errors::InvalidModelError, "page_numbers: #{model.errors.map {|e| e[:message] }.join ', '}"
             end
           end
 

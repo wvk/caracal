@@ -282,7 +282,7 @@ Both the `width` and `height` attributes require positive integer values.
 
 ### Page Margins
 
-Page margins can be set using the `page_margins` method.  The method accepts four parameters for controlling the margins of the document.
+Page margins can be set using the `page_margins` method.  The method accepts four parameters for controlling the margins of the document. Sides not given keep their current value.
 
 *Margins default to 1.0in for all sides.*
 
@@ -295,7 +295,7 @@ docx.page_margins do
 end
 ```
 
-All attributes require positive integer values. Additionally, the combined size of the margins on either axis cannot exceed the page size on that axis (e.g., the sum of the `left` and `right` values must be less than the `page_width`).
+All attributes require positive integer values. The margins on either axis must sum to less than the page size on that axis (e.g., `left` + `right` < page width); `page_margins` and `page_size` raise `Caracal::Errors::InvalidModelError` otherwise.
 
 
 ### Page Breaks
@@ -733,12 +733,12 @@ If your table contains more complex data (multiple paragraphs, images, lists, et
 
 ```ruby
 c1 = Caracal::Core::Models::TableCellModel.new do
-  bgcolor 'cccccc'    # sets the background color. defaults to 'ffffff'.
+  bgcolor 'cccccc'    # sets the background color.
   margins do
-    top                  # sets the top margin. defaults to 100. units in twips.
-    bottom               # sets the bottom margin. defaults to 100. units in twips.
-    left                 # sets the left margin. defaults to 100. units in twips.
-    right                # sets the right margin. defaults to 100. units in twips.
+    top     100       # sets the top margin. units in twips.
+    bottom  100       # sets the bottom margin. units in twips.
+    left    100       # sets the left margin. units in twips.
+    right   100       # sets the right margin. units in twips.
   end
 
   p 'This is a sentence above an image.'
@@ -746,6 +746,8 @@ c1 = Caracal::Core::Models::TableCellModel.new do
   img 'https://www.example.com/logo.png', width: 200, height: 100
 end
 ```
+
+*Background and margins are unset by default, so the table style applies. `margins` also accepts a hash (`margins top: 0, left: 100`), as does `cell_style`; sides not given stay unchanged.*
 
 To display images side-by-side, they need to be laid out horizontally in a table.
 

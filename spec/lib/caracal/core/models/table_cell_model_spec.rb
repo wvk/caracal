@@ -89,6 +89,58 @@ describe Caracal::Core::Models::TableCellModel do
 
     #=============== SETTERS ==========================
 
+    # .margins
+    describe '.margins' do
+      def margins_of(cell)
+        [cell.cell_top, cell.cell_bottom, cell.cell_left, cell.cell_right]
+      end
+
+      describe 'with a hash' do
+        before { subject.margins top: 0, left: 50 }
+
+        it { expect(margins_of(subject)).to eq [0, 102, 50, 104] }
+      end
+
+      describe 'with a block' do
+        before { subject.margins { bottom 7; right 8 } }
+
+        it { expect(margins_of(subject)).to eq [101, 7, 103, 8] }
+      end
+
+      describe 'as option' do
+        let(:cell) { described_class.new margins: { top: 0, bottom: 100, left: 0, right: 200 } }
+
+        it { expect(margins_of(cell)).to eq [0, 100, 0, 200] }
+      end
+
+      describe 'within the cell block' do
+        let(:cell) do
+          described_class.new do
+            margins do
+              top    10
+              bottom 20
+            end
+            p 'text'
+          end
+        end
+
+        it { expect(margins_of(cell)).to eq [10, 20, nil, nil] }
+      end
+
+      describe 'via apply_styles' do
+        before { subject.apply_styles({ margins: { left: 0 } }) }
+
+        it { expect(margins_of(subject)).to eq [101, 102, 0, 104] }
+      end
+
+      describe 'with an unknown side' do
+        it { expect { subject.margins middle: 1 }.to raise_error(RuntimeError) }
+      end
+    end
+
+
+    #=============== SETTERS ==========================
+
     # .bgcolor
     describe '.bgcolor' do
       before { subject.bgcolor('999999') }
@@ -291,7 +343,7 @@ describe Caracal::Core::Models::TableCellModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)     { subject.send(:option_keys).sort }
-      let(:expected)   { [:bgcolor, :bgstyle, :border, :border_color, :border_line, :border_size, :border_spacing, :border_theme_color, :bottom, :colspan, :left, :right, :rowspan, :style, :theme_bgcolor, :top, :vertical_align, :content_vertical_align, :width, :border_bottom, :border_horizontal, :border_vertical, :border_top, :border_left, :border_right, :font, :caps, :small_caps, :highlight_color, :italic, :align, :bold, :rtl, :size, :strike, :underline, :whitespace, :color, :theme_color].sort }
+      let(:expected)   { [:bgcolor, :bgstyle, :border, :border_color, :border_line, :border_size, :border_spacing, :border_theme_color, :bottom, :colspan, :left, :margins, :right, :rowspan, :style, :theme_bgcolor, :top, :vertical_align, :content_vertical_align, :width, :border_bottom, :border_horizontal, :border_vertical, :border_top, :border_left, :border_right, :font, :caps, :small_caps, :highlight_color, :italic, :align, :bold, :rtl, :size, :strike, :underline, :whitespace, :color, :theme_color].sort }
 
       it { expect(actual).to eq expected }
     end

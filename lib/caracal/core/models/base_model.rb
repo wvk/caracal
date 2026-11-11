@@ -23,7 +23,7 @@ module Caracal
           end
 
           if block_given?
-            (block.arity < 1) ? instance_eval(&block) : block[self]
+            (block.arity < 1) ? instance_exec(&block) : block[self]
           end
         end
 

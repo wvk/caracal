@@ -11,7 +11,7 @@ module Caracal
       # list data.
       #
       class ListModel < BaseModel
-        attr_accessor :numbering_id # identifies the abstract numbering scheme. Set during document rendering.
+        attr_accessor :numbering_id # identifies the numbering of this list's items. Set during document rendering.
 
         use_prefix :list
 
@@ -34,13 +34,29 @@ module Caracal
           @items ||= []
         end
 
-        # This method returns a hash, where the keys are levels
-        # and the values are the list type at that level.
-        def level_map
-          recursive_items.reduce({}) do |hash, item|
-            hash[item.list_item_level] = item.list_item_type
-            hash
+        # This method returns a hash of the numberings used by this
+        # list's tree, set by assign_numbering. The keys are numbering
+        # ids and the values map each level to its list type.
+        def numberings
+          @numberings || {}
+        end
+
+        # This method gives this list and its nested lists their numbering
+        # ids, taking new ids from the block. A nested list shares its
+        # parent's numbering unless that uses another list type at its
+        # level; then it starts a new numbering, so that its markers match
+        # its type.
+        def assign_numbering(numberings = (@numberings = {}), parent_id = nil, &next_id)
+          inherited = numberings[parent_id]
+          if inherited.nil? or not [nil, list_type].include? inherited[list_level]
+            self.numbering_id = next_id.call
+            numberings[numbering_id] = (inherited || {}).select {|level, _| level < list_level }
+          else
+            self.numbering_id = parent_id
           end
+          numberings[numbering_id][list_level] = list_type
+
+          items.each {|item| item.nested_list&.assign_numbering numberings, numbering_id, &next_id }
         end
 
         # This method returns a flattened array containing every

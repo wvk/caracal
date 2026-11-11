@@ -73,6 +73,63 @@ describe Caracal::Renderers::NumberingRenderer do
     it_behaves_like 'consistent numbering ids'
   end
 
+  describe 'mixed list types at the same level' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.ol do
+          li 'A' do
+            ul { li 'a1' }
+          end
+          li 'B' do
+            ol do
+              li 'b1'
+              li 'b2' do
+                ul { li 'b2x' }
+              end
+            end
+          end
+          li 'C' do
+            ul { li 'c1' }
+          end
+          li 'D' do
+            ol { li 'd1' }
+          end
+        end
+        docx.ul { li 'E' }
+      end
+    end
+
+    let(:items) do
+      xml[:document].xpath('//w:p[w:pPr/w:numPr]', ns).to_h do |p|
+        [p.xpath('.//w:t', ns).text, [p.at_xpath('.//w:numId/@w:val', ns).value, p.at_xpath('.//w:ilvl/@w:val', ns).value]]
+      end
+    end
+
+    def marker(text)
+      num_id, ilvl = items[text]
+      abstract_id  = xml[:numbering].at_xpath("//w:num[@w:numId='#{num_id}']/w:abstractNumId/@w:val", ns).value
+      xml[:numbering].at_xpath("//w:abstractNum[@w:abstractNumId='#{abstract_id}']/w:lvl[@w:ilvl='#{ilvl}']/w:numFmt/@w:val", ns).value
+    end
+
+    it { expect(%w(A a1 B b1 b2 b2x C c1 D d1 E).map {|t| marker t }).to eq %w(decimal bullet decimal lowerLetter lowerLetter bullet decimal bullet decimal lowerLetter bullet) }
+    it { expect(%w(A B C D).map {|t| items[t][0] }.uniq.size).to eq 1 }
+    it { expect(items['a1'][0]).to eq items['A'][0] }
+    it { expect(items['c1'][0]).to eq items['A'][0] }
+    it { expect(items['b2x'][0]).to eq items['b1'][0] }
+    it { expect([items['b1'][0], items['d1'][0], items['E'][0]].uniq.size).to eq 3 }
+    it { expect(xml[:numbering].xpath('//w:abstractNum', ns).map {|a| a.xpath('w:lvl/@w:ilvl', ns).map(&:value) }).to eq [%w(0 1), %w(0 1 2), %w(0 1), %w(0)] }
+
+    describe 'when rendered a second time' do
+      before { render document }
+
+      let(:abstract_ids) { xml[:numbering].xpath('//w:abstractNum/@w:abstractNumId', ns).map(&:value) }
+
+      it { expect(abstract_ids).to eq %w(1 2 3 4) }
+      it { expect(xml[:numbering].xpath('//w:num/@w:numId', ns).map(&:value)).to eq abstract_ids }
+      it { expect(items.values.map(&:first).uniq).to match_array abstract_ids }
+    end
+  end
+
   describe 'without heading numbering' do
     let(:document) { Caracal::Document.new {|docx| docx.h1 'Introduction' } }
 

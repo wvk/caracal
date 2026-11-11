@@ -69,10 +69,27 @@ module Caracal
 
       def render_bookmark(xml, model, **options)
         if model.start?
-          xml['w'].bookmarkStart 'w:id' => model.bookmark_id, 'w:name' => model.bookmark_name
-        else
-          xml['w'].bookmarkEnd 'w:id' => model.bookmark_id
+          xml['w'].bookmarkStart 'w:id' => open_bookmark(model.bookmark_id), 'w:name' => model.bookmark_name
+        elsif (id = close_bookmark(model.bookmark_id))
+          xml['w'].bookmarkEnd 'w:id' => id
         end
+      end
+
+      # Bookmark ids are user keys; each start gets a unique integer w:id
+      # that its end reuses. An end without key closes the latest open bookmark.
+      def open_bookmark(key)
+        @bookmark_counter = @bookmark_counter.to_i + 1
+        open_bookmarks << [key, @bookmark_counter]
+        @bookmark_counter
+      end
+
+      def close_bookmark(key)
+        index = key.nil? ? open_bookmarks.size - 1 : open_bookmarks.rindex { |k, _| k == key }
+        open_bookmarks.delete_at(index)&.last if index and index >= 0
+      end
+
+      def open_bookmarks
+        @open_bookmarks ||= []
       end
 
       def render_iframe(xml, model, **options)
@@ -577,8 +594,8 @@ module Caracal
           run.bookmark_name
         else
           name = "_Toc#{ model.object_id }"
-          model.runs.prepend(Caracal::Core::Models::BookmarkModel.new start: true, name: name, id: document.next_bookmark_id)
-          model.runs.append(Caracal::Core::Models::BookmarkModel.new start: false, id: document.current_bookmark_id)
+          model.runs.prepend(Caracal::Core::Models::BookmarkModel.new start: true, name: name, id: name)
+          model.runs.append(Caracal::Core::Models::BookmarkModel.new start: false, id: name)
           name
         end
       end

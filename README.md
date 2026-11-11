@@ -495,16 +495,17 @@ end
 
 Bookmarks can be added directly to the document or inside paragraph blocks using the `bookmark_start` and `bookmark_end`
 methods. Bookmarks can be inserted at the document-level to describe section headings, etc. or inside
-of a paragraph block for fine-grained linking.
+of a paragraph block for fine-grained linking. The optional `id` (string or integer) pairs a `bookmark_start` with its
+`bookmark_end`; without it, `bookmark_end` closes the most recently opened bookmark.
 
 ```ruby
 # document-level bookmark
-dox.bookmark_start id: 's1', name: 'section1'
+docx.bookmark_start id: 's1', name: 'section1'
 docx.h2 'Section Heading'
 docx.bookmark_end id: 's1'
 docx.p  'Section content.'
 
-# pargraph-level bookmark
+# paragraph-level bookmark
 docx.h2 'Section Heading'
 docx.p do
   text 'Pretend this paragraph has a lot of text and we want to bookmark '

@@ -266,7 +266,7 @@ docx.name    # => 'example_document.docx'
 
 ### Page Size
 
-Page dimensions can be set using the `page_size` method.  The method accepts two parameters for controlling the width and height of the document.
+Page dimensions can be set using the `page_size` method.  The method accepts two parameters for controlling the width and height of the document. Parameters not given keep their current value.
 It also accepts a third parameter for setting the page orientation.  If you want landscape orientation, you need to change both the page
 dimensions and the orientation explicitly.
 

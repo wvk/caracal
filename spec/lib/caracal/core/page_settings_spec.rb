@@ -83,6 +83,16 @@ describe Caracal::Core::PageSettings do
         it { expect(subject.page_height).to eq 12000 }
         it { expect(subject.page_orientation).to eq 'landscape' }
       end
+      describe 'when only some dimensions given' do
+        before do
+          subject.page_size width: 10000, height: 12000, orientation: :landscape
+          subject.page_size width: 11000
+        end
+
+        it { expect(subject.page_width).to eq 11000 }
+        it { expect(subject.page_height).to eq 12000 }
+        it { expect(subject.page_orientation).to eq 'landscape' }
+      end
     end
 
     # .page_margins

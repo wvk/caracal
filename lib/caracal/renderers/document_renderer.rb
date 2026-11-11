@@ -487,14 +487,8 @@ module Caracal
             w.tblCaption          'w:val'  => model.table_caption unless model.table_caption.nil?
           end
 
-          column_widths = model.table_column_widths
+          column_widths = model.grid_column_widths
           w.tblGrid do
-            column_widths ||= model.rows.first.map do |tc|
-              if tc.cell_width
-                [tc.cell_width] * (tc.cell_colspan || 1) # FIXME: this blatantly ignores defined column widths combined with merged cells!
-              end
-            end.flatten
-
             column_widths.each do |width|
               if width
                 w.gridCol 'w:w' => width
@@ -527,6 +521,11 @@ module Caracal
                       w.cnfStyle 'w:val' => cnf_style.bitmask
                     end
 
+                    spanned = column_widths[grid_col, tc.grid_span].to_a
+                    if spanned.size == tc.grid_span and spanned.all?
+                      w.tcW 'w:w' => spanned.sum, 'w:type' => 'dxa'
+                    end
+
                     # applying colspan
                     if tc.cell_colspan and tc.cell_colspan > 1
                       w.gridSpan 'w:val' => tc.cell_colspan
@@ -547,10 +546,6 @@ module Caracal
                     render_borders    w, tc, 'tcBorders', :cell
                     render_background w, tc, :cell
                     render_margins    w, tc, 'tcMar', :cell
-
-                    # if column_widths[tc_index] and column_widths[tc_index] > 0
-                    #   w.tcW 'w:w' => column_widths[tc_index], 'w:type' => 'auto'
-                    # end
 
                     if tc.cell_content_vertical_align
                       w.vAlign 'w:val' => tc.cell_content_vertical_align

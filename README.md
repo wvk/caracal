@@ -166,9 +166,6 @@ Pairs extensions and XML files with schema content types so Word can parse them 
 
 OpenXML properties are specified in several different units, depending on which attribute is being set.
 
-**Points**
-Most spacing declarations are measured in full points.
-
 **Half Points**
 All font sizes are measure in half points.  A font size of 24 is equivalent to 12pt.
 
@@ -176,13 +173,13 @@ All font sizes are measure in half points.  A font size of 24 is equivalent to 1
 Borders are measured in 1/8 points.  A border size of 4 is equivalent to 0.5pt.
 
 **Twips**
-A twip is 1/20 of a point.  Word documents are printed at 72dpi.  1in == 72pt == 1440 twips.
+A twip is 1/20 of a point.  Paragraph spacing, indentation, page sizes and page margins are measured in twips.  Word documents are printed at 72dpi.  1in == 72pt == 1440 twips.
 
 **Pixels**
 In Word documents, pixels are equivalent to points.
 
 **EMUs (English Metric Unit)**
-EMUs are a virtual unit designed to facilitate the smooth conversion between inches, millimeters, and pixels for images and vector graphics.  1in == 914400 EMUs == 72dpi x 100 x 254.
+EMUs are a virtual unit designed to facilitate the smooth conversion between inches, millimeters, and pixels for images and vector graphics.  1in == 914400 EMUs.  1px at 72dpi == 1pt == 12700 EMUs.
 
 At present, Caracal expects values to be specified in whichever unit OOXML requires. This is admittedly difficult for new Caracal users. Eventually, we'll probably implement a utility object under the hood to convert user-specified units into the format expected by OOXML.
 
@@ -270,7 +267,7 @@ Page dimensions can be set using the `page_size` method.  The method accepts two
 It also accepts a third parameter for setting the page orientation.  If you want landscape orientation, you need to change both the page
 dimensions and the orientation explicitly.
 
-*Page size defaults to United States standard A4, portrait dimensions (8.5in x 11in).*
+*Page size defaults to US Letter, portrait dimensions (8.5in x 11in).*
 
 ```ruby
 docx.page_size do

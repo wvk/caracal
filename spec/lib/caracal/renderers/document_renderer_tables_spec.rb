@@ -109,8 +109,35 @@ describe Caracal::Renderers::DocumentRenderer do
       end
 
       it { expect(grid).to eq [1000, 2000, 3000] }
+      it { expect(tbl_width).to eq 6000 }
       it { expect(tc_widths(rows[0])).to eq [[3000, 'dxa'], [3000, 'dxa']] }
       it { expect(tc_widths(rows[1])).to eq [[1000, 'dxa'], [2000, 'dxa'], [3000, 'dxa']] }
+    end
+
+    describe 'with column widths and a table width' do
+      let(:document) do
+        Caracal::Document.new do |docx|
+          docx.table [['a', 'b']], width: 8000 do
+            column_widths [1000, 2000]
+          end
+        end
+      end
+
+      it { expect(tbl_width).to eq 8000 }
+      it { expect(grid).to eq [1000, 2000] }
+    end
+
+    describe 'with column widths for some columns' do
+      let(:document) do
+        Caracal::Document.new do |docx|
+          docx.table [['a', 'b', 'c']] do
+            column_widths [1000]
+          end
+        end
+      end
+
+      it { expect(tbl_width).to eq 9360 }
+      it { expect(grid).to eq [1000, 4180, 4180] }
     end
 
     describe 'tcPr order' do

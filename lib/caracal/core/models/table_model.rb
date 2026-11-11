@@ -101,7 +101,11 @@ module Caracal
         # sum of the grid columns it spans.
         #
         def calculate_width(container_width, container)
-          self.width container_width if self.table_width.to_i.zero?
+          if self.table_width.to_i.zero?
+            # column widths covering the whole grid define the table width
+            given = table_column_widths.to_a.first grid_column_count
+            self.width (given.size == grid_column_count ? given.sum : container_width)
+          end
 
           # now that we know the whole table's width, fix the grid and size the cells to it.
           @grid_column_widths = nil

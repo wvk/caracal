@@ -713,7 +713,7 @@ docx.table [['Header 1','Header 2'],['Cell 1', 'Cell 2']] do
   border_line    :single    # sets the border style. defaults to :single. see OOXML docs for details.
   border_size    4          # sets the border width. defaults to 4. units in 1/8 points.
   border_spacing 4          # sets the cell spacing (units in twips) and the spacing around the border (units in points). defaults to 0.
-  column_widths  [80, 120]  # sets the column widths. defaults to auto. units in twips.
+  column_widths  [80, 120]  # sets the column widths and, unless `width` is given, the table width. defaults to auto. units in twips.
   repeat_header  1		      # sets the number of header rows that is repeated on each page. defaults to 0.
 end
 ```

@@ -73,5 +73,12 @@ describe 'headers and footers' do
       expect(footer.root.name).to eq 'ftr'
       expect(texts footer).to eq %w(left plain)
     end
+
+    it 'writes the relationships of footer images' do
+      docx = Caracal::Document.new { footer.img 'https://example.com/a.png', data: 'png', width: 10, height: 10 }
+      rels = Nokogiri::XML(parts(docx).fetch 'word/_rels/footer1.xml.rels').remove_namespaces!
+      expect(rels.xpath('//Relationship/@Type').map(&:value)).to all end_with '/image'
+      expect(rels.xpath('//Relationship').size).to eq 1
+    end
   end
 end

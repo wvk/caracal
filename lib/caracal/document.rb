@@ -323,11 +323,11 @@ module Caracal
     end
 
     def render_header_relationships(zip)
-      relationships_by_type(:header).each do |rel|
-        header = rel.owner
+      (relationships_by_type(:header) + relationships_by_type(:footer)).each do |rel|
+        part = rel.owner
 
-        if header.relationships.any?
-          content = ::Caracal::Renderers::RelationshipsRenderer.render header
+        if part.relationships.any?
+          content = ::Caracal::Renderers::RelationshipsRenderer.render part
 
           zip.put_next_entry "word/_rels/#{rel.formatted_target}.rels"
           zip.write content

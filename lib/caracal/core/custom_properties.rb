@@ -22,6 +22,8 @@ module Caracal
             model = Caracal::Core::Models::CustomPropertyModel.new options, &block
             if model.valid?
               register_property model
+            else
+              raise Caracal::Errors::InvalidModelError, model.errors.inspect
             end
             model
           end

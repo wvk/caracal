@@ -423,9 +423,12 @@ docx.custom_property do
   value     'test'            # sets the value of the custom property.
   type      :text             # sets the property type. accepts :text, :number, :date, :boolean.
 end
+
+docx.custom_property name: 'Due', value: Date.new(2024, 5, 17), type: :date
+docx.custom_property name: 'Amount', value: 12.5, type: :number
 ```
 
-The `name`, `value`, and `height` attributes are required. If any of the attributes are missing, the custom property will not be created.
+The `name`, `value`, and `type` attributes are required. A `:date` value may be a Date, Time, DateTime or parseable String. A `:number` value is stored as an integer or, if it has a fraction, as a floating point number. Invalid properties raise `Caracal::Errors::InvalidModelError`.
 
 A document may have zero or many custom properties. Each custom property's `name` should be unique with its `type`.
 

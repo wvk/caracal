@@ -469,7 +469,7 @@ module Caracal
             end
           end
 
-          rowspan_hash = {} # stores the remaining rowspans per table cell index
+          rowspan_hash = {} # stores the remaining rowspans per grid column
           model.rows.each_with_index do |row, index|
             w.tr do
               w.trPr do
@@ -481,7 +481,8 @@ module Caracal
                 # w.tblCellSpacing 'w:w' => 0, 'w:type' => 'dxa'
               end
 
-              row.each_with_index do |tc, tc_index| # NOTE: tc_index is modified inline at end of method!
+              grid_col = 0
+              row.each_with_index do |tc, tc_index|
                 w.tc do
                   w.tcPr do
                     cnf_style = tc.cnf_style(model, index, tc_index)
@@ -498,14 +499,14 @@ module Caracal
 
                     # applying rowspan
                     if tc.cell_rowspan and tc.cell_rowspan > 1 # start new cell with rowspan
-                      rowspan_hash[tc_index] = tc.cell_rowspan - 1 # set rowspan info for next table rows: n-1 rows left to merge
+                      rowspan_hash[grid_col] = tc.cell_rowspan - 1 # set rowspan info for next table rows: n-1 rows left to merge
                       w.vMerge 'w:val' => 'restart' # start new merged range
-                    elsif rowspan_hash[tc_index] and rowspan_hash[tc_index] > 1 # before end of merged range
+                    elsif rowspan_hash[grid_col] and rowspan_hash[grid_col] > 1 # before end of merged range
                       w.vMerge 'w:val' => 'continue' # continue merged range
-                      rowspan_hash[tc_index] -= 1
-                    elsif rowspan_hash[tc_index] == 1 # last cell in merged range
+                      rowspan_hash[grid_col] -= 1
+                    elsif rowspan_hash[grid_col] == 1 # last cell in merged range
                       w.vMerge 'w:val' => 'continue'
-                      rowspan_hash.delete tc_index # remove rowspan info, next row will not get vMerge
+                      rowspan_hash.delete grid_col # remove rowspan info, next row will not get vMerge
                     end
 
                     render_borders    w, tc, 'tcBorders', :cell
@@ -535,8 +536,7 @@ module Caracal
                   end
                 end
 
-                # adjust tc_index for next cell taking into account current cell's colspan
-                tc_index += (tc.cell_colspan && tc.cell_colspan > 0) ? tc.cell_colspan : 1
+                grid_col += (tc.cell_colspan and tc.cell_colspan > 0) ? tc.cell_colspan : 1
               end
             end
           end

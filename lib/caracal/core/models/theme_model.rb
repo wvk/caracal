@@ -43,7 +43,7 @@ module Caracal
           @theme_color_text1       = DEFAULT_THEME_COLOR_TEXT1
           @theme_color_background1 = DEFAULT_THEME_COLOR_BACKGROUND1
           @theme_color_text2       = DEFAULT_THEME_COLOR_TEXT2
-          @theme_color_background1 = DEFAULT_THEME_COLOR_BACKGROUND2
+          @theme_color_background2 = DEFAULT_THEME_COLOR_BACKGROUND2
           @theme_color_accent1     = DEFAULT_THEME_COLOR_ACCENT1
           @theme_color_accent2     = DEFAULT_THEME_COLOR_ACCENT2
           @theme_color_accent3     = DEFAULT_THEME_COLOR_ACCENT3

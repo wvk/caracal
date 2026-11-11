@@ -28,4 +28,16 @@ describe 'table of contents rendering' do
       expect(placeholders(xml)).to eq ['0']
     end
   end
+
+  describe 'page breaks' do
+    it 'adds none before the TOC' do
+      xml = document_xml {|docx| docx.toc legend: 'Contents'; docx.h1 'Introduction' }
+      expect(xml.xpath("//w:br[@w:type='page']", ns)).to be_empty
+    end
+
+    it 'keeps a page break added by the caller' do
+      xml = document_xml {|docx| docx.page; docx.toc; docx.h1 'Introduction' }
+      expect(xml.xpath("//w:br[@w:type='page']", ns).size).to eq 1
+    end
+  end
 end

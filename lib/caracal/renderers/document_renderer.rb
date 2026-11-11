@@ -210,9 +210,6 @@ module Caracal
             w.rPr
           end
           w.r do
-            w.br 'w:type' => 'page'
-          end
-          w.r do
             w.t model.toc_legend
           end
         end

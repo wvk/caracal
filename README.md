@@ -800,23 +800,15 @@ end
 To display images side-by-side, they need to be laid out horizontally in a table.
 
 ```ruby
-# When the URL or data can be hard-coded, pass a block to TableCellModel.new
 image_1_cell = Caracal::Core::Models::TableCellModel.new do
-  img('https://www.example.com/logo.png', width: 200, height: 150)
+  img 'https://www.example.com/logo.png'
 end
 
-# When the data comes from a variable, you need to instantiate the ImageModel directly
-# to preserve lexical scope (because the @image variable is not available to the block).
-# Given an ActiveStorage item in @image, the following code would generate a cell with the image inside.
-image_2_cell = Caracal::Core::Models::TableCellModel.new(
-  content: Caracal::Core::Models::ImageModel.new(
-    url: @image.name,
-    data: @image.download,
-    width: @image.metadata[:width],
-    height: @image.metadata[:height]
-  )
-)
-# Generate the table as usual, passing the cells in a 2-dimensional array
+# a block argument keeps the surrounding scope, e.g. for an ActiveStorage attachment in @image
+image_2_cell = Caracal::Core::Models::TableCellModel.new do |cell|
+  cell.img @image.filename.to_s, data: @image.download
+end
+
 docx.table [[image_1_cell, image_2_cell]]
 ```
 

@@ -51,6 +51,18 @@ describe Caracal::Core::Images do
       it { expect(model.formatted_width).to eq 400 * 12700 }
     end
 
+    # README "Table Cells"
+    context 'in a table cell built with a block argument' do
+      let(:model) { cell.contents.grep(Caracal::Core::Models::ImageModel).first }
+      let(:cell) do
+        @image = { filename: 'photo.png', data: png_of(400, 300) }
+        Caracal::Core::Models::TableCellModel.new { |c| c.img @image[:filename], data: @image[:data] }
+      end
+
+      it { expect(size).to eq [400, 300] }
+      it { expect(model.image_url).to eq 'photo.png' }
+    end
+
     context 'with a width only' do
       before { subject.img 'image.png', data: png_of(400, 300), width: 200 }
 

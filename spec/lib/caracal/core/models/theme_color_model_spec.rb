@@ -68,6 +68,33 @@ describe Caracal::Core::Models::ThemeColorModel do
     end
   end
 
+  describe 'tint and shade' do
+    let(:ns)       { { 'w' => 'http://schemas.openxmlformats.org/wordprocessingml/2006/main' } }
+    let(:document) { Caracal::Document.new { theme { color_accent1 'FF0000'; color_text1 '000000' } } }
+    let(:xml)      { Nokogiri::XML Caracal::Renderers::DocumentRenderer.render(document) }
+
+    def color(text)
+      xml.at_xpath("//w:r[w:t='#{text}']/w:rPr/w:color", ns).attributes.transform_values(&:value)
+    end
+
+    before do
+      document.p do
+        text 'tint',  theme_color: { ref: :accent1, tint: '80' }
+        text 'shade', theme_color: { ref: :accent1, shade: '80' }
+        text 'black', theme_color: { ref: :text1, tint: 'BF' }
+        text 'given', theme_color: { ref: :accent1, tint: '80', color: '123456' }
+      end
+      document.p('bg') { theme_bgcolor ref: :accent1, shade: 'BF' }
+    end
+
+    # HSL luminance: tint L' = L*f + 1 - f, shade L' = L*f, f = value/255
+    it { expect(color 'tint').to eq('themeColor' => 'accent1', 'themeTint' => '80', 'val' => 'FF7F7F') }
+    it { expect(color 'shade').to eq('themeColor' => 'accent1', 'themeShade' => '80', 'val' => '800000') }
+    it { expect(color('black')['val']).to eq '404040' }
+    it { expect(color('given')['val']).to eq '123456' }
+    it { expect(xml.at_xpath("//w:p[w:r/w:t='bg']/w:pPr/w:shd/@w:color", ns).value).to eq 'BF0000' }
+  end
+
   describe 'on a model' do
     it { expect { Caracal::Document.new.p { theme_color :visited } }.to raise_error(Caracal::Errors::InvalidModelError) }
   end

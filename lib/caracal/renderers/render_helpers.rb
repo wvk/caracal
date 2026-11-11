@@ -70,7 +70,8 @@ module Caracal
         val = theme.theme_color_val
         return val unless val.nil? or val == 'auto'
 
-        document.document_theme.color_for(theme.theme_color_ref) || 'auto'
+        hex = document.document_theme.color_for theme.theme_color_ref
+        hex ? theme.adjust(hex) : 'auto'
       end
 
       def render_color(w, model, type = nil)

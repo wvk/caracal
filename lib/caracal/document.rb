@@ -288,7 +288,7 @@ module Caracal
         images.concat rel.owner.relationships_by_type(:image)
       end
 
-      images.each do |rel|
+      images.uniq(&:formatted_target).each do |rel|
         if rel.relationship_data.to_s.size > 0
           content = rel.relationship_data
         else
@@ -323,10 +323,10 @@ module Caracal
     end
 
     def render_header_relationships(zip)
-      relationships_by_type(:header).each do |rel|
+      (relationships_by_type(:header) + relationships_by_type(:footer)).each do |rel|
         header = rel.owner
 
-        if header.relationships.any?
+        if header and header.relationships.any?
           content = ::Caracal::Renderers::RelationshipsRenderer.render header
 
           zip.put_next_entry "word/_rels/#{rel.formatted_target}.rels"

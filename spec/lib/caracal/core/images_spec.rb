@@ -124,6 +124,44 @@ describe Caracal::Core::Images do
   end
 
 
+  describe 'media parts' do
+    let(:entries) do
+      zip = Zip::File.open_buffer StringIO.new(subject.render.string)
+      zip.entries.to_h { |e| [e.name, e.get_input_stream.read] }
+    end
+    let(:media) { entries.keys.grep(%r{\Aword/media/}) }
+
+    # media part of the first image relationship of a part
+    def media_of(rels_name)
+      rel = Nokogiri::XML(entries.fetch(rels_name)).remove_namespaces!.xpath('//Relationship').find { |r| r['Type'].end_with? '/image' }
+      entries.fetch "word/#{rel['Target']}"
+    end
+
+    context 'with different images in body, header and footer' do
+      before do
+        subject.img 'image.png', width: 10, height: 10, data: png(255, 0, 0)
+        subject.header.img 'image.png', width: 10, height: 10, data: png(0, 255, 0)
+        subject.footer.img 'image.png', width: 10, height: 10, data: png(0, 0, 255)
+      end
+
+      it { expect(media.size).to eq 3 }
+      it { expect(media_of 'word/_rels/document.xml.rels').to eq png(255, 0, 0) }
+      it { expect(media_of 'word/_rels/header1.xml.rels').to eq png(0, 255, 0) }
+      it { expect(media_of 'word/_rels/footer1.xml.rels').to eq png(0, 0, 255) }
+    end
+
+    context 'with the same image in body and header' do
+      before do
+        subject.img 'image.png', width: 10, height: 10, data: png(255, 0, 0)
+        subject.header.img 'image.png', width: 10, height: 10, data: png(255, 0, 0)
+      end
+
+      it { expect(media.size).to eq 1 }
+      it { expect(media_of 'word/_rels/header1.xml.rels').to eq png(255, 0, 0) }
+    end
+  end
+
+
   #-------------------------------------------------------------
   # Rendering
   #-------------------------------------------------------------

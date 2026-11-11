@@ -61,7 +61,8 @@ module Caracal
           when :image
             ext = relationship_target.to_s.split('.').last
             ext = ext.split('?').first
-            "media/image#{relationship_id}.#{ext}"
+            # named by key, so parts with their own ids (headers, footers) share one media folder
+            "media/image-#{Digest::SHA256.hexdigest(relationship_key)[0, 16]}.#{ext}"
           when :theme
             "theme/theme1.xml"
           else

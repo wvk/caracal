@@ -84,6 +84,28 @@ describe Caracal::Core::Images do
       it { expect(images.size).to eq 1 }
       it { expect(links.size).to eq 1 }
     end
+
+    context 'with repeated, anchored and embedded drawings' do
+      let(:drawing_ns) do
+        {
+          'wp'  => 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
+          'pic' => 'http://schemas.openxmlformats.org/drawingml/2006/picture'
+        }
+      end
+      let(:doc_pr_ids)  { xml.xpath('//wp:docPr', drawing_ns).map { |n| n['id'] } }
+      let(:c_nv_pr_ids) { xml.xpath('//pic:cNvPr', drawing_ns).map { |n| n['id'] } }
+
+      before do
+        2.times { subject.img 'image.png', width: 10, height: 10, data: png(255, 0, 0) }
+        subject.img 'image.png', width: 10, height: 10, data: png(255, 0, 0), anchor: true
+        subject.iframe data: File.binread(File.join(Caracal.root, 'spec', 'support', '_fixtures', 'snippet.docx'))
+        subject.img 'image.png', width: 10, height: 10, data: png(255, 0, 0)
+      end
+
+      it { expect(doc_pr_ids.size).to eq 6 }
+      it { expect(doc_pr_ids.uniq).to eq doc_pr_ids }
+      it { expect(c_nv_pr_ids.uniq).to eq c_nv_pr_ids }
+    end
   end
 
 end

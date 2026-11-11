@@ -111,12 +111,12 @@ module Caracal
             if (r_attr = r_node.attributes['embed'])
               r_attr.value = "rId#{ index }"
             end
+          end
 
-            p_parent = r_node.parent.parent
-            p_node   = p_parent.children[0].children[0]
-            if (p_attr = p_node.attributes['id'])
-              p_attr.value = index.to_s
-            end
+          fragment.xpath('.//wp:docPr', wp: ns.t('wp')).each do |doc_pr|
+            id = next_drawing_id.to_s
+            doc_pr['id'] = id
+            doc_pr.parent.xpath('.//pic:cNvPr', pic: ns.t('pic')).each { |c_nv_pr| c_nv_pr['id'] = id }
           end
 
           xml << fragment.to_s
@@ -125,14 +125,14 @@ module Caracal
 
       def render_image_proper(xml, model, **options)
         rel      = document.relationship type: :image, target: model.image_url, data: model.image_data
-        rel_id   = rel.relationship_id
         rel_name = rel.formatted_target
+        drawing_id = next_drawing_id
 
         xml['wp'].extent cx: model.formatted_width, cy: model.formatted_height
         xml['wp'].effectExtent t: 0, b: 0, r: 0, l: 0
         xml['wp'].wrapTopAndBottom if model.image_anchor
 
-        xml['wp'].docPr id: rel_id, name: rel_name
+        xml['wp'].docPr id: drawing_id, name: rel_name
 
         xml['wp'].cNvGraphicFramePr do
           xml['a'].graphicFrameLocks noChangeAspect: '1'
@@ -144,7 +144,7 @@ module Caracal
           xml['a'].graphicData uri: ns.t('pic') do
             xml['pic'].pic do
               xml['pic'].nvPicPr do
-                xml['pic'].cNvPr id: rel_id, name: rel_name
+                xml['pic'].cNvPr id: drawing_id, name: rel_name
                 xml['pic'].cNvPicPr
               end
               xml['pic'].blipFill do
@@ -164,6 +164,11 @@ module Caracal
             end
           end
         end
+      end
+
+      # docPr/cNvPr ids must be unique per document part
+      def next_drawing_id
+        @drawing_counter = @drawing_counter.to_i + 1
       end
 
       def render_image(xml, model, **options)

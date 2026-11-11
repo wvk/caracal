@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'tmpdir'
 
 describe Caracal::View do
   let(:view_object) { Object.new.tap { |o| o.extend(described_class) } }
@@ -41,6 +42,37 @@ describe Caracal::View do
 
     view_object.save('foo.docx')
     expect(docx).to have_received(:save)
+  end
+
+  describe 'README example' do
+    let(:export_class) do
+      Class.new do
+        include Caracal::View
+
+        def initialize(data = [])
+          @data = data
+          add_data
+        end
+
+        def add_data
+          table @data do
+            cell_style cells,   size: 22
+            cell_style rows[0], size: 24, bold: true
+          end
+        end
+      end
+    end
+
+    let(:doc) { export_class.new [['Name', 'Amount'], ['Foo', '1']] }
+
+    it { expect(doc.render).to start_with 'PK' }
+
+    it 'keeps the file name given to save_as' do
+      Dir.mktmpdir do |dir|
+        doc.save_as File.join(dir, 'export.docx')
+        expect(doc.name).to eq 'export.docx'
+      end
+    end
   end
 
   describe '#respond_to?' do

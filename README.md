@@ -980,7 +980,11 @@ EOXML
 
 ## Template Rendering
 
-Caracal includes [Tilt](https://github.com/rtomayko/tilt) integration to facilitate its inclusion in other frameworks.
+Caracal includes [Tilt](https://github.com/rtomayko/tilt) integration to facilitate its inclusion in other frameworks. Templates ending in `.caracal` contain Caracal commands on the `docx` variable and render to a docx string:
+
+```ruby
+Tilt.new('report.docx.caracal').render
+```
 
 Rails integration can be added via the [Caracal-Rails](https://github.com/trade-informatics/caracal-rails) gem.
 
@@ -991,7 +995,7 @@ Lexical scope is a pretty big challenge for Caracal and it often confuses new us
 
 Alternatively, you may use the `Caracal::View` mixin to create documents, just like [Prawn](http://prawnpdf.org/api-docs/2.0/Prawn/View.html). Here is a basic example using this mixin:
 
-```
+```ruby
 class Export
   include Caracal::View
 
@@ -1001,22 +1005,22 @@ class Export
   end
 
   def add_data
-    table @data, size: 22 do
-      cell_style rows[0], bold: true
-      cell_style rows[0], size: 24
+    table @data do
+      cell_style cells,   size: 22
+      cell_style rows[0], size: 24, bold: true
     end
   end
 end
 
 # Usage:
-Export.new(some_data).save_as("export #{Time.zone.today}.docx")
+Export.new(some_data).save_as("export #{Date.today}.docx")
 
 # Or send from a controller, using Rails:
 respond_to do |format|
   format.html
   format.docx do
     doc = Export.new(my_data)
-    send_data doc.render, filename: doc.file_name, disposition: :inline, type: Mime::Type.lookup_by_extension(:docx)
+    send_data doc.render, filename: doc.name, disposition: :inline, type: Mime::Type.lookup_by_extension(:docx)
   end
 end
 ```

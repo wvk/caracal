@@ -1,3 +1,5 @@
+require 'open-uri'
+require 'tempfile'
 require 'caracal/core/models/base_model'
 
 module Caracal
@@ -83,13 +85,10 @@ module Caracal
 
         def file
           @file ||= begin
-            if iframe_url.nil?
-              file = Tempfile.new('iframe')
-              file.write iframe_data
-              file.rewind
-            else
-              file = open(iframe_url)
-            end
+            file = Tempfile.new 'iframe'
+            file.binmode
+            file.write(iframe_url.nil? ? iframe_data : url_content)
+            file.rewind
             file
           end
         end
@@ -117,6 +116,15 @@ module Caracal
         end
 
         private
+
+        # NOTICE: this potentially opens a web resource!
+        def url_content
+          if iframe_url.match? %r{\A[a-z][a-z0-9+.-]*://}i
+            URI.open(iframe_url, 'rb') { |io| io.read }
+          else
+            File.binread iframe_url
+          end
+        end
 
         def option_keys
           [:url, :data]

@@ -9,11 +9,11 @@ module Caracal
       class LinkModel < TextModel
         use_prefix :link
 
-        DEFAULT_LINK_COLOR = '1155cc'
+        DEFAULT_LINK_COLOR     = '1155cc'
+        DEFAULT_LINK_UNDERLINE = true
 
         has_string_attribute :href
 
-        has_boolean_attribute :underline, default: true
         has_boolean_attribute :internal
 
         # readers (create aliases for superclass methods to conform

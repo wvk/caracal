@@ -43,4 +43,20 @@ describe 'run properties rendering' do
     it { expect(run_values xml, 'w:color/@w:themeColor').to eq %w(accent1 accent2 accent1) }
     it { expect(run_values xml, 'w:shd/@w:themeColor').to eq %w(accent2 accent1 accent2) }
   end
+
+  describe 'link underline' do
+    let(:xml) do
+      document_xml do |docx|
+        docx.p do
+          link 'default', 'https://example.com'
+          link 'option', 'https://example.com', underline: false
+          link 'block', 'https://example.com' do
+            underline false
+          end
+        end
+      end
+    end
+
+    it { expect(xml.xpath('//w:hyperlink/w:r/w:rPr/w:u/@w:val', ns).map(&:value)).to eq %w(single none none) }
+  end
 end

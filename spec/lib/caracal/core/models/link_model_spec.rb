@@ -88,6 +88,12 @@ describe Caracal::Core::Models::LinkModel do
 
       it { expect(subject.link_underline).to eq true }
     end
+    describe '.underline false' do
+      before { subject.underline(false) }
+
+      it { expect(subject.link_underline).to eq false }
+      it { expect(subject.run_attributes.underline).to eq false }
+    end
 
     # integers
     describe '.size' do

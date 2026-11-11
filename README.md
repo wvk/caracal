@@ -876,14 +876,14 @@ docx.header.hr
 
 ### Table of contents
 
-Table of contents can be automatically generated.
+Caracal lists the document's headings in a table of contents. Word updates it, including page numbers, when it opens the document.
 
 ```ruby
 docx.table_of_contents
 # Or, for brevity:
 docx.toc
 
-# Both methods accept the same options: legend, start_level, and end_level
+# Both methods accept the same options: legend, start_level, end_level, and placeholder
 
 docx.toc legend: 'Table of contents', start_level: 1, end_level: 3
 # or using block form:
@@ -891,8 +891,11 @@ docx.toc do
   legend      'Table of contents' # Default is nil
   start_level 1                   # Default is 1 (headings level 1, aka docx.h1 or p style: 'Heading1')
   end_level   3                   # Default is 3 (headings level 3, aka docx.h3 or p style: 'Heading3')
+  placeholder '#'                 # Default is '#', shown as page number until the TOC is updated
 end
 ```
+
+To start the table of contents on a new page, add `docx.page` before it.
 
 ### IFrames
 

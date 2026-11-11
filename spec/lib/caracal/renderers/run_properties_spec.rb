@@ -60,6 +60,12 @@ describe 'run properties rendering' do
     it { expect(xml.xpath('//w:hyperlink/w:r/w:rPr/w:u/@w:val', ns).map(&:value)).to eq %w(single none none) }
   end
 
+  describe 'hidden paragraph mark' do
+    let(:xml) { document_xml { |docx| docx.p 'x', hide_mark: true, color: 'ff0000', vertical_align: :superscript } }
+
+    it { expect(xml.xpath('//w:pPr/w:rPr/*', ns).map(&:name)).to eq %w(vanish color vertAlign specVanish) }
+  end
+
   describe 'highlight color' do
     let(:xml) do
       document_xml do |docx|

@@ -940,19 +940,19 @@ end
 
 ### Using Tabs
 
-Tabs are defined per paragraph as an Array of twips like so:
+Tab stops are defined per paragraph as an Array of positions in twips. `end_tab: true` adds a tab after a text run:
 
 ```ruby
 docx.p do
-  tabs [400]
-  text 'first tabbed column at pos 0', end_tab: true
-  text 'second tabbed column at pos 400 twips'
+  tabs [2880]
+  text 'column at 0', end_tab: true
+  text 'column at 2880 twips (2in)'
 end
 
-docx.p tabs: [400, 800] do
-  text 'first tabbed column at pos 0', end_tab: true
-  text 'second tabbed column at pos 800 twips', end_tab: true
-  text 'third tabbed column'
+docx.p tabs: [2880, 5760] do
+  text 'column at 0', end_tab: true
+  text 'column at 2in', end_tab: true
+  text 'column at 4in'
 end
 ```
 

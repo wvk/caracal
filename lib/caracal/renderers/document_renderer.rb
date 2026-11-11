@@ -333,6 +333,7 @@ module Caracal
             w.spacing spacing unless spacing.nil?
             w.ind 'w:start' => ls.style_left, 'w:hanging' => hanging
             w.contextualSpacing 'w:val' => true
+            w.jc 'w:val' => model.paragraph_align unless model.paragraph_align.nil?
             render_run_attributes w, model, skip_empty: true
           end
 

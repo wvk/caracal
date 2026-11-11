@@ -16,6 +16,10 @@ module Caracal
         'Footer'
       end
 
+      def contents
+        document.contents + [document.page_number_paragraph].compact
+      end
+
     end
   end
 end

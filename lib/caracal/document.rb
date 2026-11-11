@@ -140,9 +140,7 @@ module Caracal
       [:font, :list_style, :namespace, :relationship, :style].each do |method|
         collection = self.class.send "default_#{method}s"
         collection.each do |item|
-          if (item[:if] and send item[:if]) or not item[:if]
-            send(method, item)
-          end
+          send(method, item)
         end
       end
 
@@ -179,6 +177,7 @@ module Caracal
     #
     def render
       reset_numbering
+      prepare_page_numbers
 
       buffer = ::Zip::OutputStream.write_buffer do |zip|
         %w(package_relationships content_types app core custom fonts embedded_fonts header footer settings styles document relationships header_relationships media numbering theme).each do |what|
@@ -201,6 +200,12 @@ module Caracal
     # Private Instance Methods
     #------------------------------------------------------
     private
+
+    # Page numbers are appended to the footer, which is created if necessary.
+    def prepare_page_numbers
+      footer if page_number_show
+      @footer.page_number_paragraph = page_number_paragraph if @footer
+    end
 
     #============ RENDERERS ===============================
 

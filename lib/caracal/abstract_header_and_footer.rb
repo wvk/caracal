@@ -9,7 +9,6 @@ require 'caracal/core/list_styles'
 require 'caracal/core/lists'
 require 'caracal/core/namespaces'
 require 'caracal/core/page_breaks'
-require 'caracal/core/page_numbers'
 require 'caracal/core/page_settings'
 require 'caracal/core/relationships'
 require 'caracal/core/rules'
@@ -29,7 +28,6 @@ module Caracal
 
     include Caracal::Core::Fonts
     include Caracal::Core::PageSettings
-    include Caracal::Core::PageNumbers
     include Caracal::Core::Styles
     include Caracal::Core::ListStyles
 

@@ -1,4 +1,5 @@
 require 'caracal/core/models/page_number_model'
+require 'caracal/core/models/paragraph_model'
 require 'caracal/errors'
 
 
@@ -48,6 +49,17 @@ module Caracal
             else
               raise Caracal::Errors::InvalidModelError, "page_numbers: #{model.errors.map {|e| e[:message] }.join ', '}"
             end
+          end
+
+          # Returns the paragraph holding the optional label and the page
+          # number, or nil when page numbers are off.
+          def page_number_paragraph
+            return unless page_number_show
+
+            paragraph = Caracal::Core::Models::ParagraphModel.new align: page_number_align
+            paragraph.text "#{page_number_label} ", size: page_number_label_size unless page_number_label.to_s.empty?
+            paragraph.field 'PAGE', size: page_number_number_size
+            paragraph
           end
 
         end

@@ -101,6 +101,88 @@ describe Caracal::Core::Images do
       it { expect(heights).to eq %w(1 2) }
     end
 
+    context 'with anchored image positions' do
+      let(:wp)     { { 'wp' => 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing' } }
+      let(:anchor) { xml.at_xpath('//wp:anchor', wp) }
+      let(:pos_h)  { anchor.at_xpath('wp:positionH', wp) }
+      let(:pos_v)  { anchor.at_xpath('wp:positionV', wp) }
+
+      context 'by default' do
+        before { subject.img 'image.png', width: 10, height: 10, align: :right, anchor: true }
+
+        it { expect(pos_h['relativeFrom']).to eq 'page' }
+        it { expect(pos_h.at_xpath('wp:align', wp).text).to eq 'right' }
+        it { expect(pos_v['relativeFrom']).to eq 'page' }
+        it { expect(pos_v.at_xpath('wp:align', wp).text).to eq 'top' }
+        it { expect(anchor.at_xpath('wp:wrapTopAndBottom', wp)).to be_truthy }
+        it { expect(anchor['behindDoc']).to eq 'false' }
+      end
+
+      context 'with offsets' do
+        before do
+          subject.img 'image.png', width: 10, height: 10, anchor: true do
+            x           1440
+            y           720
+            relative_to :margin
+            wrap        :square
+          end
+        end
+
+        it { expect(pos_h['relativeFrom']).to eq 'margin' }
+        it { expect(pos_h.at_xpath('wp:posOffset', wp).text).to eq '914400' }
+        it { expect(pos_v['relativeFrom']).to eq 'margin' }
+        it { expect(pos_v.at_xpath('wp:posOffset', wp).text).to eq '457200' }
+        it { expect(anchor.at_xpath('wp:wrapSquare', wp)['wrapText']).to eq 'bothSides' }
+        it { expect(anchor.element_children.map(&:name)).to eq %w(simplePos positionH positionV extent effectExtent wrapSquare docPr cNvGraphicFramePr graphic) }
+      end
+
+      context 'with only a vertical offset' do
+        before { subject.img 'image.png', width: 10, height: 10, align: :center, anchor: true, y: -100 }
+
+        it { expect(pos_h.at_xpath('wp:align', wp).text).to eq 'center' }
+        it { expect(pos_v.at_xpath('wp:posOffset', wp).text).to eq '-63500' }
+      end
+
+      {
+        page:      %w(page page),
+        margin:    %w(margin margin),
+        column:    %w(column margin),
+        paragraph: %w(column paragraph)
+      }.each do |relative_to, (h, v)|
+        context "relative to #{relative_to}" do
+          before { subject.img 'image.png', width: 10, height: 10, anchor: true, x: 0, y: 0, relative_to: relative_to }
+
+          it { expect([pos_h['relativeFrom'], pos_v['relativeFrom']]).to eq [h, v] }
+        end
+      end
+
+      context 'with separate references per axis' do
+        before { subject.img 'image.png', width: 10, height: 10, anchor: true, relative_to: :page, relative_to_y: :paragraph }
+
+        it { expect([pos_h['relativeFrom'], pos_v['relativeFrom']]).to eq %w(page paragraph) }
+      end
+
+      context 'in front of text' do
+        before { subject.img 'image.png', width: 10, height: 10, anchor: true, wrap: :none }
+
+        it { expect(anchor.at_xpath('wp:wrapNone', wp)).to be_truthy }
+        it { expect(anchor['behindDoc']).to eq 'false' }
+      end
+
+      context 'behind text' do
+        before { subject.img 'image.png', width: 10, height: 10, anchor: true, wrap: :behind }
+
+        it { expect(anchor.at_xpath('wp:wrapNone', wp)).to be_truthy }
+        it { expect(anchor['behindDoc']).to eq 'true' }
+      end
+    end
+
+    context 'with invalid anchor options' do
+      it { expect { subject.img 'image.png', width: 10, height: 10, anchor: true, wrap: :tight }.to raise_error(Caracal::Errors::InvalidModelError, /:tight/) }
+      it { expect { subject.img 'image.png', width: 10, height: 10, anchor: true, relative_to: :line }.to raise_error(Caracal::Errors::InvalidModelError, /:line/) }
+      it { expect { subject.img 'image.png', width: 10, height: 10, anchor: true, relative_to_x: :foo }.to raise_error(Caracal::Errors::InvalidModelError) }
+    end
+
     context 'with repeated, anchored and embedded drawings' do
       let(:drawing_ns) do
         {

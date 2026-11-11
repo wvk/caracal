@@ -674,7 +674,18 @@ the simplest solution to both problems.*
 
 #### Anchored Images
 
-By default, Caracal will place the image inline (inside a paragraph). If you want thhe image to be anchored to the page instead, just provide `anchor: true`. `top`, `left` etc. values will be measured relative to the page. **This behaviour will change** as soon as we add support for a more sophisticated anchor model.
+Images are placed inline by default. `anchor: true` positions the image freely instead; `top`, `bottom`, `left` and `right` then set the distance to the surrounding text.
+
+```ruby
+docx.img 'https://www.example.com/logo.png', width: 120, height: 60, anchor: true do
+  x           1440      # horizontal offset in twips. default aligns the image by its align value.
+  y           720       # vertical offset in twips. default is the top.
+  relative_to :margin   # :page (default), :margin, :column or :paragraph.
+  wrap        :square   # :top_and_bottom (default), :square, :none (in front of text) or :behind (behind text).
+end
+```
+
+`relative_to_x` and `relative_to_y` set the reference per axis. Vertically, `:column` measures from the margin; horizontally, `:paragraph` measures from the column.
 
 ### Tables
 

@@ -10,6 +10,9 @@ module Caracal
       class ImageModel < BaseModel
         use_prefix :image
 
+        RELATIVE_TOS = [:page, :margin, :column, :paragraph]
+        WRAPS        = [:square, :top_and_bottom, :none, :behind]
+
         has_integer_attribute :ppi,    default: 72 # pixels per inch
         has_integer_attribute :width,  default: 0  # units in pixels. (will cause error)
         has_integer_attribute :height, default: 0  # units in pixels. (will cause error)
@@ -20,6 +23,14 @@ module Caracal
 
         has_symbol_attribute :align, default: :left
         has_symbol_attribute :anchor
+
+        # anchored images only
+        has_integer_attribute :x                              # units in twips.
+        has_integer_attribute :y                              # units in twips.
+        has_symbol_attribute :relative_to, default: :page
+        has_symbol_attribute :relative_to_x                   # defaults to relative_to
+        has_symbol_attribute :relative_to_y                   # defaults to relative_to
+        has_symbol_attribute :wrap, default: :top_and_bottom
 
         has_string_attribute :url
         has_string_attribute :data
@@ -35,6 +46,8 @@ module Caracal
           @image_left   = DEFAULT_IMAGE_LEFT
           @image_right  = DEFAULT_IMAGE_RIGHT
           @image_anchor = DEFAULT_IMAGE_ANCHOR
+          @image_relative_to = DEFAULT_IMAGE_RELATIVE_TO
+          @image_wrap   = DEFAULT_IMAGE_WRAP
 
           super(options, &block).tap do
             formatted_width
@@ -58,6 +71,13 @@ module Caracal
           end
         end
 
+        [:x, :y].each do |m|
+          define_method "formatted_#{m}" do
+            value = send("image_#{m}")
+            value * 635 unless value.nil? # twips to EMUs
+          end
+        end
+
         #=============== SETTERS ==============================
 
         def anchor(value)
@@ -72,13 +92,15 @@ module Caracal
 
         def valid?
           [:ppi, :width, :height].all? { |a| validate_size a, at_least: 0 } and
-            [:top, :bottom, :left, :right].all? { |a| validate("#{a} must not be negative") { send("image_#{a}").to_i >= 0 } }
+            [:top, :bottom, :left, :right].all? { |a| validate("#{a} must not be negative") { send("image_#{a}").to_i >= 0 } } and
+            [:relative_to, :relative_to_x, :relative_to_y].all? { |a| validate_inclusion a, within: RELATIVE_TOS } and
+            validate_inclusion(:wrap, within: WRAPS, allow_nil: false)
         end
 
         private
 
         def option_keys
-          [:url, :width, :height, :align, :top, :bottom, :left, :right, :data, :anchor]
+          [:url, :width, :height, :align, :top, :bottom, :left, :right, :data, :anchor, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap]
         end
 
         def pixels_to_emus(value, ppi)

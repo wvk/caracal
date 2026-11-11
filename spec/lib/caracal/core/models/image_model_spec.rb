@@ -202,7 +202,7 @@ describe Caracal::Core::Models::ImageModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:url, :data, :width, :height, :align, :top, :bottom, :left, :right, :anchor].sort }
+      let(:expected) { [:url, :data, :width, :height, :align, :top, :bottom, :left, :right, :anchor, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap].sort }
 
       it { expect(actual).to eq expected }
     end

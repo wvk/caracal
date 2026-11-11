@@ -139,7 +139,7 @@ module Caracal
 
         xml['wp'].extent cx: model.formatted_width, cy: model.formatted_height
         xml['wp'].effectExtent t: 0, b: 0, r: 0, l: 0
-        xml['wp'].wrapTopAndBottom if model.image_anchor
+        render_image_wrap xml, model if model.image_anchor
 
         xml['wp'].docPr id: drawing_id, name: rel_name
 
@@ -175,6 +175,36 @@ module Caracal
         end
       end
 
+      def render_image_wrap(xml, model)
+        case model.image_wrap
+        when :square         then xml['wp'].wrapSquare wrapText: 'bothSides'
+        when :top_and_bottom then xml['wp'].wrapTopAndBottom
+        else                      xml['wp'].wrapNone
+        end
+      end
+
+      # relative_to => [ST_RelFromH, ST_RelFromV]
+      IMAGE_RELATIVE_FROM = {
+        page:      ['page', 'page'],
+        margin:    ['margin', 'margin'],
+        column:    ['column', 'margin'],
+        paragraph: ['column', 'paragraph']
+      }
+
+      def render_image_position(xml, model, axis)
+        relative_to = model.send("image_relative_to_#{axis}") || model.image_relative_to || :page
+        horizontal  = axis == :x
+        offset      = model.send "formatted_#{axis}"
+
+        xml['wp'].send horizontal ? 'positionH' : 'positionV', relativeFrom: IMAGE_RELATIVE_FROM[relative_to][horizontal ? 0 : 1] do
+          if offset
+            xml['wp'].posOffset offset
+          else
+            xml['wp'].align horizontal ? model.image_align : 'top'
+          end
+        end
+      end
+
       # docPr/cNvPr ids must be unique per document part
       def next_drawing_id
         @drawing_counter = @drawing_counter.to_i + 1
@@ -199,14 +229,10 @@ module Caracal
               dist = {distR: model.formatted_right, distT: model.formatted_top, distB: model.formatted_bottom, distL: model.formatted_left}
 
               if model.image_anchor
-                xml['wp'].anchor dist.merge(relativeHeight: (@relative_height = @relative_height.to_i + 1), simplePos: false, locked: true, layoutInCell: false, allowOverlap: false, behindDoc: false) do
+                xml['wp'].anchor dist.merge(relativeHeight: (@relative_height = @relative_height.to_i + 1), simplePos: false, locked: true, layoutInCell: false, allowOverlap: false, behindDoc: model.image_wrap == :behind) do
                   xml['wp'].simplePos x: 0, y: 0
-                  xml['wp'].positionH relativeFrom: 'page' do # TODO: allow other relativeFrom values
-                    xml['wp'].align model.image_align
-                  end
-                  xml['wp'].positionV relativeFrom: 'page' do # TODO: allow other relativeFrom values
-                    xml['wp'].align 'top'
-                  end
+                  render_image_position xml, model, :x
+                  render_image_position xml, model, :y
 
                   render_image_proper xml, model
                 end

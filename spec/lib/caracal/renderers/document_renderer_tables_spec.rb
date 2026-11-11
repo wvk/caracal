@@ -52,6 +52,16 @@ describe Caracal::Renderers::DocumentRenderer do
     end
   end
 
+  describe 'procs as table cells' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.table [[->{ p 'lambda' }, proc { p 'proc' }, ->(cell) { cell.p 'arg' }]]
+      end
+    end
+
+    it { expect(cell_texts(xml.at_xpath('//w:tbl/w:tr', ns))).to eq %w(lambda proc arg) }
+  end
+
   describe 'table cell margins' do
     def tc_mar(tc)
       tc.xpath('w:tcPr/w:tcMar/*', ns).map {|m| [m.name, m['w:w']] }

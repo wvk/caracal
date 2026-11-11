@@ -120,6 +120,20 @@ describe Caracal::Core::Bookmarks do
       it { expect(ids(xml, 'bookmarkEnd')).to eq ids(xml, 'bookmarkStart') }
     end
 
+    context 'with an embedded document' do
+      before do
+        subject.bookmark_start name: 'before'
+        subject.bookmark_end
+        subject.iframe data: File.binread(File.join(Caracal.root, 'spec', 'support', '_fixtures', 'snippet.docx'))
+        subject.bookmark_start name: 'after'
+        subject.bookmark_end
+      end
+
+      it { expect(ids(xml, 'bookmarkStart')).to eq %w(1 2 3) }
+      it { expect(ids(xml, 'bookmarkEnd')).to eq %w(1 2 3) }
+      it { expect(xml.xpath('//w:bookmarkStart', ns).map(&:attributes).map(&:size)).to all(eq 2) }
+    end
+
     context 'with an end that has no start' do
       before { subject.bookmark_end id: 'nope' }
 

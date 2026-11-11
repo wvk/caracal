@@ -78,9 +78,13 @@ module Caracal
       # Bookmark ids are user keys; each start gets a unique integer w:id
       # that its end reuses. An end without key closes the latest open bookmark.
       def open_bookmark(key)
+        id = next_bookmark_id
+        open_bookmarks << [key, id]
+        id
+      end
+
+      def next_bookmark_id
         @bookmark_counter = @bookmark_counter.to_i + 1
-        open_bookmarks << [key, @bookmark_counter]
-        @bookmark_counter
       end
 
       def close_bookmark(key)
@@ -117,6 +121,11 @@ module Caracal
             id = next_drawing_id.to_s
             doc_pr['id'] = id
             doc_pr.parent.xpath('.//pic:cNvPr', pic: ns.t('pic')).each { |c_nv_pr| c_nv_pr['id'] = id }
+          end
+
+          bookmark_ids = Hash.new { |ids, old_id| ids[old_id] = next_bookmark_id }
+          fragment.xpath('.//w:bookmarkStart | .//w:bookmarkEnd', w: ns.t('w')).each do |bookmark|
+            bookmark['w:id'] = bookmark_ids[bookmark['w:id']].to_s
           end
 
           xml << fragment.to_s

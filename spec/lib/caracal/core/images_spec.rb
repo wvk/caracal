@@ -93,6 +93,14 @@ describe Caracal::Core::Images do
       it { expect(%w(distT distB distL distR).map { |a| inline[a] }).to eq %w(0 0 0 0) }
     end
 
+    context 'with anchored images' do
+      before { 2.times { subject.img 'image.png', width: 10, height: 10, anchor: true } }
+
+      let(:heights) { xml.xpath('//wp:anchor', 'wp' => 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing').map { |n| n['relativeHeight'] } }
+
+      it { expect(heights).to eq %w(1 2) }
+    end
+
     context 'with repeated, anchored and embedded drawings' do
       let(:drawing_ns) do
         {

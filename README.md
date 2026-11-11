@@ -378,7 +378,7 @@ Paragraph style classes can be defined using the `style` method.  The method acc
 docx.style do
   id              'Heading1'  # sets the internal identifier for the style.
   name            'heading 1' # sets the friendly name of the style.
-  type            'paragraph' # sets the style type. accepts `paragraph` or `character`
+  type            'paragraph' # sets the style type. accepts `paragraph`, `character` or `table` (see Table Styles).
   font            'Palantino' # sets the font family.
   color           '333333'    # sets the text color. accepts hex RGB.
   size            28          # sets the font size. units in half points.
@@ -757,6 +757,23 @@ end
 ```
 
 *Note: content of cells 21 and 24 will disappear*
+
+#### Table Styles
+
+Table styles take the style options plus conditional formats for parts of the table. A table's `look` selects which parts get them.
+
+```ruby
+docx.style id: 'Grid', name: 'grid', type: :table, border_color: '666666' do
+  conditional_format type: :firstRow, bold: true, bgcolor: 'cccccc'
+  conditional_format type: :band2Horz, bgcolor: 'eeeeee'
+end
+
+docx.table data, style: 'Grid' do
+  look first_row: true, last_row: true, first_col: true, last_col: true # default false. hband and vband default to true.
+end
+```
+
+Conditional format types are `wholeTable`, `firstRow`, `lastRow`, `firstCol`, `lastCol`, `band1Horz`, `band2Horz`, `band1Vert`, `band2Vert` and the corner cells `nwCell`, `neCell`, `swCell`, `seCell`. Header and total rows and columns are not banded.
 
 ### Table Cells
 

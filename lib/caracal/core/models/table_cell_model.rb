@@ -226,6 +226,9 @@ module Caracal
       end
 
       class ConditionalFormat
+        # ST_Cnf bit order (ECMA-376 17.18.11): firstRow lastRow firstColumn lastColumn
+        # oddVBand evenVBand oddHBand evenHBand firstRowFirstColumn firstRowLastColumn
+        # lastRowFirstColumn lastRowLastColumn
         BITMASK = {
           firstRow:  0,
           lastRow:   0,
@@ -235,11 +238,15 @@ module Caracal
           band2Vert: 0,
           band1Horz: 0,
           band2Horz: 0,
-          neCell:    0,
           nwCell:    0,
-          seCell:    0,
-          swCell:    0
+          neCell:    0,
+          swCell:    0,
+          seCell:    0
         }.freeze
+
+        # later formats override earlier ones (ECMA-376 17.7.6)
+        PRECEDENCE = %i(wholeTable band1Vert band2Vert band1Horz band2Horz firstCol lastCol
+                        firstRow lastRow nwCell neCell swCell seCell)
 
         attr_reader :table_style
 
@@ -257,11 +264,10 @@ module Caracal
         def style_hash
           hsh = @table_style.table_cell_style_attributes
           if @table_style.respond_to? :find_conditional_format
-            {wholeTable: 1}.merge(@bm).each do |key, use|
+            used = {wholeTable: 1}.merge @bm
+            PRECEDENCE.each do |key|
               cf = @table_style.find_conditional_format key
-              if use == 1 and cf
-                hsh.merge! cf.table_cell_style_attributes
-              end
+              hsh.merge! cf.table_cell_style_attributes if cf and used[key] == 1
             end
           end
           hsh
@@ -270,39 +276,37 @@ module Caracal
         private
 
         def set_bitmask
-          max_row = @rows - 1
-          max_col = @cols - 1
+          look = @table_look
+          first_row = (look.table_look_first_row and @row == 0)
+          last_row  = (look.table_look_last_row and @row == @rows - 1)
+          first_col = (look.table_look_first_col and @col == 0)
+          last_col  = (look.table_look_last_col and @last_col == @cols - 1)
+
           @bm = BITMASK.dup
-          if @table_look.table_look_first_row and @row == 0
-            @bm[:firstRow] = 1
-            if @table_look.table_look_first_col and @col == 0
-              @bm[:nwCell] = 1
-            end
-            if @table_look.table_look_last_col and @last_col == max_col
-              @bm[:neCell] = 1
-            end
-          end
+          @bm[:firstRow] = 1 if first_row
+          @bm[:lastRow]  = 1 if last_row
+          @bm[:firstCol] = 1 if first_col
+          @bm[:lastCol]  = 1 if last_col
+          @bm[:nwCell]   = 1 if first_row and first_col
+          @bm[:neCell]   = 1 if first_row and last_col
+          @bm[:swCell]   = 1 if last_row and first_col
+          @bm[:seCell]   = 1 if last_row and last_col
 
-          if @table_look.table_look_last_row and @row == max_row
-            @bm[:lastRow] = 1
-            if @table_look.table_look_first_col and @col == 0
-              @bm[:swCell] = 1
-            end
-            if @table_look.table_look_last_col and @last_col == max_col
-              @bm[:seCell] = 1
-            end
+          # header and total rows/columns are not banded
+          if look.table_look_hband and not (first_row or last_row)
+            band = band_index @row, look.table_look_first_row, :row
+            @bm[band.even? ? :band1Horz : :band2Horz] = 1
           end
-
-          if @table_look.table_look_first_col and @col == 0
-            @bm[:firstCol] = 1
+          if look.table_look_vband and not (first_col or last_col)
+            band = band_index @col, look.table_look_first_col, :col
+            @bm[band.even? ? :band1Vert : :band2Vert] = 1
           end
-
-          if @table_look.table_look_last_col and @last_col == max_col
-            @bm[:lastCol] = 1
-          end
-
-          # TODO: hband, vband
           @bm
+        end
+
+        def band_index(index, skip_first, kind)
+          size = @table_style.respond_to?(:"style_#{kind}_band_size") ? @table_style.send(:"style_#{kind}_band_size").to_i : 1
+          (index - (skip_first ? 1 : 0)) / [size, 1].max
         end
       end
     end

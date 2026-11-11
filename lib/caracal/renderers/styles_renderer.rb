@@ -195,7 +195,7 @@ module Caracal
           # table properties
           w.tblPr do
             w.tblStyleRowBandSize 'w:val'  => model.style_row_band_size.to_i              unless model.style_row_band_size.nil?
-            w.tblStyleColBandSize 'w:val'  => model.style_row_band_size.to_i              unless model.style_col_band_size.nil?
+            w.tblStyleColBandSize 'w:val'  => model.style_col_band_size.to_i              unless model.style_col_band_size.nil?
             # w.tblW                'w:w'    => 0, 'w:type' => 'auto' # Preferred Table Width
             w.jc                  'w:val'  => model.style_align.to_s                      unless model.style_align.nil?
             w.tblCellSpacing      'w:w'    => model.style_cell_spacing, 'w:type' => 'dxa' unless model.style_cell_spacing.nil?
@@ -232,10 +232,10 @@ module Caracal
             # conditional formatting
             model.conditional_formats.each do |cf|
               w.tblStylePr 'w:type' => cf.style_type do
-                unless model.style_align.nil?
+                unless cf.style_align.nil?
                   # NOTE: setting any other pPr here would have no effect.
                   w.pPr do
-                    w.jc 'w:val' => model.style_align.to_s
+                    w.jc 'w:val' => cf.style_align.to_s
                   end
                 end
 
@@ -247,7 +247,7 @@ module Caracal
                   render_borders    w, cf, 'tcBorders', :style
                   render_background w, cf, :style
                   render_margins    w, cf, 'tcMar', :style
-                  w.vAlign 'w:val' => cf.style_content_vertical_align unless model.style_content_vertical_align.nil?
+                  w.vAlign 'w:val' => cf.style_content_vertical_align unless cf.style_content_vertical_align.nil?
                 end
               end
             end

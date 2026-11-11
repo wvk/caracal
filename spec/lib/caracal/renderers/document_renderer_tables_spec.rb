@@ -141,14 +141,14 @@ describe Caracal::Renderers::DocumentRenderer do
       end
     end
 
-    # bitmask positions: firstRow lastRow firstCol lastCol ... neCell nwCell
+    # bitmask positions: firstRow lastRow firstCol lastCol band1Vert band2Vert band1Horz band2Horz nwCell neCell swCell seCell
     def cnf(row)
       row.xpath('w:tc/w:tcPr/w:cnfStyle/@w:val', ns).map(&:value)
     end
 
-    it { expect(cnf(rows[0])).to eq %w(101000000100 100100001000) }
-    it { expect(cnf(rows[1])).to eq %w(001000000000 000000000000 000100000000) }
-    it { expect(cnf(rows[2])).to eq %w(001000000000 000100000000) }
+    it { expect(cnf(rows[0])).to eq %w(101000001000 100100000100) }
+    it { expect(cnf(rows[1])).to eq %w(001000100000 000010100000 000100100000) }
+    it { expect(cnf(rows[2])).to eq %w(001000010000 000100010000) }
     it { expect(rows[2].xpath('w:tc', ns).map {|tc| tc.at_xpath('.//w:r/w:rPr/w:b', ns).nil? }).to eq [true, false] }
   end
 

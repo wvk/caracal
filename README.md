@@ -167,13 +167,13 @@ Pairs extensions and XML files with schema content types so Word can parse them 
 OpenXML properties are specified in several different units, depending on which attribute is being set.
 
 **Points**
-Most spacing declarations are measured in full points.
+Border and rule spacing is measured in full points.
 
 **Half Points**
 All font sizes are measure in half points.  A font size of 24 is equivalent to 12pt.
 
 **Eighth Points**
-Borders are measured in 1/8 points.  A border size of 4 is equivalent to 0.5pt.
+Border and rule sizes are measured in 1/8 points.  A border size of 4 is equivalent to 0.5pt.
 
 **Twips**
 A twip is 1/20 of a point.  Word documents are printed at 72dpi.  1in == 72pt == 1440 twips.
@@ -546,7 +546,7 @@ docx.hr do
   color   '333333'   # sets the color of the line. defaults to auto.
   line    :double    # sets the line style (single or double). defaults to single.
   size    8          # sets the thickness of the line. units in 1/8 points. defaults to 4.
-  spacing 4          # sets the spacing around the line. units in 1/8 points. defaults to 1.
+  spacing 4          # sets the spacing above the line. units in points. defaults to 1.
 end
 ```
 
@@ -684,14 +684,16 @@ The `table` command accepts data in the form of a two-dimensional arrays. This c
 docx.table [['Header 1','Header 2'],['Cell 1', 'Cell 2']] do
   border_color   '666666'   # sets the border color. defaults to 'auto'.
   border_line    :single    # sets the border style. defaults to :single. see OOXML docs for details.
-  border_size    4          # sets the border width. defaults to 0. units in twips.
-  border_spacing 4          # sets the spacing around the border. defaults to 0. units in twips.
+  border_size    4          # sets the border width. defaults to 0. units in 1/8 points.
+  border_spacing 4          # sets the cell spacing (units in twips) and the spacing around the border (units in points). defaults to 0.
   column_widths  [80, 120]  # sets the column widths. defaults to auto. units in twips.
   repeat_header  1		      # sets the number of header rows that is repeated on each page. defaults to 0.
 end
 ```
 
-Table borders can be further styled with position-specific options. Caracal supports styling the top, bottom, left, right, inside horizontal, and inside vertical borders with the `border_top`, `border_bottom`, `border_left`, `border_right`, `border_horizontal`, and `border_vertical`, respectively. Options have the same meaning as those set at the table level.
+Any table-level border option draws all table borders. A table without border options has no borders.
+
+Table borders can be further styled with position-specific options. Caracal supports styling the top, bottom, left, right, inside horizontal, and inside vertical borders with the `border_top`, `border_bottom`, `border_left`, `border_right`, `border_horizontal`, and `border_vertical`, respectively. Options have the same meaning as those set at the table level, and options not given fall back to the table-level ones.
 
 ```ruby
 docx.table data, border_size: 4 do

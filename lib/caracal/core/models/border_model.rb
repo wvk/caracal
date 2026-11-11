@@ -20,7 +20,7 @@ module Caracal
         has_symbol_attribute :line, default: :single
         has_symbol_attribute :type
 
-        has_integer_attribute :size, default: 0 # 1/8 points
+        has_integer_attribute :size, default: 4 # 1/8 points
         has_integer_attribute :spacing          # points, rendered as 0 when nil
 
         # readers fall back to the (subclass) defaults, so that unset

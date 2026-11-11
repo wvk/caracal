@@ -49,6 +49,20 @@ describe 'border rendering' do
     end
   end
 
+  describe 'table with border_color only' do
+    let(:borders) { table_borders document_xml { |docx| docx.table data, border_color: 'ff0000' } }
+
+    it 'defaults to a 1/2 pt border' do
+      expect(borders.values.uniq).to eq [{ 'val' => 'single', 'sz' => '4', 'space' => '0', 'color' => 'ff0000' }]
+    end
+  end
+
+  describe 'table with a per-edge line only' do
+    let(:borders) { table_borders document_xml { |docx| docx.table(data) { border_bottom line: :double } } }
+
+    it { expect(borders).to eq('bottom' => { 'val' => 'double', 'sz' => '4', 'space' => '0', 'color' => 'auto' }) }
+  end
+
   describe 'table with a per-edge border only' do
     let(:borders) { table_borders document_xml { |docx| docx.table(data) { border_bottom size: 12 } } }
 

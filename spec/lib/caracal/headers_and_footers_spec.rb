@@ -168,4 +168,69 @@ describe 'headers and footers' do
       expect(overrides docx).to eq %w(/word/header1.xml /word/footer1.xml)
     end
   end
+
+  describe 'first page' do
+    let(:r)     { 'http://schemas.openxmlformats.org/officeDocument/2006/relationships' }
+    let(:sect)  { xml(docx, 'word/document.xml').at_xpath('//w:body/w:sectPr', ns) }
+
+    def references(sect, kind)
+      sect.xpath("w:#{kind}Reference", ns).map {|ref| ref['w:type'] }
+    end
+
+    # maps reference type to the referenced part's texts
+    def referenced_texts(docx, sect, kind)
+      rels = Nokogiri::XML(parts(docx).fetch 'word/_rels/document.xml.rels').remove_namespaces!
+      sect.xpath("w:#{kind}Reference", ns).to_h do |ref|
+        target = rels.at_xpath("//Relationship[@Id='#{ref.attribute_with_ns('id', r).value}']/@Target").value
+        [ref['w:type'], texts(xml(docx, "word/#{target}"))]
+      end
+    end
+
+    describe 'by default' do
+      let(:docx) { Caracal::Document.new { header.p 'h'; footer.p 'f' } }
+
+      it { expect(sect.at_xpath('w:titlePg', ns)).to be_nil }
+      it { expect(references sect, 'header').to eq %w(default) }
+      it { expect(references sect, 'footer').to eq %w(default) }
+    end
+
+    describe 'without headers and footers' do
+      let(:docx) { Caracal::Document.new }
+
+      it { expect(sect.element_children.map(&:name)).to eq %w(pgSz pgMar) }
+    end
+
+    describe 'when different' do
+      let(:docx) { Caracal::Document.new { different_first_page; header.p 'h'; page_numbers true } }
+
+      it { expect(sect.element_children.map(&:name)).to eq %w(headerReference headerReference footerReference footerReference pgSz pgMar titlePg) }
+      it { expect(referenced_texts docx, sect, 'header').to eq 'default' => ['h'], 'first' => [] }
+      it { expect(referenced_texts(docx, sect, 'footer')['first']).to eq [] }
+      it { expect(xml(docx, "word/footer2.xml").xpath('//w:instrText', ns)).to be_empty }
+    end
+
+    describe 'when switched off again' do
+      let(:docx) { Caracal::Document.new { different_first_page; different_first_page false } }
+
+      it { expect(sect.at_xpath('w:titlePg', ns)).to be_nil }
+    end
+
+    describe 'with first page header and footer' do
+      let(:docx) do
+        Caracal::Document.new do
+          header(type: :first) { p 'first header' }
+          footer(type: :first).p 'first footer'
+          header.p 'header'
+        end
+      end
+
+      it { expect(sect.at_xpath('w:titlePg', ns)).not_to be_nil }
+      it { expect(referenced_texts docx, sect, 'header').to eq 'first' => ['first header'], 'default' => ['header'] }
+      it { expect(referenced_texts docx, sect, 'footer').to eq 'first' => ['first footer'] }
+    end
+
+    it 'rejects unknown types' do
+      expect { Caracal::Document.new.header type: :even }.to raise_error(Caracal::Errors::InvalidModelError)
+    end
+  end
 end

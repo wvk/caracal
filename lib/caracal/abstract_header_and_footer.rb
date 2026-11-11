@@ -43,7 +43,7 @@ module Caracal
 
     attr_reader :index, :type
 
-    def initialize(index: 1, type: 'default', &block)
+    def initialize(index: 1, type: :default, &block)
       @index = index
       @type = type
       page_size

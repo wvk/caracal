@@ -106,20 +106,35 @@ module Caracal
       docx.save
     end
 
-    def header(&block)
-      if @header.nil?
-        @header = Header.new index: 1, type: 'default'
-        relationship @header.relationship_params
-      end
-      @header.configure(&block)
+    HEADER_FOOTER_TYPES = %i(default first)
+
+    # Returns the header of the given type, evaluating the block on it.
+    # Type :first is the header of a different first page.
+    def header(type: :default, &block)
+      header_or_footer headers, Header, type, &block
     end
 
-    def footer(&block)
-      if @footer.nil?
-        @footer = Footer.new index: 1, type: 'default'
-        relationship @footer.relationship_params
-      end
-      @footer.configure(&block)
+    # Returns the footer of the given type, evaluating the block on it.
+    def footer(type: :default, &block)
+      header_or_footer footers, Footer, type, &block
+    end
+
+    def headers
+      @headers ||= {}
+    end
+
+    def footers
+      @footers ||= {}
+    end
+
+    # Gives the first page its own header and footer, which stay blank
+    # unless defined with `header type: :first` or `footer type: :first`.
+    def different_first_page(value = true)
+      @different_first_page = value
+    end
+
+    def different_first_page?
+      !!(@different_first_page or headers.key? :first or footers.key? :first)
     end
 
     #------------------------------------------------------
@@ -177,7 +192,7 @@ module Caracal
     #
     def render
       reset_numbering
-      prepare_page_numbers
+      prepare_headers_and_footers
 
       buffer = ::Zip::OutputStream.write_buffer do |zip|
         %w(package_relationships content_types app core custom fonts embedded_fonts header footer settings styles document relationships header_relationships media numbering theme).each do |what|
@@ -201,10 +216,26 @@ module Caracal
     #------------------------------------------------------
     private
 
-    # Page numbers are appended to the footer, which is created if necessary.
-    def prepare_page_numbers
+    def header_or_footer(parts, klass, type, &block)
+      type = type.to_sym
+      unless HEADER_FOOTER_TYPES.include? type
+        raise Caracal::Errors::InvalidModelError, "#{klass.name.split('::').last.downcase} type must be one of #{HEADER_FOOTER_TYPES.inspect}"
+      end
+
+      part = parts[type] ||= klass.new(index: parts.size + 1, type: type).tap {|hf| relationship hf.relationship_params }
+      part.configure(&block)
+    end
+
+    # Page numbers are appended to the default footer, which is created if
+    # necessary. A different first page gets (blank) first-page parts.
+    def prepare_headers_and_footers
       footer if page_number_show
-      @footer.page_number_paragraph = page_number_paragraph if @footer
+      footers[:default]&.page_number_paragraph = page_number_paragraph
+
+      if different_first_page?
+        header type: :first
+        footer type: :first
+      end
     end
 
     #============ RENDERERS ===============================

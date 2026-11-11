@@ -106,20 +106,35 @@ module Caracal
       docx.save
     end
 
-    def header(&block)
-      if @header.nil?
-        @header = Header.new index: 1, type: 'default', &block
-        relationship @header.relationship_params
-      end
-      @header
+    HEADER_FOOTER_TYPES = %i(default first)
+
+    # Returns the header of the given type, evaluating the block on it.
+    # Type :first is the header of a different first page.
+    def header(type: :default, &block)
+      header_or_footer headers, Header, type, &block
     end
 
-    def footer(&block)
-      if @footer.nil?
-        @footer = Footer.new index: 1, type: 'default', &block
-        relationship @footer.relationship_params
-      end
-      @footer
+    # Returns the footer of the given type, evaluating the block on it.
+    def footer(type: :default, &block)
+      header_or_footer footers, Footer, type, &block
+    end
+
+    def headers
+      @headers ||= {}
+    end
+
+    def footers
+      @footers ||= {}
+    end
+
+    # Gives the first page its own header and footer, which stay blank
+    # unless defined with `header type: :first` or `footer type: :first`.
+    def different_first_page(value = true)
+      @different_first_page = value
+    end
+
+    def different_first_page?
+      !!(@different_first_page or headers.key? :first or footers.key? :first)
     end
 
     #------------------------------------------------------
@@ -140,9 +155,7 @@ module Caracal
       [:font, :list_style, :namespace, :relationship, :style].each do |method|
         collection = self.class.send "default_#{method}s"
         collection.each do |item|
-          if (item[:if] and send item[:if]) or not item[:if]
-            send(method, item)
-          end
+          send(method, item)
         end
       end
 
@@ -179,6 +192,7 @@ module Caracal
     #
     def render
       reset_numbering
+      prepare_headers_and_footers
 
       buffer = ::Zip::OutputStream.write_buffer do |zip|
         %w(package_relationships content_types app core custom fonts embedded_fonts header footer settings styles document relationships header_relationships media numbering theme).each do |what|
@@ -201,6 +215,28 @@ module Caracal
     # Private Instance Methods
     #------------------------------------------------------
     private
+
+    def header_or_footer(parts, klass, type, &block)
+      type = type.to_sym
+      unless HEADER_FOOTER_TYPES.include? type
+        raise Caracal::Errors::InvalidModelError, "#{klass.name.split('::').last.downcase} type must be one of #{HEADER_FOOTER_TYPES.inspect}"
+      end
+
+      part = parts[type] ||= klass.new(index: parts.size + 1, type: type, document: self).tap {|hf| relationship hf.relationship_params }
+      part.configure(&block)
+    end
+
+    # Page numbers are appended to the default footer, which is created if
+    # necessary. A different first page gets (blank) first-page parts.
+    def prepare_headers_and_footers
+      footer if page_number_show
+      footers[:default]&.page_number_paragraph = page_number_paragraph
+
+      if different_first_page?
+        header type: :first
+        footer type: :first
+      end
+    end
 
     #============ RENDERERS ===============================
 
@@ -323,11 +359,11 @@ module Caracal
     end
 
     def render_header_relationships(zip)
-      relationships_by_type(:header).each do |rel|
-        header = rel.owner
+      (relationships_by_type(:header) + relationships_by_type(:footer)).each do |rel|
+        part = rel.owner
 
-        if header.relationships.any?
-          content = ::Caracal::Renderers::RelationshipsRenderer.render header
+        if part.relationships.any?
+          content = ::Caracal::Renderers::RelationshipsRenderer.render part
 
           zip.put_next_entry "word/_rels/#{rel.formatted_target}.rels"
           zip.write content

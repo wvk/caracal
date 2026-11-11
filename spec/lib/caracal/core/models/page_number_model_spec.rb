@@ -112,6 +112,12 @@ describe Caracal::Core::Models::PageNumberModel do
 
         it { expect(subject.valid?).to eq false }
       end
+      describe 'when size and label_size or number_size are given' do
+        it { expect(described_class.new(size: 20, label_size: 24).valid?).to eq false }
+        it { expect(described_class.new { number_size 20; size 24 }.valid?).to eq false }
+        it { expect(described_class.new(size: 20).valid?).to eq true }
+        it { expect(described_class.new(label_size: 24, number_size: 20).valid?).to eq true }
+      end
     end
 
   end

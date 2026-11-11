@@ -107,7 +107,8 @@ For each Caracal request, the following document structure will be created and z
           ...
         |- document.xml
         |- fontTable.xml
-        |- footer.xml
+        |- footer1.xml
+        |- header1.xml
         |- numbering.xml
         |- settings.xml
         |- styles.xml
@@ -146,8 +147,8 @@ Specifies the fonts used in the document.
 **word/fonts/** and **word/_rels/fontTable.xml.rels**
 Embedded font files and their links from the font table. Only present when fonts are embedded.
 
-**word/footer.xml**
-Defines the formatting of the document footer.
+**word/header1.xml** and **word/footer1.xml**
+The page header and footer. Only present when the document has a header or footer. A different first page adds `header2.xml` and `footer2.xml`.
 
 **word/numbering.xml**
 Defines ordered and unordered list styles.
@@ -312,18 +313,19 @@ docx.page     # starts a new page.
 
 ### Page Numbers
 
-Page numbers can be added to the footer via the `page_numbers` method.  The method accepts optional parameters for controlling the alignment, label and size of the text.
+The `page_numbers` method adds a paragraph with the page number to the end of the footer, creating the footer if needed.
 
 *Page numbers are turned off by default.*
 
 ```ruby
 docx.page_numbers true do
-  align        :right  # sets the alignment. accepts :left, :center, and :right.
-  label        'Page'  # sets the text that will go to the left of the page number. Defaults to nil.
-  size:        24      # sets the label and number size simultaneously. units in half points.
-  label_size:  24      # sets the label size only. units in half points.
-  number_size: 20      # sets the number size only. units in half points.
+  align       :right  # sets the alignment. accepts :left, :center, and :right. defaults to :center.
+  label       'Page'  # sets the text that will go to the left of the page number. defaults to nil.
+  label_size  24      # sets the label size only. units in half points.
+  number_size 20      # sets the number size only. units in half points.
 end
+
+docx.page_numbers true, label: 'Page', size: 24  # size sets the label and number size simultaneously.
 ```
 
 The `size` option and the `label_size` and `number_size` options are mutually exclusive.
@@ -839,27 +841,19 @@ end
 
 ## Experimental Features
 
-### Headers
+### Headers and Footers
 
-Pages can also include headers, which will be repeated on every page in the document.
+Headers and footers are repeated on every page. They take the same content as the document body, in the order given.
 
 ```ruby
 docx.header.h1 'Page Header'
 
 docx.header do
-  p 'Page headers can contain headings, paragraphs, images, lists, even tables, all using the usual syntax and options.'
+  p 'Headers can contain headings, paragraphs, images, lists and tables.'
+  p 'This paragraph is right-aligned.', align: :right
 end
 
-docx.header.p 'Contents added without the `align` option will be displayed after content laid out in the header table, even if it comes earlier in the code.'
-
-# Using the align option, content can be laid out horizontally inside headers.
-docx.header do
-  p 'This paragraph will be left-aligned and placed in the leftmost column.',   align: :left
-  p 'This paragraph will be centered and placed in the center column.',         align: :center
-  p 'This paragraph will be right-aligned and placed in the rightmost column.', align: :right
-end
-
-docx.header.img "http://example.com/image.png" do
+docx.header.img 'http://example.com/image.png' do
   width  60
   height 60
   align :right
@@ -883,6 +877,18 @@ docx.header.table [['11', '1213', '14'], ['21', '22', '23', '24']] do
 end
 
 docx.header.hr
+
+docx.footer.p 'Footers work the same way.', align: :center
+```
+
+To give the first page its own header and footer, use `type: :first`; page numbers are not added there. `different_first_page` leaves the first page blank instead.
+
+```ruby
+docx.header type: :first do
+  p 'First page header'
+end
+
+docx.different_first_page
 ```
 
 

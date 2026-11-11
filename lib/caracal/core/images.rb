@@ -24,7 +24,7 @@ module Caracal
             if model.valid?
               contents << model
             else
-              raise Caracal::Errors::InvalidModelError, 'Images require a positive width and height and non-negative margins.'
+              raise Caracal::Errors::InvalidModelError, "Invalid image: #{model.errors.map { |e| e[:message] }.join ', '}"
             end
             model
           end

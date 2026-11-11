@@ -101,7 +101,7 @@ describe Caracal::Core::Models::RelationshipModel do
           allow(subject).to receive(:relationship_target).and_return('https://www.google.com/images/srpr/logo11w.png')
         end
 
-        it { expect(subject.formatted_target).to eq 'media/image2.png' }
+        it { expect(subject.formatted_target).to match %r{\Amedia/image-\h{16}\.png\z} }
       end
       describe 'when not image' do
         before do

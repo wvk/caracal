@@ -26,8 +26,8 @@ describe Caracal::Core::Models::ImageModel do
     # constants
     describe 'constants' do
       it { expect(described_class::DEFAULT_IMAGE_PPI).to eq 72 }
-      it { expect(described_class::DEFAULT_IMAGE_WIDTH).to eq 0 }
-      it { expect(described_class::DEFAULT_IMAGE_HEIGHT).to eq 0 }
+      it { expect(described_class::DEFAULT_IMAGE_WIDTH).to eq nil }
+      it { expect(described_class::DEFAULT_IMAGE_HEIGHT).to eq nil }
       it { expect(described_class::DEFAULT_IMAGE_ALIGN).to eq :left }
       it { expect(described_class::DEFAULT_IMAGE_TOP).to eq 8 }
       it { expect(described_class::DEFAULT_IMAGE_BOTTOM).to eq 8 }
@@ -202,7 +202,7 @@ describe Caracal::Core::Models::ImageModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:url, :data, :width, :height, :align, :top, :bottom, :left, :right, :anchor].sort }
+      let(:expected) { [:url, :data, :width, :height, :align, :top, :bottom, :left, :right, :anchor, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap].sort }
 
       it { expect(actual).to eq expected }
     end

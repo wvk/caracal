@@ -655,15 +655,16 @@ end
 
 ### Images
 
-Images can be added by using the `img` method. `width` and `height` (in pixels) are required; the other parameters control the style and placement of the asset.
+Images can be added by using the `img` method. The other parameters control the size, style and placement of the asset.
 
 *Caracal will automatically embed the image in the Word document.*
 
 ```ruby
 docx.img 'https://www.example.com/logo.png' do
   data    raw_data  # sets the file data directly instead of opening the url
-  width   396       # sets the image width. units specified in pixels.
-  height  216       # sets the image height. units specified in pixels.
+  width   396       # sets the image width. units specified in pixels. defaults to the image's own width.
+  height  216       # sets the image height. units specified in pixels. defaults to the image's own height.
+  ppi     96        # sets the pixels per inch. default is 72.
   align   :right    # controls the justification of the image. default is :left.
   top     10        # sets the top margin. units specified in pixels.
   bottom  10        # sets the bottom margin. units specified in pixels.
@@ -672,6 +673,8 @@ docx.img 'https://www.example.com/logo.png' do
 end
 ```
 
+*Width and height are read from PNG, JPEG and GIF data; give one of them to scale the image keeping its aspect ratio. Other formats need both.*
+
 *Note: If you provide the image data, you should still supply a URL. I know this
 is a bit hacky, but it allows the library to key the image more effectively and
 Caracal needs a file extension to apply to the renamed media file. This seemed
@@ -679,7 +682,18 @@ the simplest solution to both problems.*
 
 #### Anchored Images
 
-By default, Caracal will place the image inline (inside a paragraph). If you want thhe image to be anchored to the page instead, just provide `anchor: true`. `top`, `left` etc. values will be measured relative to the page. **This behaviour will change** as soon as we add support for a more sophisticated anchor model.
+Images are placed inline by default. `anchor: true` positions the image freely instead; `top`, `bottom`, `left` and `right` then set the distance to the surrounding text.
+
+```ruby
+docx.img 'https://www.example.com/logo.png', width: 120, height: 60, anchor: true do
+  x           1440      # horizontal offset in twips. default aligns the image by its align value.
+  y           720       # vertical offset in twips. default is the top.
+  relative_to :margin   # :page (default), :margin, :column or :paragraph.
+  wrap        :square   # :top_and_bottom (default), :square, :none (in front of text) or :behind (behind text).
+end
+```
+
+`relative_to_x` and `relative_to_y` set the reference per axis. Vertically, `:column` measures from the margin; horizontally, `:paragraph` measures from the column.
 
 ### Tables
 

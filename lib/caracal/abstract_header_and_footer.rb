@@ -82,6 +82,10 @@ module Caracal
     def find_list_style(type, level)
       document.find_list_style type, level
     end
+
+    def document_theme
+      document.document_theme
+    end
   end
 end
 

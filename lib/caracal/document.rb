@@ -386,13 +386,8 @@ module Caracal
     end
 
     def render_theme(zip)
-      relationships_by_type(:theme).each do |rel|
-        content = ::Caracal::Renderers::ThemeRenderer.render self, rel.owner
-
-        zip.put_next_entry "word/#{rel.formatted_target}"
-        zip.write content
-      end
-
+      zip.put_next_entry 'word/theme/theme1.xml'
+      zip.write ::Caracal::Renderers::ThemeRenderer.render(self, document_theme)
     end
 
   end

@@ -65,8 +65,7 @@ module Caracal
         val = theme.theme_color_val
         return val unless val.nil? or val == 'auto'
 
-        doc_theme = document.document_theme || (@default_theme ||= Caracal::Core::Models::ThemeModel.new)
-        doc_theme.color_for(theme.theme_color_ref) || 'auto'
+        document.document_theme.color_for(theme.theme_color_ref) || 'auto'
       end
 
       def render_color(w, model, type = nil)

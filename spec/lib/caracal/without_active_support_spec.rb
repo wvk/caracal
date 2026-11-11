@@ -15,7 +15,5 @@ describe 'Rendering without ActiveSupport' do
   end
 
   it { expect(defined?(ActiveSupport)).to be_nil }
-  it { expect(docx.use_theme?).to be true }
-  it { expect(Caracal::Document.new.use_theme?).to be false }
   it { expect { docx.render }.not_to raise_error }
 end

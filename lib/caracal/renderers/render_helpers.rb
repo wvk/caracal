@@ -101,6 +101,7 @@ module Caracal
           attrs = model.run_attributes # only contains non-nil values
           unless attrs.empty? and not skip_empty
             w.rPr do
+              w.rStyle     'w:val' => attrs.style                           unless attrs.style.nil?
               render_fonts w, attrs, 'rFonts'
               unless attrs.bold.nil?
                 w.b       'w:val' => attrs.bold
@@ -113,15 +114,15 @@ module Caracal
               w.caps       'w:val' => attrs.caps                            unless attrs.caps.nil?
               w.smallCaps  'w:val' => attrs.small_caps                      unless attrs.small_caps.nil?
               w.strike     'w:val' => attrs.strike                          unless attrs.strike.nil?
+              w.vanish     'w:val' => attrs.hide_mark                       unless attrs.hide_mark.nil?
               render_color  w, attrs
               w.sz         'w:val' => attrs.size                            unless attrs.size.nil?
-              # w.highlight  'w:val' => attrs.highlight_color                 unless attrs.highlight_color.nil?
+              w.highlight  'w:val' => attrs.highlight_color                 unless attrs.highlight_color.nil?
               w.u          'w:val' => (attrs.underline ? 'single' : 'none') unless attrs.underline.nil?
               # TODO: w.bdr
               render_background w, attrs
               w.vertAlign  'w:val' => attrs.vertical_align                  unless attrs.vertical_align.nil?
               w.rtl        'w:val' => attrs.rtl                             unless attrs.rtl.nil?
-              w.vanish     'w:val' => attrs.hide_mark                       unless attrs.hide_mark.nil?
               w.specVanish 'w:val' => attrs.hide_mark                       unless attrs.hide_mark.nil?
             end
           end

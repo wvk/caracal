@@ -76,9 +76,11 @@ module Caracal
                 model&.send attr, v
               end
 
-              # reader for attribute of optional border, e.g. table_border_top_color
+              # reader for attribute of optional border, e.g. table_border_top_color.
+              # unset attributes fall back to the default border, then to the defaults.
               base.define_method attr_reader_name do
-                model = self.send(model_reader_name) || self.send(border_reader_name)
+                models = [self.send(model_reader_name), self.send(border_reader_name)].compact
+                model  = models.find { |m| m.given? attr } || models.first
                 model&.send bdr_attr
               end
             end

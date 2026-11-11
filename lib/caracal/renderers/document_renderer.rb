@@ -651,7 +651,7 @@ module Caracal
         end
       end
 
-      def render_tabs(w, tabs)
+      def render_tabs(w, _model, tabs)
         w.tabs do
           tabs.each do |t|
             case t

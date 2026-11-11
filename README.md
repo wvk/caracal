@@ -166,11 +166,14 @@ Pairs extensions and XML files with schema content types so Word can parse them 
 
 OpenXML properties are specified in several different units, depending on which attribute is being set.
 
+**Points**
+Border and rule spacing is measured in full points.
+
 **Half Points**
 All font sizes are measure in half points.  A font size of 24 is equivalent to 12pt.
 
 **Eighth Points**
-Borders are measured in 1/8 points.  A border size of 4 is equivalent to 0.5pt.
+Border and rule sizes are measured in 1/8 points.  A border size of 4 is equivalent to 0.5pt.
 
 **Twips**
 A twip is 1/20 of a point.  Paragraph spacing, indentation, page sizes and page margins are measured in twips.  Word documents are printed at 72dpi.  1in == 72pt == 1440 twips.
@@ -406,6 +409,8 @@ Caracal establishes a standard set of default styles for every document. Default
 Styles are declared as `paragraph` by default. If you need to adjust inline text styles repeatedly, you might
 benefit from defining a `character` style.  Paragraph styles affects all text runs within a paragraph; character styles
 are used to style individual runs within a larger text block.
+Character styles use the text options only (font, color, size, bold, …) and are applied to text runs and links with the
+`style` option, e.g. `text 'x', style: 'MyCharStyle'`.
 
 One-off inline text styling can also be accomplished by passing the `text` command override arguments (see below).
 
@@ -451,11 +456,13 @@ docx.p 'Sample text.' do
   italic          false             # sets whether or not render the text in italic style.
   underline       false             # sets whether or not to underline the text.
   bgcolor         'cccccc'          # sets the background color.
-  highlight_color 'yellow'          # sets the highlight color. only accepts OOXML enumerations. see http://www.datypic.com/sc/ooxml/t-w_ST_HighlightColor.html.
+  highlight_color 'yellow'          # sets the highlight color. accepts the names listed below.
   vertical_align  'superscript'     # sets the vertical alignment.
   keep_next       false             # sets whether or not to keep this paragraph with the next paragraph when separated by page break.
 end
 ```
+
+`highlight_color` accepts `black`, `blue`, `cyan`, `green`, `magenta`, `red`, `yellow`, `white`, `darkBlue`, `darkCyan`, `darkGreen`, `darkMagenta`, `darkRed`, `darkYellow`, `darkGray`, `lightGray` and `none` for paragraphs, text runs, links and styles. Other values raise `Caracal::Errors::InvalidModelError`.
 
 More complex paragraph runs can be accomplished by using the `text` method instead the paragraph's block.
 
@@ -487,7 +494,7 @@ p do
     italic          false             # sets whether or not the text will be italic. defaults to false.
     underline       true              # sets whether or not the text will be underlined. defaults to true.
     bgcolor         'cccccc'          # sets the background color.
-    highlight_color 'yellow'          # sets the highlight color. only accepts OOXML enumerations. see http://www.datypic.com/sc/ooxml/t-w_ST_HighlightColor.html.
+    highlight_color 'yellow'          # sets the highlight color. accepts the names listed under Paragraphs.
   end
 end
 ```
@@ -544,7 +551,7 @@ docx.hr do
   color   '333333'   # sets the color of the line. defaults to auto.
   line    :double    # sets the line style (single or double). defaults to single.
   size    8          # sets the thickness of the line. units in 1/8 points. defaults to 4.
-  spacing 4          # sets the spacing around the line. units in 1/8 points. defaults to 1.
+  spacing 4          # sets the spacing above the line. units in points. defaults to 1.
 end
 ```
 
@@ -682,14 +689,16 @@ The `table` command accepts data in the form of a two-dimensional arrays. This c
 docx.table [['Header 1','Header 2'],['Cell 1', 'Cell 2']] do
   border_color   '666666'   # sets the border color. defaults to 'auto'.
   border_line    :single    # sets the border style. defaults to :single. see OOXML docs for details.
-  border_size    4          # sets the border width. defaults to 0. units in twips.
-  border_spacing 4          # sets the spacing around the border. defaults to 0. units in twips.
+  border_size    4          # sets the border width. defaults to 0. units in 1/8 points.
+  border_spacing 4          # sets the cell spacing (units in twips) and the spacing around the border (units in points). defaults to 0.
   column_widths  [80, 120]  # sets the column widths. defaults to auto. units in twips.
   repeat_header  1		      # sets the number of header rows that is repeated on each page. defaults to 0.
 end
 ```
 
-Table borders can be further styled with position-specific options. Caracal supports styling the top, bottom, left, right, inside horizontal, and inside vertical borders with the `border_top`, `border_bottom`, `border_left`, `border_right`, `border_horizontal`, and `border_vertical`, respectively. Options have the same meaning as those set at the table level.
+Any table-level border option draws all table borders. A table without border options has no borders.
+
+Table borders can be further styled with position-specific options. Caracal supports styling the top, bottom, left, right, inside horizontal, and inside vertical borders with the `border_top`, `border_bottom`, `border_left`, `border_right`, `border_horizontal`, and `border_vertical`, respectively. Options have the same meaning as those set at the table level, and options not given fall back to the table-level ones.
 
 ```ruby
 docx.table data, border_size: 4 do
@@ -941,19 +950,19 @@ end
 
 ### Using Tabs
 
-Tabs are defined per paragraph as an Array of twips like so:
+Tab stops are defined per paragraph as an Array of positions in twips. `end_tab: true` adds a tab after a text run:
 
 ```ruby
 docx.p do
-  tabs [400]
-  text 'first tabbed column at pos 0', end_tab: true
-  text 'second tabbed column at pos 400 twips'
+  tabs [2880]
+  text 'column at 0', end_tab: true
+  text 'column at 2880 twips (2in)'
 end
 
-docx.p tabs: [400, 800] do
-  text 'first tabbed column at pos 0', end_tab: true
-  text 'second tabbed column at pos 800 twips', end_tab: true
-  text 'third tabbed column'
+docx.p tabs: [2880, 5760] do
+  text 'column at 0', end_tab: true
+  text 'column at 2in', end_tab: true
+  text 'column at 4in'
 end
 ```
 

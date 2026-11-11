@@ -517,10 +517,10 @@ module Caracal
               end
 
               grid_col = 0
-              row.each_with_index do |tc, tc_index|
+              row.each do |tc|
                 w.tc do
                   w.tcPr do
-                    cnf_style = tc.cnf_style(model, index, tc_index)
+                    cnf_style = tc.cnf_style(model, index, grid_col)
                     # conditional styling rules
                     unless cnf_style.nil?
                       tc.apply_styles cnf_style.style_hash, reverse: true
@@ -571,7 +571,7 @@ module Caracal
                   end
                 end
 
-                grid_col += (tc.cell_colspan and tc.cell_colspan > 0) ? tc.cell_colspan : 1
+                grid_col += tc.grid_span
               end
             end
           end

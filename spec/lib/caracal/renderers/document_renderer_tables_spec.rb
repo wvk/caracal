@@ -52,6 +52,32 @@ describe Caracal::Renderers::DocumentRenderer do
     end
   end
 
+  describe 'conditional formatting with colspans' do
+    let(:rows) { xml.xpath('//w:tbl/w:tr', ns) }
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.style id: 'Grid', name: 'grid', type: :table do
+          conditional_format type: 'lastCol', id: 'GridLastCol', name: 'grid last col', bold: true
+        end
+        docx.table [['ab', 'c'], ['a', 'b', 'c'], ['a', 'bc']], style: 'Grid' do
+          look first_row: true, first_col: true, last_col: true
+          cell_style rows[0][0], colspan: 2
+          cell_style rows[2][1], colspan: 2
+        end
+      end
+    end
+
+    # bitmask positions: firstRow lastRow firstCol lastCol ... neCell nwCell
+    def cnf(row)
+      row.xpath('w:tc/w:tcPr/w:cnfStyle/@w:val', ns).map(&:value)
+    end
+
+    it { expect(cnf(rows[0])).to eq %w(101000000100 100100001000) }
+    it { expect(cnf(rows[1])).to eq %w(001000000000 000000000000 000100000000) }
+    it { expect(cnf(rows[2])).to eq %w(001000000000 000100000000) }
+    it { expect(rows[2].xpath('w:tc', ns).map {|tc| tc.at_xpath('.//w:r/w:rPr/w:b', ns).nil? }).to eq [true, false] }
+  end
+
   describe 'procs as table cells' do
     let(:document) do
       Caracal::Document.new do |docx|

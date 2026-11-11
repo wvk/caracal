@@ -90,6 +90,11 @@ module Caracal
           @table_data || [[]]
         end
 
+        # number of grid columns, counting colspans
+        def grid_column_count
+          rows.map {|row| row.sum(&:grid_span) }.max
+        end
+
         #=============== STYLES ===============================
 
         # This method sets explicit widths on all wrapped cells

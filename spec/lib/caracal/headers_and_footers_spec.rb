@@ -152,4 +152,20 @@ describe 'headers and footers' do
       expect(xml(docx, 'word/footer1.xml').xpath('//w:instrText', ns).size).to eq 1
     end
   end
+
+  describe 'content types' do
+    def overrides(docx)
+      types = Nokogiri::XML(parts(docx).fetch '[Content_Types].xml').remove_namespaces!
+      types.xpath('//Override/@PartName').map(&:value).grep(%r{/word/(header|footer)})
+    end
+
+    it 'declares no header or footer parts when there are none' do
+      expect(overrides Caracal::Document.new).to be_empty
+    end
+
+    it 'declares the existing header and footer parts' do
+      docx = Caracal::Document.new { header.p 'h'; footer.p 'f' }
+      expect(overrides docx).to eq %w(/word/header1.xml /word/footer1.xml)
+    end
+  end
 end

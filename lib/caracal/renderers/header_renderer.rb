@@ -11,55 +11,21 @@ module Caracal
       # Public Methods
       #-------------------------------------------------------------
 
-      # This method produces the xml required for the `word/header1.xml`
+      # This method produces the xml required for a `word/headerN.xml`
       # sub-document.
       #
       def to_xml
-        positions = [:left, :center, :right]
         builder = ::Nokogiri::XML::Builder.with(declaration_xml) do |xml|
-          xml['w'].hdr root_options do
-            #xml['w'].tbl do
-              #xml['w'].tblPr do
-                #xml['w'].tblStyle({ 'w:val' => "TableNormal" })
-                #xml['w'].bidiVisual({ 'w:val' => "0" })
-                #xml['w'].tblW({ 'w:w' => "0", 'w:type' => "auto" })
-                #xml['w'].tblLayout({ 'w:type' => "fixed" })
-                #xml['w'].tblLook({ 'w:val' => "06A0", 'w:firstRow' => "1", 'w:lastRow' => "0", 'w:firstColumn' => "1", 'w:lastColumn' => "0", 'w:noHBand' => "1", 'w:noVBand' => "1" })
-              #end
-              #xml['w'].tblGrid do
-                #positions.size.times do
-                  #xml['w'].gridCol({ 'w:w' => "3120" })
-                #end
-              #end
-              #xml['w'].tr paragraph_options do
-                #positions.each do |position|
-                  #xml['w'].tc do
-                    #xml['w'].tcPr do
-                      #xml['w'].tcW({ 'w:w' => '3120', 'w:type' => 'dxa' })
-                      #xml['w'].tcMar
-                    #end
-                    #document.contents_for(position).each do |model|
-                      #method = render_method_for_model(model)
-                      #model.style('Header') if model.respond_to? :style
-                      #model.align(position) if model.respond_to? :align
-                      #model.indent(position => -115) if position != :center && model.respond_to?(:indent)
-                      #send(method, xml, model)
-                    #end
-                  #end
-                #end
-              #end
-            #end
+          xml['w'].send root_element, root_options do
+            contents.each do |model|
+              send render_method_for_model(model), xml, model
+            end
 
-            if document.contents_for(nil).each do |model|
-              method = render_method_for_model(model)
-              # model.style('Header') if model.respond_to? :style
-              send method, xml, model
-            end.empty?
-              # Add empty paragraph to facilitate editing
+            # Word requires a header or footer to end with a paragraph
+            if contents.empty? or contents.last.is_a? Caracal::Core::Models::TableModel
               xml['w'].p paragraph_options do
                 xml['w'].pPr do
-                  xml['w'].pStyle 'w:val' => 'Header'
-                  xml['w'].bidi 'w:val' => '0'
+                  xml['w'].pStyle 'w:val' => paragraph_style
                 end
               end
             end
@@ -74,6 +40,18 @@ module Caracal
       # Private Methods
       #-------------------------------------------------------------
       private
+
+      def root_element
+        'hdr'
+      end
+
+      def paragraph_style
+        'Header'
+      end
+
+      def contents
+        document.contents
+      end
 
       def root_options
         {

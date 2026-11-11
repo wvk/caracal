@@ -108,18 +108,18 @@ module Caracal
 
     def header(&block)
       if @header.nil?
-        @header = Header.new index: 1, type: 'default', &block
+        @header = Header.new index: 1, type: 'default'
         relationship @header.relationship_params
       end
-      @header
+      @header.configure(&block)
     end
 
     def footer(&block)
       if @footer.nil?
-        @footer = Footer.new index: 1, type: 'default', &block
+        @footer = Footer.new index: 1, type: 'default'
         relationship @footer.relationship_params
       end
-      @footer
+      @footer.configure(&block)
     end
 
     #------------------------------------------------------

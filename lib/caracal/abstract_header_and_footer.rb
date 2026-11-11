@@ -45,7 +45,7 @@ module Caracal
 
     attr_reader :index, :type
 
-    def initialize(index: 1, type: 'default')
+    def initialize(index: 1, type: 'default', &block)
       @index = index
       @type = type
       page_size
@@ -57,14 +57,18 @@ module Caracal
           send(method, item)
         end
       end
+
+      configure(&block)
+    end
+
+    # Evaluates a DSL block against this header or footer.
+    def configure(&block)
+      (block.arity < 1) ? instance_eval(&block) : block[self] if block
+      self
     end
 
     def contents
       @contents ||= []
-    end
-
-    def contents_for(position)
-      contents.select { |model| model.alignment == position }
     end
   end
 end

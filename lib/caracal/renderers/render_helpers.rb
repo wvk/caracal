@@ -101,6 +101,7 @@ module Caracal
           attrs = model.run_attributes # only contains non-nil values
           unless attrs.empty? and not skip_empty
             w.rPr do
+              w.rStyle     'w:val' => attrs.style                           unless attrs.style.nil?
               render_fonts w, attrs, 'rFonts'
               unless attrs.bold.nil?
                 w.b       'w:val' => attrs.bold

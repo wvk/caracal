@@ -407,6 +407,8 @@ Caracal establishes a standard set of default styles for every document. Default
 Styles are declared as `paragraph` by default. If you need to adjust inline text styles repeatedly, you might
 benefit from defining a `character` style.  Paragraph styles affects all text runs within a paragraph; character styles
 are used to style individual runs within a larger text block.
+Character styles use the text options only (font, color, size, bold, …) and are applied to text runs and links with the
+`style` option, e.g. `text 'x', style: 'MyCharStyle'`.
 
 One-off inline text styling can also be accomplished by passing the `text` command override arguments (see below).
 

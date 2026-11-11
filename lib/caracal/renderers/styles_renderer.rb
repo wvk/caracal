@@ -71,14 +71,16 @@ module Caracal
             document.styles.each do |style|
               next if style.style_default
               case style.style_type
-              when :paragraph, :character
+              when :paragraph
                 render_paragraph_style w, style
+              when :character
+                render_character_style w, style
               when :table, :table_row
                 render_table_style w, style
               when :table_cell
                 render_table_cell_style w, style
               else
-                raise "unknown style type: #{style.style_type}" # TODO: what about caracter/run styles?
+                raise "unknown style type: #{style.style_type}"
               end
             end
           end
@@ -112,7 +114,7 @@ module Caracal
         end
       end
 
-      def render_style(w, model, type)
+      def render_style(w, model, type, base: model.style_base, next_style: model.style_next)
         style_opts = {'w:type' => type, 'w:styleId' => model.style_id}
         if model.style_default
           style_opts['w:default'] = '1'
@@ -123,11 +125,21 @@ module Caracal
         w.style style_opts do
           w.name    'w:val' => model.style_name
           w.aliases 'w:val' => model.style_aliases unless model.style_aliases.nil?
-          w.basedOn 'w:val' => model.style_base    unless model.style_base.nil?
-          w.next    'w:val' => model.style_next    unless model.style_next.nil?
+          w.basedOn 'w:val' => base                unless base.nil?
+          w.next    'w:val' => next_style          unless next_style.nil?
           w.locked if model.style_locked
 
           yield w, model
+        end
+      end
+
+      # character styles carry run properties only and may only be based on character styles
+      def render_character_style(w, model)
+        base = document.find_style model.style_base if model.style_base
+        base = nil unless base&.style_type == :character
+
+        render_style w, model, 'character', base: base&.style_id, next_style: nil do
+          render_run_attributes w, model, skip_empty: true
         end
       end
 

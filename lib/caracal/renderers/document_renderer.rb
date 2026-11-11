@@ -69,10 +69,31 @@ module Caracal
 
       def render_bookmark(xml, model, **options)
         if model.start?
-          xml['w'].bookmarkStart 'w:id' => model.bookmark_id, 'w:name' => model.bookmark_name
-        else
-          xml['w'].bookmarkEnd 'w:id' => model.bookmark_id
+          xml['w'].bookmarkStart 'w:id' => open_bookmark(model.bookmark_id), 'w:name' => model.bookmark_name
+        elsif (id = close_bookmark(model.bookmark_id))
+          xml['w'].bookmarkEnd 'w:id' => id
         end
+      end
+
+      # Bookmark ids are user keys; each start gets a unique integer w:id
+      # that its end reuses. An end without key closes the latest open bookmark.
+      def open_bookmark(key)
+        id = next_bookmark_id
+        open_bookmarks << [key, id]
+        id
+      end
+
+      def next_bookmark_id
+        @bookmark_counter = @bookmark_counter.to_i + 1
+      end
+
+      def close_bookmark(key)
+        index = key.nil? ? open_bookmarks.size - 1 : open_bookmarks.rindex { |k, _| k == key }
+        open_bookmarks.delete_at(index)&.last if index and index >= 0
+      end
+
+      def open_bookmarks
+        @open_bookmarks ||= []
       end
 
       def render_iframe(xml, model, **options)
@@ -94,12 +115,17 @@ module Caracal
             if (r_attr = r_node.attributes['embed'])
               r_attr.value = "rId#{ index }"
             end
+          end
 
-            p_parent = r_node.parent.parent
-            p_node   = p_parent.children[0].children[0]
-            if (p_attr = p_node.attributes['id'])
-              p_attr.value = index.to_s
-            end
+          fragment.xpath('.//wp:docPr', wp: ns.t('wp')).each do |doc_pr|
+            id = next_drawing_id.to_s
+            doc_pr['id'] = id
+            doc_pr.parent.xpath('.//pic:cNvPr', pic: ns.t('pic')).each { |c_nv_pr| c_nv_pr['id'] = id }
+          end
+
+          bookmark_ids = Hash.new { |ids, old_id| ids[old_id] = next_bookmark_id }
+          fragment.xpath('.//w:bookmarkStart | .//w:bookmarkEnd', w: ns.t('w')).each do |bookmark|
+            bookmark['w:id'] = bookmark_ids[bookmark['w:id']].to_s
           end
 
           xml << fragment.to_s
@@ -108,14 +134,14 @@ module Caracal
 
       def render_image_proper(xml, model, **options)
         rel      = document.relationship type: :image, target: model.image_url, data: model.image_data
-        rel_id   = rel.relationship_id
         rel_name = rel.formatted_target
+        drawing_id = next_drawing_id
 
         xml['wp'].extent cx: model.formatted_width, cy: model.formatted_height
         xml['wp'].effectExtent t: 0, b: 0, r: 0, l: 0
         xml['wp'].wrapTopAndBottom if model.image_anchor
 
-        xml['wp'].docPr id: rel_id, name: rel_name
+        xml['wp'].docPr id: drawing_id, name: rel_name
 
         xml['wp'].cNvGraphicFramePr do
           xml['a'].graphicFrameLocks noChangeAspect: '1'
@@ -127,7 +153,7 @@ module Caracal
           xml['a'].graphicData uri: ns.t('pic') do
             xml['pic'].pic do
               xml['pic'].nvPicPr do
-                xml['pic'].cNvPr id: rel_id, name: rel_name
+                xml['pic'].cNvPr id: drawing_id, name: rel_name
                 xml['pic'].cNvPicPr
               end
               xml['pic'].blipFill do
@@ -149,6 +175,11 @@ module Caracal
         end
       end
 
+      # docPr/cNvPr ids must be unique per document part
+      def next_drawing_id
+        @drawing_counter = @drawing_counter.to_i + 1
+      end
+
       def render_image(xml, model, **options)
         unless ds = document.default_style
           raise Caracal::Errors::NoDefaultStyleError 'Document must declare a default paragraph style.'
@@ -168,7 +199,7 @@ module Caracal
               dist = {distR: model.formatted_right, distT: model.formatted_top, distB: model.formatted_bottom, distL: model.formatted_left}
 
               if model.image_anchor
-                xml['wp'].anchor dist.merge(relativeHeight: false, simplePos: false, locked: true, layoutInCell: false, allowOverlap: false, behindDoc: false) do
+                xml['wp'].anchor dist.merge(relativeHeight: (@relative_height = @relative_height.to_i + 1), simplePos: false, locked: true, layoutInCell: false, allowOverlap: false, behindDoc: false) do
                   xml['wp'].simplePos x: 0, y: 0
                   xml['wp'].positionH relativeFrom: 'page' do # TODO: allow other relativeFrom values
                     xml['wp'].align model.image_align
@@ -581,8 +612,8 @@ module Caracal
           run.bookmark_name
         else
           name = "_Toc#{ model.object_id }"
-          model.runs.prepend(Caracal::Core::Models::BookmarkModel.new start: true, name: name, id: document.next_bookmark_id)
-          model.runs.append(Caracal::Core::Models::BookmarkModel.new start: false, id: document.current_bookmark_id)
+          model.runs.prepend(Caracal::Core::Models::BookmarkModel.new start: true, name: name, id: name)
+          model.runs.append(Caracal::Core::Models::BookmarkModel.new start: false, id: name)
           name
         end
       end

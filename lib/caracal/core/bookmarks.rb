@@ -15,19 +15,11 @@ module Caracal
           # Public Methods
           #------------------------------------------------
 
-          def current_bookmark_id
-            @current_bookmark_id ||= 1
-          end
-
-          def next_bookmark_id
-            @current_bookmark_id = current_bookmark_id + 1
-          end
-
           #========== BOOKMARKS ===========================
 
           def bookmark_start(*args, &block)
             options = Caracal::Utilities.extract_options!(args)
-            options.merge! start: true, id: next_bookmark_id
+            options.merge! start: true
 
             model = Caracal::Core::Models::BookmarkModel.new options, &block
             if model.valid?
@@ -38,8 +30,13 @@ module Caracal
             model
           end
 
-          def bookmark_end
-            contents << Caracal::Core::Models::BookmarkModel.new(start: false, id: current_bookmark_id)
+          def bookmark_end(*args, &block)
+            options = Caracal::Utilities.extract_options!(args)
+            options.merge! start: false
+
+            model = Caracal::Core::Models::BookmarkModel.new options, &block
+            contents << model
+            model
           end
 
         end

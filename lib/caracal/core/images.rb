@@ -24,7 +24,7 @@ module Caracal
             if model.valid?
               contents << model
             else
-              raise Caracal::Errors::InvalidModelError, 'Images require an URL and positive size/margin values.'
+              raise Caracal::Errors::InvalidModelError, 'Images require a positive width and height and non-negative margins.'
             end
             model
           end

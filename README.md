@@ -504,16 +504,17 @@ end
 
 Bookmarks can be added directly to the document or inside paragraph blocks using the `bookmark_start` and `bookmark_end`
 methods. Bookmarks can be inserted at the document-level to describe section headings, etc. or inside
-of a paragraph block for fine-grained linking.
+of a paragraph block for fine-grained linking. The optional `id` (string or integer) pairs a `bookmark_start` with its
+`bookmark_end`; without it, `bookmark_end` closes the most recently opened bookmark.
 
 ```ruby
 # document-level bookmark
-dox.bookmark_start id: 's1', name: 'section1'
+docx.bookmark_start id: 's1', name: 'section1'
 docx.h2 'Section Heading'
 docx.bookmark_end id: 's1'
 docx.p  'Section content.'
 
-# pargraph-level bookmark
+# paragraph-level bookmark
 docx.h2 'Section Heading'
 docx.p do
   text 'Pretend this paragraph has a lot of text and we want to bookmark '
@@ -649,7 +650,7 @@ end
 
 ### Images
 
-Images can be added by using the `img` method.  The method accepts several optional parameters for controlling the style and placement of the asset.
+Images can be added by using the `img` method. `width` and `height` (in pixels) are required; the other parameters control the style and placement of the asset.
 
 *Caracal will automatically embed the image in the Word document.*
 
@@ -812,7 +813,7 @@ end
 
 Instead of specifying a `color` or `bgcolor` value in your styles or other models, you may use their theme counterparts `theme_color` or `theme_bgcolor`, respectively. This combined with a custom color theme allows the consumers of your DOCX file to switch to their own color theme and have all your styles magically honor them.
 
-Word allows the following theme colors: dark1, light1, dark2, light1, accent1 ... accent1, hyperlink, visited_hyperlink. Define your color thime like so:
+`theme_color` and `theme_bgcolor` accept dark1, light1, dark2, light2, accent1 to accent6, hyperlink, visited_hyperlink (or followedHyperlink), text1, background1, text2, background2 and none. Define your color theme like so:
 
 ```ruby
 docx.theme do

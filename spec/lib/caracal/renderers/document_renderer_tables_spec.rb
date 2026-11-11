@@ -51,4 +51,48 @@ describe Caracal::Renderers::DocumentRenderer do
       it { expect(rows[0].xpath('w:tc', ns).map {|tc| tc.xpath('w:p', ns).size }).to eq [1, 1] }
     end
   end
+
+  describe 'table cell margins' do
+    def tc_mar(tc)
+      tc.xpath('w:tcPr/w:tcMar/*', ns).map {|m| [m.name, m['w:w']] }
+    end
+
+    # README "Nested Tables"
+    let(:document) do
+      Caracal::Document.new do |docx|
+        row1 = ['Header 1', 'Header 2', 'Header 3']
+        row2 = ['Cell 1', 'Cell 2', 'Cell 3']
+        row3 = ['Cell 4', 'Cell 5', 'Cell 6']
+        row4 = ['Footer 1', 'Footer 2', 'Footer 3']
+        c1 = Caracal::Core::Models::TableCellModel.new margins: { top: 0, bottom: 100, left: 0, right: 200 } do
+          table [row1, row2, row3, row4], border_size: 4 do
+            cell_style rows[0],  bold: true, bgcolor: '3366cc', color: 'ffffff'
+            cell_style rows[-1], bold: true,   bgcolor: 'dddddd'
+            cell_style cells[3], italic: true, color: 'cc0000'
+            cell_style cells,    size: 18, margins: { top: 100, bottom: 0, left: 100, right: 100 }
+          end
+        end
+        c2 = Caracal::Core::Models::TableCellModel.new margins: { top: 0, bottom: 100, left: 0, right: 200 } do
+          p 'This layout uses nested tables (the outer table has no border) to provide a caption to the table data.'
+        end
+
+        docx.table [[c1, c2]] do
+          cell_style cols[0], width: 6000
+        end
+      end
+    end
+
+    let(:outer_cells) { xml.xpath('/w:document/w:body/w:tbl/w:tr/w:tc', ns) }
+    let(:inner_cells) { xml.xpath('//w:tbl//w:tbl/w:tr/w:tc', ns) }
+
+    it { expect(outer_cells.map {|tc| tc_mar(tc) }).to all eq [%w(top 0), %w(left 0), %w(bottom 100), %w(right 200)] }
+    it { expect(inner_cells.size).to eq 12 }
+    it { expect(inner_cells.map {|tc| tc_mar(tc) }).to all eq [%w(top 100), %w(left 100), %w(bottom 0), %w(right 100)] }
+
+    describe 'when no margins given' do
+      let(:document) { Caracal::Document.new {|docx| docx.table [['x']] } }
+
+      it { expect(xml.xpath('//w:tcMar', ns)).to be_empty }
+    end
+  end
 end

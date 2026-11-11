@@ -1,6 +1,7 @@
 require 'caracal/core/models/base_model'
 require 'caracal/core/models/border_model'
 require 'caracal/core/models/paragraph_model'
+require 'caracal/core/models/margin_model'
 require 'caracal/core/models/concerns/has_background'
 require 'caracal/core/models/concerns/has_color'
 require 'caracal/core/models/concerns/has_borders'
@@ -83,6 +84,17 @@ module Caracal
           @contents ||= []
         end
 
+        #=============== SETTERS ==============================
+
+        # Sets several margins at once, from a hash and/or a block.
+        def margins(options={}, &block)
+          model = MarginModel.new options, &block
+          HasMargins::ATTRS.each do |side|
+            value = model.send "margin_#{side}"
+            send side, value unless value.nil?
+          end
+        end
+
         #=============== STYLES ===============================
 
         # This method allows styles to be applied to this cell
@@ -102,7 +114,7 @@ module Caracal
               if not reverse or self.send("cell_#{k}").nil?
                 send k, v
               end
-              options.delete k if %i(top bottom left right).include? k.to_sym or k.to_s.include? 'border'
+              options.delete k if %i(top bottom left right margins).include? k.to_sym or k.to_s.include? 'border'
             end
           end
 
@@ -194,7 +206,7 @@ module Caracal
         end
 
         def self.option_keys
-          @options_keys ||= [:style, :width, :align, :content_vertical_align, :rowspan, :colspan] +
+          @options_keys ||= [:style, :width, :align, :content_vertical_align, :rowspan, :colspan, :margins] +
               HasMargins::ATTRS +
               HasRunAttributes::ATTRS
         end

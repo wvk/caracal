@@ -85,6 +85,14 @@ describe Caracal::Core::Images do
       it { expect(links.size).to eq 1 }
     end
 
+    context 'with zero margins' do
+      before { subject.img 'image.png', width: 10, height: 10, top: 0, bottom: 0, left: 0, right: 0 }
+
+      let(:inline) { xml.at_xpath('//wp:inline', 'wp' => 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing') }
+
+      it { expect(%w(distT distB distL distR).map { |a| inline[a] }).to eq %w(0 0 0 0) }
+    end
+
     context 'with repeated, anchored and embedded drawings' do
       let(:drawing_ns) do
         {

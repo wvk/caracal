@@ -641,7 +641,7 @@ end
 
 ### Images
 
-Images can be added by using the `img` method.  The method accepts several optional parameters for controlling the style and placement of the asset.
+Images can be added by using the `img` method. `width` and `height` (in pixels) are required; the other parameters control the style and placement of the asset.
 
 *Caracal will automatically embed the image in the Word document.*
 

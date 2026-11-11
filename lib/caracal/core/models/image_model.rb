@@ -71,7 +71,8 @@ module Caracal
         #=============== VALIDATION ==============================
 
         def valid?
-          [:ppi, :width, :height, :top, :bottom, :left, :right].all? {|a| validate_size a, at_least: 0 }
+          [:ppi, :width, :height].all? { |a| validate_size a, at_least: 0 } and
+            [:top, :bottom, :left, :right].all? { |a| validate("#{a} must not be negative") { send("image_#{a}").to_i >= 0 } }
         end
 
         private

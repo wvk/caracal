@@ -166,11 +166,24 @@ describe Caracal::Core::Models::ImageModel do
       describe 'when all values okay' do
         it { expect(subject.valid?).to eq true }
       end
-      [:width, :height, :top, :bottom, :left, :right].each do |d|
+      [:width, :height].each do |d|
         describe "when #{ d } lte 0" do
           before do
             allow(subject).to receive("image_#{ d }").and_return(0)
           end
+
+          it { expect(subject.valid?).to eq false }
+        end
+      end
+      [:top, :bottom, :left, :right].each do |d|
+        describe "when #{ d } is 0" do
+          before { subject.send d, 0 }
+
+          it { expect(subject.valid?).to eq true }
+        end
+
+        describe "when #{ d } is negative" do
+          before { subject.send d, -1 }
 
           it { expect(subject.valid?).to eq false }
         end

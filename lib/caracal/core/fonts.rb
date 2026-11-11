@@ -50,6 +50,12 @@ module Caracal
             fonts.find { |f| f.matches? name }
           end
 
+          # all embedded font files of all fonts, numbered consecutively. The number determines
+          # both the part name (word/fonts/fontN.odttf) and the relationship id within the font table.
+          def embedded_fonts
+            fonts.flat_map(&:embedded_fonts).each.with_index(1) {|embedded, index| embedded.index = index }
+          end
+
           #============== REGISTRATION ========================
 
           def register_font(model)

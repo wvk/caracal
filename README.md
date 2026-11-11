@@ -97,6 +97,10 @@ For each Caracal request, the following document structure will be created and z
       |- word
         |- _rels
           |- document.xml.rels
+          |- fontTable.xml.rels
+        |- fonts
+          |- font1.odttf
+          ...
         |- media
           |- image001.png
           |- image002.png
@@ -138,6 +142,9 @@ The main content file for the document.
 
 **word/fontTable.xml**
 Specifies the fonts used in the document.
+
+**word/fonts/** and **word/_rels/fontTable.xml.rels**
+Embedded font files and their links from the font table. Only present when fonts are embedded.
 
 **word/footer.xml**
 Defines the formatting of the document footer.
@@ -324,13 +331,39 @@ The `size` option and the `label_size` and `number_size` options are mutually ex
 
 Fonts are added to the font table file by calling the `font` method and passing the name of the font.
 
-*At present, Caracal only supports declaring the primary font name.*
-
 ```ruby
 docx.font do
   name 'Droid Serif'
 end
 ```
+
+#### Embedding fonts
+
+Fonts can be embedded into the document, so it renders correctly on systems that don't have the font installed. Pass the font file for each style you use, as a file path or an IO:
+
+```ruby
+docx.font do
+  name        'Source Serif Pro'                     # must match the font's family name
+  regular     'fonts/SourceSerifPro-Regular.ttf'
+  bold        'fonts/SourceSerifPro-Bold.ttf'
+  italic      'fonts/SourceSerifPro-It.ttf'
+  bold_italic File.open('fonts/SourceSerifPro-BoldIt.ttf', 'rb')
+end
+
+docx.font name: 'Source Serif Pro', regular: 'fonts/SourceSerifPro-Regular.ttf'   # or as options
+```
+
+All styles of one font should be files of the same font family: Word uses only one embedded font per font name.
+
+Embedded fonts are obfuscated as required by ECMA-376 §17.8.1. Use `obfuscate false` to embed the plain font files instead; Word reads those as well.
+
+Caracal checks every font file when it is added and raises `Caracal::Errors::InvalidFontError` if
+
+* the file is not a single TrueType/OpenType font (font collections and WOFF files are not supported),
+* the font has CFF (PostScript) outlines, which is common for `.otf` files: only TrueType outlines are supported,
+* the font's license forbids embedding (OpenType `fsType`: Restricted License, or Bitmap embedding only).
+
+Fonts licensed for Preview & Print embedding only are embedded with a warning: Word opens documents containing them read-only.
 
 
 ### Styles

@@ -33,6 +33,7 @@ require 'caracal/renderers/core_renderer'
 require 'caracal/renderers/custom_renderer'
 require 'caracal/renderers/document_renderer'
 require 'caracal/renderers/fonts_renderer'
+require 'caracal/renderers/font_relationships_renderer'
 require 'caracal/renderers/header_renderer'
 require 'caracal/renderers/footer_renderer'
 require 'caracal/renderers/numbering_renderer'
@@ -180,7 +181,7 @@ module Caracal
       reset_numbering
 
       buffer = ::Zip::OutputStream.write_buffer do |zip|
-        %w(package_relationships content_types app core custom fonts header footer settings styles document relationships header_relationships media numbering theme).each do |what|
+        %w(package_relationships content_types app core custom fonts embedded_fonts header footer settings styles document relationships header_relationships media numbering theme).each do |what|
           send "render_#{what}", zip
         end
       end
@@ -242,6 +243,21 @@ module Caracal
       content = ::Caracal::Renderers::FontsRenderer.render self
 
       zip.put_next_entry 'word/fontTable.xml'
+      zip.write content
+    end
+
+    def render_embedded_fonts(zip)
+      embedded_fonts = self.embedded_fonts
+      return if embedded_fonts.empty?
+
+      embedded_fonts.each do |embedded|
+        zip.put_next_entry "word/#{embedded.target}"
+        zip.write embedded.content
+      end
+
+      content = ::Caracal::Renderers::FontRelationshipsRenderer.render self
+
+      zip.put_next_entry 'word/_rels/fontTable.xml.rels'
       zip.write content
     end
 

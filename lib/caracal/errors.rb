@@ -19,5 +19,10 @@ module Caracal
     # Caracal document object.
     #
     NoDocumentError = Class.new StandardError
+
+    # This error is raised when a font file cannot be embedded: unknown file format,
+    # unsupported outline format, or the font's license forbids embedding.
+    #
+    InvalidFontError = Class.new StandardError
   end
 end

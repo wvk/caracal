@@ -15,10 +15,17 @@ module Caracal
       # sub-document.
       #
       def to_xml
+        document.embedded_fonts # numbers the embedded font files
+
         builder = ::Nokogiri::XML::Builder.with(declaration_xml) do |xml|
-          xml['w'].fonts root_options do
+          w = xml['w']
+          w.fonts root_options do
             document.fonts.each do |font|
-              xml['w'].font({ 'w:name' => font.font_name })
+              w.font 'w:name' => font.font_name do
+                font.embedded_fonts.each do |embedded|
+                  w.send embedded.element_name, 'r:id' => embedded.rel_id, 'w:fontKey' => embedded.font_key
+                end
+              end
             end
           end
         end

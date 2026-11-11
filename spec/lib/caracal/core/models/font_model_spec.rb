@@ -82,7 +82,7 @@ describe Caracal::Core::Models::FontModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:name].sort }
+      let(:expected) { [:name, :obfuscate, :regular, :bold, :italic, :bold_italic].sort }
       
       it { expect(actual).to eq expected }
     end

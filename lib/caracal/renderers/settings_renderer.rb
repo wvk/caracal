@@ -19,6 +19,7 @@ module Caracal
           w = xml['w']
           w.settings root_options do
             w.displayBackgroundShape 'w:val' => '1'
+            w.embedTrueTypeFonts if document.embedded_fonts.any? # keeps embedded fonts when Word saves the document
             w.defaultTabStop 'w:val' => '720'
             w.autoHyphenation 'w:val' => '1' # Automatically Hyphenate Document Contents When Displayed
             w.consecutiveHyphenLimit 'w:val' => 2 #    Maximum Number of Consecutively Hyphenated Lines

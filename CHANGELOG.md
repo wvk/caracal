@@ -9,7 +9,7 @@
   * Run options override the options of their paragraph.
   * Bookmark `id:` is a key pairing start and end; numeric ids are assigned while rendering. `next_bookmark_id` and `current_bookmark_id` are removed.
   * Images without `width`/`height` use their own size at the file's DPI, else 96 ppi.
-  * Media parts are named by content: `media/image-<hash>.<ext>`.
+  * Media parts are named `media/image-<hash>.<ext>`, hashed from the image URL and, if given, its data.
   * `highlight_color` accepts Word's highlight colour names only.
   * Theme colour names are validated; `visited_hyperlink` is `followedHyperlink`.
   * Invalid custom properties raise `Caracal::Errors::InvalidModelError`.
@@ -23,7 +23,7 @@
   * Position anchored images by offset, reference and wrap mode
   * Character styles and `style:` on text runs and links
   * Table styles with conditional formats and banding
-  * Table cell `margins` (hash or block); table captions; cell borders and styles
+  * Table cell `margins` (hash or block); table captions; cell borders and styles; bookmarks and raw XML in table cells
   * First-page headers and footers; document footers; lists in headers and footers
   * Table of contents with legend, levels and `placeholder`; Word updates it on open
   * Color themes

@@ -3,7 +3,6 @@
 # Caracal
 
 This fork includes fixes and functionalities from pending PRs from the original project, to be able to use them while waiting for the PRs to be merged there.
-Fork gem version = 1.7.2
 Original [![Gem Version](http://img.shields.io/gem/v/caracal.svg?style=flat)](https://rubygems.org/gems/caracal)
 
 ## Overview
@@ -84,12 +83,12 @@ Only after all the programmer instructions have been parsed does the document at
 
 You may not know that .docx files are simply a zipped collection of XML documents that follow the OOXML standard. (We didn't, in any event.) This means constructing a .docx file from scratch actually requires the creation of several files.  Caracal abstracts users from this process entirely.
 
-For each Caracal request, the following document structure will be created and zipped into the final output file:
+For each Caracal request, the following document structure will be created and zipped into the final output file (parts marked * only when used):
 
 ```
     example.docx
       |- _rels
-      	|- .rels
+        |- .rels
       |- docProps
         |- app.xml
         |- core.xml
@@ -97,18 +96,21 @@ For each Caracal request, the following document structure will be created and z
       |- word
         |- _rels
           |- document.xml.rels
-          |- fontTable.xml.rels
-        |- fonts
+          |- fontTable.xml.rels    *
+          |- header1.xml.rels      *
+          |- footer1.xml.rels      *
+        |- fonts                   *
           |- font1.odttf
           ...
-        |- media
-          |- image001.png
-          |- image002.png
+        |- media                   *
+          |- image-3f2a9c41d07e5b68.png
           ...
+        |- theme
+          |- theme1.xml
         |- document.xml
         |- fontTable.xml
-        |- footer1.xml
-        |- header1.xml
+        |- footer1.xml             *
+        |- header1.xml             *
         |- numbering.xml
         |- settings.xml
         |- styles.xml
@@ -136,7 +138,7 @@ Specifies the custom document properties. *This file is generated automatically 
 Defines an internal identifier and type with all external content items (images, links, etc). *This file is generated automatically by the library based on other user directives.*
 
 **word/media/**
-A collection of media assets (each of which should have an entry in document.xml.rels).
+The images, named `image-<16 hex digits>.<ext>` after their URL and data. Each has an entry in the `.rels` file of the part showing it.
 
 **word/document.xml**
 The main content file for the document.
@@ -148,10 +150,13 @@ Specifies the fonts used in the document.
 Embedded font files and their links from the font table. Only present when fonts are embedded.
 
 **word/header1.xml** and **word/footer1.xml**
-The page header and footer. Only present when the document has a header or footer. A different first page adds `header2.xml` and `footer2.xml`.
+The page header and footer. Only present when the document has a header or footer. A different first page adds `header2.xml` and `footer2.xml`. Their images and links are listed in `word/_rels/header1.xml.rels` and `footer1.xml.rels`.
 
 **word/numbering.xml**
 Defines ordered and unordered list styles.
+
+**word/theme/theme1.xml**
+The color and font theme. See [Color Themes](#color-themes).
 
 **word/settings.xml**
 Defines global directives for the document (e.g., whether to show background images, tab widths, etc). Also, establishes compatibility with older versions on Word.
@@ -488,18 +493,19 @@ end
 
 ### Links
 
-Links can be added inside paragraphs using the `link` method.  The method accepts several optional parameters for controlling the style and behavior of the rule.
+Links can be added inside paragraphs using the `link` method.  The method accepts several optional parameters for controlling the style and behavior of the link.
 
 ```ruby
-p do
-  link 'Example Text', 'https://wwww.example.com' do
-    internal        false             # sets whether or not the link references an external url. defaults to false.
+docx.p do
+  link 'Example Text', 'https://www.example.com' do
+    internal        false             # links to the bookmark named by the second argument instead of a url. defaults to false.
+    style           'Hyperlink'       # sets the character style. defaults to nil.
     font            'Courier New'     # sets the font name to use. defaults to nil.
-    color           '0000ff'          # sets the color of the text. defaults to 1155cc.
+    color           '0000ff'          # sets the color of the text. defaults to 1155cc, or the style's.
     size            24                # sets the font size. units in half-points. defaults to nil.
     bold            false             # sets whether or not the text will be bold. defaults to false.
     italic          false             # sets whether or not the text will be italic. defaults to false.
-    underline       true              # sets whether or not the text will be underlined. defaults to true.
+    underline       true              # sets whether or not the text will be underlined. defaults to true, or the style's.
     bgcolor         'cccccc'          # sets the background color.
     highlight_color 'yellow'          # sets the highlight color. accepts the names listed under Paragraphs.
   end
@@ -548,6 +554,21 @@ docx.h2 do
   text '.'
 end
 ```
+
+#### Heading Numbering
+
+`heading_numbering` numbers the headings. `text` is the number's text, with `%1` to `%6` standing for the counters of `h1` to `h6`.
+
+```ruby
+docx.heading_numbering do
+  h1 fmt: 'decimal', text: '%1.'
+  h2 text: '%1.%2', suff: 'tab'
+end
+
+docx.heading_numbering h1: { text: '%1.' }, h2: { fmt: 'lowerLetter', text: '%1.%2' }
+```
+
+`fmt` is one of `decimal` (default), `decimalZero`, `lowerLetter`, `upperLetter`, `lowerRoman`, `upperRoman`, `ordinal` and `none`. `suff` follows the number: `space` (default), `tab` or `nothing`. Levels not given stay unnumbered.
 
 
 ### Rules

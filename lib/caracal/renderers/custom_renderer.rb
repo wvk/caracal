@@ -32,9 +32,6 @@ module Caracal
                     # Not a boolean sent, so reverting to string so docx will open
                     xml['vt'].lpwstr property.custom_property_value.to_s
                   end
-                else
-                  # Fail to string type
-                  xml['vt'].lpwstr property.custom_property_value.to_s
                 end
               end
             end

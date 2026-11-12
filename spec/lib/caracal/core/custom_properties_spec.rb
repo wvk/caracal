@@ -42,6 +42,16 @@ describe Caracal::Core::CustomProperties do
       it { expect { subject.custom_property name: 'Due', value: 'someday', type: :date }.to raise_error(Caracal::Errors::InvalidModelError) }
     end
 
+    describe 'when type unknown' do
+      it { expect { subject.custom_property name: 'Client', value: 'ACME', type: :foo }.to raise_error(Caracal::Errors::InvalidModelError, /type must be one of/) }
+    end
+
+    describe 'when type given in capitals' do
+      before { subject.custom_property name: 'Client', value: 'ACME', type: 'Text' }
+
+      it { expect(rendered :lpwstr).to eq 'ACME' }
+    end
+
     describe 'when number not numeric' do
       it { expect { subject.custom_property name: 'Count', value: 'many', type: :number }.to raise_error(Caracal::Errors::InvalidModelError) }
     end

@@ -11,6 +11,8 @@ module Caracal
       class CustomPropertyModel < BaseModel
         use_prefix :custom_property
 
+        TYPES = %w(text number date boolean)
+
         has_string_attribute :name
         has_string_attribute :type
 
@@ -45,10 +47,14 @@ module Caracal
         #=============== VALIDATION ===========================
 
         def valid?
-          option_keys.all? {|m| validate_presence m } and valid_value?
+          option_keys.all? {|m| validate_presence m } and valid_type? and valid_value?
         end
 
         private
+
+        def valid_type?
+          validate("type must be one of #{TYPES.inspect}") { TYPES.include? custom_property_type.downcase }
+        end
 
         def valid_value?
           case custom_property_type.downcase

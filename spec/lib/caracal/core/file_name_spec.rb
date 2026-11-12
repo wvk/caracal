@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'tmpdir'
 
 describe Caracal::Core::FileName do
   let(:file_name) { 'test.docx' }
@@ -20,6 +21,7 @@ describe Caracal::Core::FileName do
     # accessors
     describe 'file name readers' do
       it { expect(subject.name).to eq 'caracal.docx' }
+      it { expect(subject.path).to eq './caracal.docx' }
     end
     
   end
@@ -46,6 +48,16 @@ describe Caracal::Core::FileName do
         let(:new_name)  { nil }
         
         it { expect(actual).to eq previous }
+      end
+    end
+
+    # .save
+    describe '.save' do
+      it 'writes ./caracal.docx by default' do
+        Dir.mktmpdir do |dir|
+          Dir.chdir(dir) { subject.save }
+          expect(File.file? File.join(dir, 'caracal.docx')).to be true
+        end
       end
     end
     

@@ -83,6 +83,16 @@ describe Caracal::Core::PageSettings do
         it { expect(subject.page_height).to eq 12000 }
         it { expect(subject.page_orientation).to eq 'landscape' }
       end
+      describe 'when only some dimensions given' do
+        before do
+          subject.page_size width: 10000, height: 12000, orientation: :landscape
+          subject.page_size width: 11000
+        end
+
+        it { expect(subject.page_width).to eq 11000 }
+        it { expect(subject.page_height).to eq 12000 }
+        it { expect(subject.page_orientation).to eq 'landscape' }
+      end
     end
 
     # .page_margins
@@ -144,6 +154,27 @@ describe Caracal::Core::PageSettings do
         it { expect(subject.page_margin_left).to   eq 1443 }
         it { expect(subject.page_margin_right).to  eq 1444 }
       end
+      describe 'when only some sides given' do
+        before { subject.page_margins left: 720 }
+
+        it { expect(subject.page_margin_left).to   eq 720 }
+        it { expect(subject.page_margin_top).to    eq 1440 }
+        it { expect(subject.page_margin_bottom).to eq 1440 }
+        it { expect(subject.page_margin_right).to  eq 1440 }
+      end
+      describe 'when margins exceed the page size' do
+        it { expect { subject.page_margins left: 6000, right: 6240 }.to raise_error(Caracal::Errors::InvalidModelError) }
+        it { expect { subject.page_margins top: 14400 }.to raise_error(Caracal::Errors::InvalidModelError) }
+      end
+      describe 'when a side is not positive' do
+        it { expect { subject.page_margins left: 0 }.to raise_error(Caracal::Errors::InvalidModelError) }
+      end
+    end
+
+    describe '.page_size smaller than the current margins' do
+      it { expect { subject.page_size width: 2880, height: 15840 }.to raise_error(Caracal::Errors::InvalidModelError) }
+      it { expect { subject.page_size width: 12240, height: 2000 }.to raise_error(Caracal::Errors::InvalidModelError) }
+      it { expect { subject.page_size width: 2881, height: 2881 }.not_to raise_error }
     end
 
   end

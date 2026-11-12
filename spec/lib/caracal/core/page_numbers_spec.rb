@@ -66,6 +66,9 @@ describe Caracal::Core::PageSettings do
         it { expect(subject.page_number_label).to eq 'More Text' }
         it { expect(subject.page_number_show).to eq true }
       end
+      describe 'when size and label_size are given' do
+        it { expect { subject.page_numbers true, size: 20, label_size: 24 }.to raise_error(Caracal::Errors::InvalidModelError, /mutually exclusive/) }
+      end
       describe 'when fancy block given' do
         subject do
           Caracal::Document.new do |docx|

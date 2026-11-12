@@ -1,10 +1,10 @@
 require 'nokogiri'
-require 'date'
 require 'caracal/renderers/xml_renderer'
 
 module Caracal
   module Renderers
     class CustomRenderer < XmlRenderer
+      I4_RANGE = -2**31...2**31
 
       # This method produces the xml required for the `docProps/custom.xml`
       # sub-document.
@@ -17,19 +17,21 @@ module Caracal
                 when  'text'
                   xml['vt'].lpwstr property.custom_property_value
                 when 'date'
-                  xml['vt'].filetime property.custom_property_value.to_date
+                  xml['vt'].filetime property.custom_property_date
                 when 'number'
-                  xml['vt'].i4 property.custom_property_value.to_f
+                  number = property.custom_property_number
+                  if number.is_a? Integer and I4_RANGE.cover? number
+                    xml['vt'].i4 number.to_s
+                  else
+                    xml['vt'].r8 number.to_f.to_s
+                  end
                 when 'boolean'
-                  if property.custom_property_value == 'true' || property.custom_property_value == 'false'
-                    xml['vt'].bool property.custom_property_value
+                  if %w(true false).include? property.custom_property_value.to_s
+                    xml['vt'].bool property.custom_property_value.to_s
                   else
                     # Not a boolean sent, so reverting to string so docx will open
-                    xml['vt'].lpwstr property.custom_property_value
+                    xml['vt'].lpwstr property.custom_property_value.to_s
                   end
-                else
-                  # Fail to string type
-                  xml['vt'].lpwstr property.custom_property_value
                 end
               end
             end

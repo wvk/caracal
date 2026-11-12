@@ -10,7 +10,7 @@ module Caracal
         use_prefix :bookmark
 
         has_boolean_attribute :start
-        has_integer_attribute :id
+        has_string_attribute  :id # pairs start and end; rendered as a unique integer w:id
         has_string_attribute :name
 
         #========== GETTERS ===============================
@@ -37,7 +37,7 @@ module Caracal
         private
 
         def option_keys
-          [:name, :start]
+          [:id, :name, :start]
         end
 
       end

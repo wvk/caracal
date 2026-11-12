@@ -5,13 +5,11 @@ module Caracal
       # This class encapsulates the logic needed for functions that
       # do not store or manipulate data.
       class BaseModel
-        attr_reader :alignment # FIXME: move to models that actually need this
         attr_reader :errors
 
         # initialization
         def initialize(options={}, &block)
           @errors = []
-          @alignment = options.key?(:align) && StyleModel::HORIZONTAL_ALIGNS.include?(options[:align]) ? options[:align] : nil
 
           options.each do |(key, value)|
             # send(key, value) if option_keys.include?(key) # safer, but need to define complete border model accessors first.
@@ -23,7 +21,7 @@ module Caracal
           end
 
           if block_given?
-            (block.arity < 1) ? instance_eval(&block) : block[self]
+            (block.arity < 1) ? instance_exec(&block) : block[self]
           end
         end
 

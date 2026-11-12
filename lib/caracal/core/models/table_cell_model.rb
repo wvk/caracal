@@ -1,6 +1,7 @@
 require 'caracal/core/models/base_model'
 require 'caracal/core/models/border_model'
 require 'caracal/core/models/paragraph_model'
+require 'caracal/core/models/margin_model'
 require 'caracal/core/models/concerns/has_background'
 require 'caracal/core/models/concerns/has_color'
 require 'caracal/core/models/concerns/has_borders'
@@ -83,6 +84,17 @@ module Caracal
           @contents ||= []
         end
 
+        #=============== SETTERS ==============================
+
+        # Sets several margins at once, from a hash and/or a block.
+        def margins(options={}, &block)
+          model = MarginModel.new options, &block
+          HasMargins::ATTRS.each do |side|
+            value = model.send "margin_#{side}"
+            send side, value unless value.nil?
+          end
+        end
+
         #=============== STYLES ===============================
 
         # This method allows styles to be applied to this cell
@@ -102,7 +114,7 @@ module Caracal
               if not reverse or self.send("cell_#{k}").nil?
                 send k, v
               end
-              options.delete k if %i(top bottom left right).include? k.to_sym or k.to_s.include? 'border'
+              options.delete k if %i(top bottom left right margins).include? k.to_sym or k.to_s.include? 'border'
             end
           end
 
@@ -172,15 +184,22 @@ module Caracal
           }.compact
         end
 
+        # col is the cell's first grid column, so colspans count
         def cnf_style(table_ref, row, col)
           current_table_style = document.find_style table_ref.table_style
           if current_table_style
             ConditionalFormat.new current_table_style, table_ref.table_look,
                 row: row,
                 col: col,
+                span: grid_span,
                 rows: table_ref.rows.size,
-                cols: table_ref.rows.map(&:size).max
+                cols: table_ref.grid_column_count
           end
+        end
+
+        # number of grid columns this cell covers
+        def grid_span
+          cell_colspan.to_i > 0 ? cell_colspan : 1
         end
 
         #=============== VALIDATION ===========================
@@ -194,7 +213,7 @@ module Caracal
         end
 
         def self.option_keys
-          @options_keys ||= [:style, :width, :align, :content_vertical_align, :rowspan, :colspan] +
+          @options_keys ||= [:style, :width, :align, :content_vertical_align, :rowspan, :colspan, :margins] +
               HasMargins::ATTRS +
               HasRunAttributes::ATTRS
         end
@@ -207,6 +226,9 @@ module Caracal
       end
 
       class ConditionalFormat
+        # ST_Cnf bit order (ECMA-376 17.18.11): firstRow lastRow firstColumn lastColumn
+        # oddVBand evenVBand oddHBand evenHBand firstRowFirstColumn firstRowLastColumn
+        # lastRowFirstColumn lastRowLastColumn
         BITMASK = {
           firstRow:  0,
           lastRow:   0,
@@ -216,17 +238,22 @@ module Caracal
           band2Vert: 0,
           band1Horz: 0,
           band2Horz: 0,
-          neCell:    0,
           nwCell:    0,
-          seCell:    0,
-          swCell:    0
+          neCell:    0,
+          swCell:    0,
+          seCell:    0
         }.freeze
+
+        # later formats override earlier ones (ECMA-376 17.7.6)
+        PRECEDENCE = %i(wholeTable band1Vert band2Vert band1Horz band2Horz firstCol lastCol
+                        firstRow lastRow nwCell neCell swCell seCell)
 
         attr_reader :table_style
 
-        def initialize(table_style, table_look, rows: nil, cols: nil, row: nil, col: nil)
+        def initialize(table_style, table_look, rows: nil, cols: nil, row: nil, col: nil, span: 1)
           @table_style, @table_look = table_style, table_look
           @rows, @row, @cols, @col = rows, row, cols, col
+          @last_col = col && col + span - 1
           set_bitmask
         end
 
@@ -237,11 +264,10 @@ module Caracal
         def style_hash
           hsh = @table_style.table_cell_style_attributes
           if @table_style.respond_to? :find_conditional_format
-            {wholeTable: 1}.merge(@bm).each do |key, use|
+            used = {wholeTable: 1}.merge @bm
+            PRECEDENCE.each do |key|
               cf = @table_style.find_conditional_format key
-              if use == 1 and cf
-                hsh.merge! cf.table_cell_style_attributes
-              end
+              hsh.merge! cf.table_cell_style_attributes if cf and used[key] == 1
             end
           end
           hsh
@@ -250,39 +276,37 @@ module Caracal
         private
 
         def set_bitmask
-          max_row = @rows - 1
-          max_col = @cols - 1
+          look = @table_look
+          first_row = (look.table_look_first_row and @row == 0)
+          last_row  = (look.table_look_last_row and @row == @rows - 1)
+          first_col = (look.table_look_first_col and @col == 0)
+          last_col  = (look.table_look_last_col and @last_col == @cols - 1)
+
           @bm = BITMASK.dup
-          if @table_look.table_look_first_row and @row == 0
-            @bm[:firstRow] = 1
-            if @table_look.table_look_first_col and @col == 0
-              @bm[:nwCell] = 1
-            end
-            if @table_look.table_look_last_col and @col == max_col
-              @bm[:neCell] = 1
-            end
-          end
+          @bm[:firstRow] = 1 if first_row
+          @bm[:lastRow]  = 1 if last_row
+          @bm[:firstCol] = 1 if first_col
+          @bm[:lastCol]  = 1 if last_col
+          @bm[:nwCell]   = 1 if first_row and first_col
+          @bm[:neCell]   = 1 if first_row and last_col
+          @bm[:swCell]   = 1 if last_row and first_col
+          @bm[:seCell]   = 1 if last_row and last_col
 
-          if @table_look.table_look_last_row and @row == max_row
-            @bm[:lastRow] = 1
-            if @table_look.table_look_first_col and @col == 0
-              @bm[:swCell] = 1
-            end
-            if @table_look.table_look_last_col and @col == max_col
-              @bm[:seCell] = 1
-            end
+          # header and total rows/columns are not banded
+          if look.table_look_hband and not (first_row or last_row)
+            band = band_index @row, look.table_look_first_row, :row
+            @bm[band.even? ? :band1Horz : :band2Horz] = 1
           end
-
-          if @table_look.table_look_first_col and @col == 0
-            @bm[:firstCol] = 1
+          if look.table_look_vband and not (first_col or last_col)
+            band = band_index @col, look.table_look_first_col, :col
+            @bm[band.even? ? :band1Vert : :band2Vert] = 1
           end
-
-          if @table_look.table_look_last_col and @col == max_col
-            @bm[:lastCol] = 1
-          end
-
-          # TODO: hband, vband
           @bm
+        end
+
+        def band_index(index, skip_first, kind)
+          size = @table_style.respond_to?(:"style_#{kind}_band_size") ? @table_style.send(:"style_#{kind}_band_size").to_i : 1
+          (index - (skip_first ? 1 : 0)) / [size, 1].max
         end
       end
     end

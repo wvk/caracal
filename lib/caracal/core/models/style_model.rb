@@ -26,7 +26,7 @@ module Caracal
         has_string_attribute :base, default: 'Normal'
         has_string_attribute :next, default: 'Normal'
 
-        has_integer_attribute :line, default: 360 # 0.25in in twips
+        has_integer_attribute :line, default: 360 # 0.25in in twips; 240ths of a line for line_rule :auto
         has_integer_attribute :indent_left  # twips
         has_integer_attribute :indent_right # twips
         has_integer_attribute :indent_first # twips
@@ -40,13 +40,13 @@ module Caracal
         has_boolean_attribute :before_autospacing, default: false
         has_boolean_attribute :after_autospacing, default: false
 
-        has_symbol_attribute :line_rule, default: :exact
+        has_symbol_attribute :line_rule, default: :at_least
         has_symbol_attribute :type, default: :paragraph
         has_symbol_attribute :align, default: :left
 
         TYPES             = %i(character paragraph table table_row table_cell)
         HORIZONTAL_ALIGNS = %i(left center right both)
-        LINE_RULES        = %i(exact auto atLeast)
+        LINE_RULES        = { at_least: 'atLeast', exact: 'exact', auto: 'auto' } # ST_LineSpacingRule
 
         # initialization
         def initialize(options={}, &block)
@@ -93,11 +93,12 @@ module Caracal
             underline:       self.style_underline,
             caps:            self.style_caps,
             small_caps:      self.style_small_caps,
+            strike:          self.style_strike,
             bgcolor:         self.style_bgcolor,
             theme_bgcolor:   self.style_theme_bgcolor,
             bgstyle:         self.style_bgstyle,
             vertical_align:  self.style_vertical_align,
-            # highlight_color: self.style_highlight_color
+            highlight_color: self.style_highlight_color
           }.compact
           OpenStruct.new attrs
         end
@@ -117,7 +118,7 @@ module Caracal
               validate_presence :type and
               self.valid_type? and
               validate_inclusion :align, within: HORIZONTAL_ALIGNS and
-              validate_inclusion :line_rule, within: LINE_RULES and
+              validate_inclusion :line_rule, within: LINE_RULES.keys and
               self.valid_bgstyle? and
               self.valid_run_attributes?
         end

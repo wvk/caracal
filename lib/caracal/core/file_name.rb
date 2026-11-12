@@ -36,7 +36,7 @@ module Caracal
             a = v.split '/'
 
             @name = (v == '') ? self.class::DEFAULT_FILE_NAME : a.last
-            @path = (a.size > 1) ? v : "./#{ v }"
+            @path = (a.size > 1) ? v : "./#{ @name }"
           end
 
         end

@@ -71,14 +71,16 @@ module Caracal
             document.styles.each do |style|
               next if style.style_default
               case style.style_type
-              when :paragraph, :character
+              when :paragraph
                 render_paragraph_style w, style
+              when :character
+                render_character_style w, style
               when :table, :table_row
                 render_table_style w, style
               when :table_cell
                 render_table_cell_style w, style
               else
-                raise "unknown style type: #{style.style_type}" # TODO: what about caracter/run styles?
+                raise "unknown style type: #{style.style_type}"
               end
             end
           end
@@ -112,7 +114,7 @@ module Caracal
         end
       end
 
-      def render_style(w, model, type)
+      def render_style(w, model, type, base: model.style_base, next_style: model.style_next)
         style_opts = {'w:type' => type, 'w:styleId' => model.style_id}
         if model.style_default
           style_opts['w:default'] = '1'
@@ -123,11 +125,21 @@ module Caracal
         w.style style_opts do
           w.name    'w:val' => model.style_name
           w.aliases 'w:val' => model.style_aliases unless model.style_aliases.nil?
-          w.basedOn 'w:val' => model.style_base    unless model.style_base.nil?
-          w.next    'w:val' => model.style_next    unless model.style_next.nil?
+          w.basedOn 'w:val' => base                unless base.nil?
+          w.next    'w:val' => next_style          unless next_style.nil?
           w.locked if model.style_locked
 
           yield w, model
+        end
+      end
+
+      # character styles carry run properties only and may only be based on character styles
+      def render_character_style(w, model)
+        base = document.find_style model.style_base if model.style_base
+        base = nil unless base&.style_type == :character
+
+        render_style w, model, 'character', base: base&.style_id, next_style: nil do
+          render_run_attributes w, model, skip_empty: true
         end
       end
 
@@ -183,7 +195,7 @@ module Caracal
           # table properties
           w.tblPr do
             w.tblStyleRowBandSize 'w:val'  => model.style_row_band_size.to_i              unless model.style_row_band_size.nil?
-            w.tblStyleColBandSize 'w:val'  => model.style_row_band_size.to_i              unless model.style_col_band_size.nil?
+            w.tblStyleColBandSize 'w:val'  => model.style_col_band_size.to_i              unless model.style_col_band_size.nil?
             # w.tblW                'w:w'    => 0, 'w:type' => 'auto' # Preferred Table Width
             w.jc                  'w:val'  => model.style_align.to_s                      unless model.style_align.nil?
             w.tblCellSpacing      'w:w'    => model.style_cell_spacing, 'w:type' => 'dxa' unless model.style_cell_spacing.nil?
@@ -220,10 +232,10 @@ module Caracal
             # conditional formatting
             model.conditional_formats.each do |cf|
               w.tblStylePr 'w:type' => cf.style_type do
-                unless model.style_align.nil?
+                unless cf.style_align.nil?
                   # NOTE: setting any other pPr here would have no effect.
                   w.pPr do
-                    w.jc 'w:val' => model.style_align.to_s
+                    w.jc 'w:val' => cf.style_align.to_s
                   end
                 end
 
@@ -235,7 +247,7 @@ module Caracal
                   render_borders    w, cf, 'tcBorders', :style
                   render_background w, cf, :style
                   render_margins    w, cf, 'tcMar', :style
-                  w.vAlign 'w:val' => cf.style_content_vertical_align unless model.style_content_vertical_align.nil?
+                  w.vAlign 'w:val' => cf.style_content_vertical_align unless cf.style_content_vertical_align.nil?
                 end
               end
             end
@@ -266,7 +278,7 @@ module Caracal
 
         if [top, bottom, line].compact.size > 0
           options               = {}
-          options['w:lineRule'] = model.style_line_rule unless model.style_line_rule.nil?
+          options['w:lineRule'] = line_rule_value model.style_line_rule unless line.nil?
           options['w:before']   = top                   unless top.nil?
           options['w:after']    = bottom                unless bottom.nil?
           options['w:line']     = line                  unless line.nil?

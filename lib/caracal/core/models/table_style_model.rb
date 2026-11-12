@@ -33,11 +33,10 @@ module Caracal
           super options, &block
         end
 
-        def conditional_format(options, &block)
-          @conditional_formats ||= {}
+        def conditional_format(options = {}, &block)
           model = Caracal::Core::Models::TableStyleModel.new options.merge(conditional: true), &block
           if model.valid?
-            @conditional_formats[options[:type]] = model
+            (@conditional_formats ||= {})[model.style_type] = model
           else
             raise Caracal::Errors::InvalidModelError, model.errors.inspect
           end
@@ -47,8 +46,8 @@ module Caracal
           @conditional_formats&.values
         end
 
-        def find_conditional_format(name)
-          @conditional_formats[name.to_s]
+        def find_conditional_format(type)
+          @conditional_formats&.fetch type.to_sym, nil
         end
 
         def run_attributes
@@ -63,7 +62,7 @@ module Caracal
             caps:            self.style_caps,
             small_caps:      self.style_small_caps,
             vertical_align:  self.style_vertical_align,
-            # highlight_color: self.style_highlight_color
+            highlight_color: self.style_highlight_color
           }.compact
           OpenStruct.new attrs
         end
@@ -86,8 +85,16 @@ module Caracal
           end
         end
 
+        # a conditional format belongs to its table style and needs no id or name
         def valid?
-          super #and validate_all :conditional_formats, allow_nil: true
+          if @_conditional
+            validate_presence :type and valid_type? and
+                validate_inclusion :align, within: HORIZONTAL_ALIGNS and
+                validate_inclusion :line_rule, within: LINE_RULES.keys and
+                valid_bgstyle? and valid_run_attributes?
+          else
+            super
+          end
         end
       end
 

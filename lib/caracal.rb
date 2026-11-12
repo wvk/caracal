@@ -30,16 +30,23 @@ module Caracal
 end
 
 
+# Register the template for *.caracal files; loaded on first use.
+#
+Tilt.register_lazy :CaracalTemplate, 'tilt/caracal', 'caracal'
+
+
 # Add functions to table cell model. we do this here to
 # avoid a circular require between Caracal::Core::Tables
 # and Caracal::Core::Models::TableCellModel.
 #
 Caracal::Core::Models::TableCellModel.class_eval do
+  include Caracal::Core::Bookmarks
   include Caracal::Core::Images
   include Caracal::Core::Lists
   include Caracal::Core::Rules
   include Caracal::Core::Tables
   include Caracal::Core::Text
+  include Caracal::Core::RawXml
 
   # add themes stuff later
 end

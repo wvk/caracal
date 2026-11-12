@@ -9,7 +9,6 @@ require 'caracal/core/list_styles'
 require 'caracal/core/lists'
 require 'caracal/core/namespaces'
 require 'caracal/core/page_breaks'
-require 'caracal/core/page_numbers'
 require 'caracal/core/page_settings'
 require 'caracal/core/relationships'
 require 'caracal/core/rules'
@@ -29,7 +28,6 @@ module Caracal
 
     include Caracal::Core::Fonts
     include Caracal::Core::PageSettings
-    include Caracal::Core::PageNumbers
     include Caracal::Core::Styles
     include Caracal::Core::ListStyles
 
@@ -43,11 +41,12 @@ module Caracal
     include Caracal::Core::Text
     include Caracal::Core::RawXml
 
-    attr_reader :index, :type
+    attr_reader :index, :type, :document
 
-    def initialize(index: 1, type: 'default')
+    def initialize(index: 1, type: :default, document: nil, &block)
       @index = index
       @type = type
+      @document = document
       page_size
       page_margins top: 1440, bottom: 1440, left: 1440, right: 1440
 
@@ -57,14 +56,43 @@ module Caracal
           send(method, item)
         end
       end
+
+      configure(&block)
+    end
+
+    # Evaluates a DSL block against this header or footer.
+    def configure(&block)
+      (block.arity < 1) ? instance_eval(&block) : block[self] if block
+      self
     end
 
     def contents
       @contents ||= []
     end
 
-    def contents_for(position)
-      contents.select { |model| model.alignment == position }
+    # Lists are numbered by the document, which owns numbering.xml.
+    def toplevel_lists
+      document.toplevel_lists
+    end
+
+    def next_numbering_id
+      document.next_numbering_id
+    end
+
+    def next_drawing_id
+      document.next_drawing_id
+    end
+
+    def next_bookmark_id
+      document.next_bookmark_id
+    end
+
+    def find_list_style(type, level)
+      document.find_list_style type, level
+    end
+
+    def document_theme
+      document.document_theme
     end
   end
 end

@@ -38,8 +38,7 @@ module Caracal
                 w.pgSz page_size_options
                 w.pgMar page_margin_options
 
-                # FIXME: dirty hack to let word create a blank header for the first page which is the cover
-                w.titlePg
+                w.titlePg if document.different_first_page?
               end
 
             end
@@ -69,10 +68,31 @@ module Caracal
 
       def render_bookmark(xml, model, **options)
         if model.start?
-          xml['w'].bookmarkStart 'w:id' => model.bookmark_id, 'w:name' => model.bookmark_name
-        else
-          xml['w'].bookmarkEnd 'w:id' => model.bookmark_id
+          xml['w'].bookmarkStart 'w:id' => open_bookmark(model.bookmark_id), 'w:name' => model.bookmark_name
+        elsif (id = close_bookmark(model.bookmark_id))
+          xml['w'].bookmarkEnd 'w:id' => id
         end
+      end
+
+      # Bookmark ids are user keys; each start gets a unique integer w:id
+      # that its end reuses. An end without key closes the latest open bookmark.
+      def open_bookmark(key)
+        id = next_bookmark_id
+        open_bookmarks << [key, id]
+        id
+      end
+
+      def next_bookmark_id
+        document.next_bookmark_id
+      end
+
+      def close_bookmark(key)
+        index = key.nil? ? open_bookmarks.size - 1 : open_bookmarks.rindex { |k, _| k == key }
+        open_bookmarks.delete_at(index)&.last if index and index >= 0
+      end
+
+      def open_bookmarks
+        @open_bookmarks ||= []
       end
 
       def render_iframe(xml, model, **options)
@@ -94,12 +114,17 @@ module Caracal
             if (r_attr = r_node.attributes['embed'])
               r_attr.value = "rId#{ index }"
             end
+          end
 
-            p_parent = r_node.parent.parent
-            p_node   = p_parent.children[0].children[0]
-            if (p_attr = p_node.attributes['id'])
-              p_attr.value = index.to_s
-            end
+          fragment.xpath('.//wp:docPr', wp: ns.t('wp')).each do |doc_pr|
+            id = next_drawing_id.to_s
+            doc_pr['id'] = id
+            doc_pr.parent.xpath('.//pic:cNvPr', pic: ns.t('pic')).each { |c_nv_pr| c_nv_pr['id'] = id }
+          end
+
+          bookmark_ids = Hash.new { |ids, old_id| ids[old_id] = next_bookmark_id }
+          fragment.xpath('.//w:bookmarkStart | .//w:bookmarkEnd', w: ns.t('w')).each do |bookmark|
+            bookmark['w:id'] = bookmark_ids[bookmark['w:id']].to_s
           end
 
           xml << fragment.to_s
@@ -108,14 +133,14 @@ module Caracal
 
       def render_image_proper(xml, model, **options)
         rel      = document.relationship type: :image, target: model.image_url, data: model.image_data
-        rel_id   = rel.relationship_id
         rel_name = rel.formatted_target
+        drawing_id = next_drawing_id
 
         xml['wp'].extent cx: model.formatted_width, cy: model.formatted_height
         xml['wp'].effectExtent t: 0, b: 0, r: 0, l: 0
-        xml['wp'].wrapTopAndBottom if model.image_anchor
+        render_image_wrap xml, model if model.image_anchor
 
-        xml['wp'].docPr id: rel_id, name: rel_name
+        xml['wp'].docPr id: drawing_id, name: rel_name
 
         xml['wp'].cNvGraphicFramePr do
           xml['a'].graphicFrameLocks noChangeAspect: '1'
@@ -127,7 +152,7 @@ module Caracal
           xml['a'].graphicData uri: ns.t('pic') do
             xml['pic'].pic do
               xml['pic'].nvPicPr do
-                xml['pic'].cNvPr id: rel_id, name: rel_name
+                xml['pic'].cNvPr id: drawing_id, name: rel_name
                 xml['pic'].cNvPicPr
               end
               xml['pic'].blipFill do
@@ -149,6 +174,40 @@ module Caracal
         end
       end
 
+      def render_image_wrap(xml, model)
+        case model.image_wrap
+        when :square         then xml['wp'].wrapSquare wrapText: 'bothSides'
+        when :top_and_bottom then xml['wp'].wrapTopAndBottom
+        else                      xml['wp'].wrapNone
+        end
+      end
+
+      # relative_to => [ST_RelFromH, ST_RelFromV]
+      IMAGE_RELATIVE_FROM = {
+        page:      ['page', 'page'],
+        margin:    ['margin', 'margin'],
+        column:    ['column', 'margin'],
+        paragraph: ['column', 'paragraph']
+      }
+
+      def render_image_position(xml, model, axis)
+        relative_to = model.send("image_relative_to_#{axis}") || model.image_relative_to || :page
+        horizontal  = axis == :x
+        offset      = model.send "formatted_#{axis}"
+
+        xml['wp'].send horizontal ? 'positionH' : 'positionV', relativeFrom: IMAGE_RELATIVE_FROM[relative_to][horizontal ? 0 : 1] do
+          if offset
+            xml['wp'].posOffset offset
+          else
+            xml['wp'].align horizontal ? model.image_align : 'top'
+          end
+        end
+      end
+
+      def next_drawing_id
+        document.next_drawing_id
+      end
+
       def render_image(xml, model, **options)
         unless ds = document.default_style
           raise Caracal::Errors::NoDefaultStyleError 'Document must declare a default paragraph style.'
@@ -168,14 +227,10 @@ module Caracal
               dist = {distR: model.formatted_right, distT: model.formatted_top, distB: model.formatted_bottom, distL: model.formatted_left}
 
               if model.image_anchor
-                xml['wp'].anchor dist.merge(relativeHeight: false, simplePos: false, locked: true, layoutInCell: false, allowOverlap: false, behindDoc: false) do
+                xml['wp'].anchor dist.merge(relativeHeight: (@relative_height = @relative_height.to_i + 1), simplePos: false, locked: true, layoutInCell: false, allowOverlap: false, behindDoc: model.image_wrap == :behind) do
                   xml['wp'].simplePos x: 0, y: 0
-                  xml['wp'].positionH relativeFrom: 'page' do # TODO: allow other relativeFrom values
-                    xml['wp'].align model.image_align
-                  end
-                  xml['wp'].positionV relativeFrom: 'page' do # TODO: allow other relativeFrom values
-                    xml['wp'].align 'top'
-                  end
+                  render_image_position xml, model, :x
+                  render_image_position xml, model, :y
 
                   render_image_proper xml, model
                 end
@@ -210,9 +265,6 @@ module Caracal
             w.rPr
           end
           w.r do
-            w.br 'w:type' => 'page'
-          end
-          w.r do
             w.t model.toc_legend
           end
         end
@@ -231,18 +283,7 @@ module Caracal
             end
 
             unless fieldstart_rendered
-              w.r do
-                w.fldChar 'w:fldCharType' => 'begin'
-              end
-              w.r do
-                w.instrText(
-                  { 'xml:space' => 'preserve' },
-                  " TOC \\o \"#{model.toc_start_level}-#{model.toc_end_level}\" \\h \\z \\u "
-                )
-              end
-              w.r do
-                w.fldChar 'w:fldCharType' => 'separate'
-              end
+              render_tableofcontent_field_start xml, model
               fieldstart_rendered = true
             end
 
@@ -269,7 +310,7 @@ module Caracal
                 w.fldChar 'w:fldCharType' => 'separate'
               end
               w.r do
-                w.t '{bitte aktualisieren}' # fake number
+                w.t model.toc_placeholder
               end
               w.r do
                 w.fldChar 'w:fldCharType' => 'end'
@@ -279,9 +320,26 @@ module Caracal
         end
 
         w.p paragraph_options do
+          render_tableofcontent_field_start xml, model unless fieldstart_rendered # keeps the field balanced without entries
           w.r do
             w.fldChar 'w:fldCharType' => 'end'
           end
+        end
+      end
+
+      def render_tableofcontent_field_start(xml, model)
+        w = xml['w']
+        w.r do
+          w.fldChar 'w:fldCharType' => 'begin'
+        end
+        w.r do
+          w.instrText(
+            { 'xml:space' => 'preserve' },
+            " TOC \\o \"#{model.toc_start_level}-#{model.toc_end_level}\" \\h \\z \\u "
+          )
+        end
+        w.r do
+          w.fldChar 'w:fldCharType' => 'separate'
         end
       end
 
@@ -305,11 +363,12 @@ module Caracal
       def render_list(xml, model, **options)
         if model.list_level == 0
           document.toplevel_lists << model
-          model.numbering_id = document.next_numbering_id
+          model.assign_numbering { document.next_numbering_id }
         end
 
-        model.recursive_items.each do |item|
-          render_listitem(xml, item, model.numbering_id)
+        model.items.each do |item|
+          render_listitem xml, item, model.numbering_id
+          render_list xml, item.nested_list if item.nested_list
         end
       end
 
@@ -333,6 +392,7 @@ module Caracal
             w.spacing spacing unless spacing.nil?
             w.ind 'w:start' => ls.style_left, 'w:hanging' => hanging
             w.contextualSpacing 'w:val' => true
+            w.jc 'w:val' => model.paragraph_align unless model.paragraph_align.nil?
             render_run_attributes w, model, skip_empty: true
           end
 
@@ -452,14 +512,8 @@ module Caracal
             w.tblCaption          'w:val'  => model.table_caption unless model.table_caption.nil?
           end
 
-          column_widths = model.table_column_widths
+          column_widths = model.grid_column_widths
           w.tblGrid do
-            column_widths ||= model.rows.first.map do |tc|
-              if tc.cell_width
-                [tc.cell_width] * (tc.cell_colspan || 1) # FIXME: this blatantly ignores defined column widths combined with merged cells!
-              end
-            end.flatten
-
             column_widths.each do |width|
               if width
                 w.gridCol 'w:w' => width
@@ -469,7 +523,7 @@ module Caracal
             end
           end
 
-          rowspan_hash = {} # stores the remaining rowspans per table cell index
+          rowspan_hash = {} # stores the remaining rowspans per grid column
           model.rows.each_with_index do |row, index|
             w.tr do
               w.trPr do
@@ -481,14 +535,20 @@ module Caracal
                 # w.tblCellSpacing 'w:w' => 0, 'w:type' => 'dxa'
               end
 
-              row.each_with_index do |tc, tc_index| # NOTE: tc_index is modified inline at end of method!
+              grid_col = 0
+              row.each do |tc|
                 w.tc do
                   w.tcPr do
-                    cnf_style = tc.cnf_style(model, index, tc_index)
+                    cnf_style = tc.cnf_style(model, index, grid_col)
                     # conditional styling rules
                     unless cnf_style.nil?
                       tc.apply_styles cnf_style.style_hash, reverse: true
                       w.cnfStyle 'w:val' => cnf_style.bitmask
+                    end
+
+                    spanned = column_widths[grid_col, tc.grid_span].to_a
+                    if spanned.size == tc.grid_span and spanned.all?
+                      w.tcW 'w:w' => spanned.sum, 'w:type' => 'dxa'
                     end
 
                     # applying colspan
@@ -498,23 +558,19 @@ module Caracal
 
                     # applying rowspan
                     if tc.cell_rowspan and tc.cell_rowspan > 1 # start new cell with rowspan
-                      rowspan_hash[tc_index] = tc.cell_rowspan - 1 # set rowspan info for next table rows: n-1 rows left to merge
+                      rowspan_hash[grid_col] = tc.cell_rowspan - 1 # set rowspan info for next table rows: n-1 rows left to merge
                       w.vMerge 'w:val' => 'restart' # start new merged range
-                    elsif rowspan_hash[tc_index] and rowspan_hash[tc_index] > 1 # before end of merged range
+                    elsif rowspan_hash[grid_col] and rowspan_hash[grid_col] > 1 # before end of merged range
                       w.vMerge 'w:val' => 'continue' # continue merged range
-                      rowspan_hash[tc_index] -= 1
-                    elsif rowspan_hash[tc_index] == 1 # last cell in merged range
+                      rowspan_hash[grid_col] -= 1
+                    elsif rowspan_hash[grid_col] == 1 # last cell in merged range
                       w.vMerge 'w:val' => 'continue'
-                      rowspan_hash.delete tc_index # remove rowspan info, next row will not get vMerge
+                      rowspan_hash.delete grid_col # remove rowspan info, next row will not get vMerge
                     end
 
                     render_borders    w, tc, 'tcBorders', :cell
                     render_background w, tc, :cell
                     render_margins    w, tc, 'tcMar', :cell
-
-                    # if column_widths[tc_index] and column_widths[tc_index] > 0
-                    #   w.tcW 'w:w' => column_widths[tc_index], 'w:type' => 'auto'
-                    # end
 
                     if tc.cell_content_vertical_align
                       w.vAlign 'w:val' => tc.cell_content_vertical_align
@@ -535,8 +591,7 @@ module Caracal
                   end
                 end
 
-                # adjust tc_index for next cell taking into account current cell's colspan
-                tc_index += (tc.cell_colspan && tc.cell_colspan > 0) ? tc.cell_colspan : 1
+                grid_col += tc.grid_span
               end
             end
           end
@@ -564,7 +619,7 @@ module Caracal
             text:  heading.plain_text,
             # outline levels in Word are zero-based, but we use 1-based levels within our models
             # this will be taken into account in the renderer
-            level: heading.try(:paragraph_style).match(/Heading(\d)\Z/) { |m| m[1].to_i || 1 }
+            level: heading.paragraph_style.match(/Heading(\d)\Z/) { |m| m[1].to_i || 1 }
           }
         end
         bookmarks
@@ -577,8 +632,8 @@ module Caracal
           run.bookmark_name
         else
           name = "_Toc#{ model.object_id }"
-          model.runs.prepend(Caracal::Core::Models::BookmarkModel.new start: true, name: name, id: document.next_bookmark_id)
-          model.runs.append(Caracal::Core::Models::BookmarkModel.new start: false, id: document.current_bookmark_id)
+          model.runs.prepend(Caracal::Core::Models::BookmarkModel.new start: true, name: name, id: name)
+          model.runs.append(Caracal::Core::Models::BookmarkModel.new start: false, id: name)
           name
         end
       end
@@ -602,7 +657,10 @@ module Caracal
           'w:top'    => document.page_margin_top,
           'w:bottom' => document.page_margin_bottom,
           'w:left'   => document.page_margin_left,
-          'w:right'  => document.page_margin_right
+          'w:right'  => document.page_margin_right,
+          'w:header' => 720,
+          'w:footer' => 720,
+          'w:gutter' => 0
         }
       end
 
@@ -636,7 +694,10 @@ module Caracal
         hsh = {}
         hsh['w:before'] = opts[:top].to_i    unless opts[:top].nil?
         hsh['w:after']  = opts[:bottom].to_i unless opts[:bottom].nil?
-        hsh['w:line']   = opts[:line].to_i   unless opts[:line].nil?
+        unless opts[:line].nil?
+          hsh['w:line']     = opts[:line].to_i
+          hsh['w:lineRule'] = line_rule_value opts[:line_rule]
+        end
         if hsh.empty?
           nil
         else
@@ -644,7 +705,7 @@ module Caracal
         end
       end
 
-      def render_tabs(w, tabs)
+      def render_tabs(w, _model, tabs)
         w.tabs do
           tabs.each do |t|
             case t

@@ -20,10 +20,19 @@ describe Caracal::Core::Models::BorderModel do
     # constants
     describe 'constants' do
       it { expect(described_class::DEFAULT_BORDER_COLOR).to   eq 'auto' }
-      # it { expect(described_class::DEFAULT_BORDER_LINE).to    eq :single }
-      # it { expect(described_class::DEFAULT_BORDER_SIZE).to    eq 4 }
-      # it { expect(described_class::DEFAULT_BORDER_SPACING).to eq 1 }
-      # it { expect(described_class::DEFAULT_BORDER_TYPE).to    eq :top }
+      it { expect(described_class::DEFAULT_BORDER_LINE).to    eq :single }
+      it { expect(described_class::DEFAULT_BORDER_SIZE).to    eq 4 }
+      it { expect(described_class::DEFAULT_BORDER_SPACING).to be_nil }
+    end
+
+    describe 'defaults' do
+      subject { described_class.new }
+
+      it { expect(subject.border_color).to eq 'auto' }
+      it { expect(subject.border_line).to  eq :single }
+      it { expect(subject.border_size).to  eq 4 }
+      it { expect(subject.given? :line).to eq false }
+      it { expect(described_class.new(line: :double).given? :line).to eq true }
     end
 
     # accessors

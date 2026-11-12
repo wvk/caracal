@@ -1,3 +1,4 @@
+require 'digest'
 require 'caracal/core/models/base_model'
 
 
@@ -34,7 +35,6 @@ module Caracal
         has_string_attribute :data
 
         has_symbol_attribute :type, downcase: true
-        has_symbol_attribute :key, downcase: true
 
         attr_reader :owner
 
@@ -43,6 +43,14 @@ module Caracal
         #-------------------------------------------------------------
 
         #=================== GETTERS =============================
+
+        # Relationships with the same key share one part; embedded data is
+        # part of the key, so placeholder targets with different data stay apart.
+        def relationship_key
+          key = relationship_target.to_s.downcase
+          key += "##{Digest::SHA256.hexdigest relationship_data}" unless relationship_data.to_s.empty?
+          key
+        end
 
         def formatted_id
           "rId#{relationship_id}"
@@ -53,7 +61,8 @@ module Caracal
           when :image
             ext = relationship_target.to_s.split('.').last
             ext = ext.split('?').first
-            "media/image#{relationship_id}.#{ext}"
+            # named by key, so parts with their own ids (headers, footers) share one media folder
+            "media/image-#{Digest::SHA256.hexdigest(relationship_key)[0, 16]}.#{ext}"
           when :theme
             "theme/theme1.xml"
           else
@@ -69,14 +78,12 @@ module Caracal
 
         def target(value)
           @relationship_target = value.to_s
-          @relationship_key    = value.to_s.downcase
         end
 
         #=================== STATE ===============================
 
-        # FIXME: this only takes the key into account, not the type
-        def matches?(str)
-          relationship_key.downcase == str.to_s.downcase
+        def matches?(str, type = nil)
+          relationship_key == str.to_s.downcase and (type.nil? or relationship_type == type.to_sym)
         end
 
         def target_mode?

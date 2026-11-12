@@ -9,11 +9,11 @@ module Caracal
       class LinkModel < TextModel
         use_prefix :link
 
-        DEFAULT_LINK_COLOR = '1155cc'
+        DEFAULT_LINK_COLOR     = '1155cc'
+        DEFAULT_LINK_UNDERLINE = true
 
         has_string_attribute :href
 
-        has_boolean_attribute :underline, default: true
         has_boolean_attribute :internal
 
         # readers (create aliases for superclass methods to conform
@@ -31,10 +31,13 @@ module Caracal
 
         # initialization
         def initialize(options={}, &block)
-          @text_color     = DEFAULT_LINK_COLOR
-          @text_underline = DEFAULT_LINK_UNDERLINE
-
           super options, &block
+
+          # a character style formats the link instead of the defaults
+          unless text_style
+            @text_color     = DEFAULT_LINK_COLOR     if text_color.nil?
+            @text_underline = DEFAULT_LINK_UNDERLINE if text_underline.nil?
+          end
         end
 
         #========== STATE HELPERS =========================
@@ -46,7 +49,7 @@ module Caracal
         #========== VALIDATION ============================
 
         def valid?
-          [:content, :href].all? {|a| validate_presence a }
+          [:content, :href].all? {|a| validate_presence a } and self.valid_highlight_color?
         end
 
         private

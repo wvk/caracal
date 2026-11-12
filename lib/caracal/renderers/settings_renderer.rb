@@ -23,6 +23,7 @@ module Caracal
             w.defaultTabStop 'w:val' => '720'
             w.autoHyphenation 'w:val' => '1' # Automatically Hyphenate Document Contents When Displayed
             w.consecutiveHyphenLimit 'w:val' => 2 #    Maximum Number of Consecutively Hyphenated Lines
+            w.updateFields 'w:val' => 'true' if toc? # Word fills in the TOC on open
             w.compat do # see http://www.datypic.com/sc/ooxml/e-w_compat-1.html for options
               w.compatSetting 'w:val' => '14', 'w:name' => 'compatibilityMode', 'w:uri' => 'http://schemas.microsoft.com/office/word'
             end
@@ -37,6 +38,10 @@ module Caracal
       # Private Methods
       #-------------------------------------------------------------
       private
+
+      def toc?
+        document.contents.any? {|model| model.is_a? Caracal::Core::Models::TableOfContentModel }
+      end
 
       def root_options
         {

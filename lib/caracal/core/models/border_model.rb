@@ -17,21 +17,19 @@ module Caracal
         has_model_attribute :theme_color,
             model: Caracal::Core::Models::ThemeColorModel
 
-        has_symbol_attribute :line
+        has_symbol_attribute :line, default: :single
         has_symbol_attribute :type
 
-        has_integer_attribute :size    # 1/8 points
-        has_integer_attribute :spacing # 1/8 points
+        has_integer_attribute :size, default: 4 # 1/8 points
+        has_integer_attribute :spacing          # points, rendered as 0 when nil
 
-        # initialization
-        def initialize(options={}, &block)
-          @border_type = DEFAULT_BORDER_TYPE
-
-          ATTRS.each do |attr|
-            instance_variable_set "@border_#{attr}", self.class.const_get("DEFAULT_BORDER_#{attr.to_s.upcase}")
+        # readers fall back to the (subclass) defaults, so that unset
+        # attributes can be told apart from set ones (see #given?)
+        ATTRS.each do |attr|
+          define_method "border_#{attr}" do
+            v = instance_variable_get "@border_#{attr}"
+            v.nil? ? self.class.const_get("DEFAULT_BORDER_#{attr.upcase}") : v
           end
-
-          super options, &block
         end
 
 
@@ -52,6 +50,10 @@ module Caracal
 
         #=============== GETTERS ==============================
 
+        def given?(attr)
+          not instance_variable_get("@border_#{attr}").nil?
+        end
+
         def formatted_type
           self.class.formatted_type(border_type) || ''
         end
@@ -60,7 +62,7 @@ module Caracal
           if undefined?
             0
           else
-            border_size + (2 * border_spacing)
+            border_size + (2 * border_spacing.to_i)
           end
         end
 

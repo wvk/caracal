@@ -2,6 +2,11 @@ module Caracal
   module Renderers
     module RenderHelpers
 
+      # line_rule defaults to a minimum line height
+      def line_rule_value(rule)
+        Caracal::Core::Models::StyleModel::LINE_RULES[rule || :at_least]
+      end
+
       def render_margins(w, model, margin_type, type)
         margins = %w(top left bottom right).select do |dir|
           v = model.send "#{type}_#{dir}"
@@ -18,9 +23,13 @@ module Caracal
       end
 
       def render_borders(w, model, border_type, type)
-        borders = %w(top left bottom right horizontal vertical).select do |dir|
-          method_name = "#{type}_border_#{dir}_line"
-          v = model.send method_name #if model.respond_to? method_name
+        paragraph = border_type == 'pBdr'
+        # pBdr has no inside borders: an explicit horizontal border becomes `between`
+        dirs = %w(top left bottom right horizontal vertical)
+        dirs = %w(top left bottom right) + (model.send("#{type}_border_horizontal") ? %w(horizontal) : []) if paragraph
+
+        borders = dirs.select do |dir|
+          v = model.send "#{type}_border_#{dir}_line"
           v and v != :none
         end
 
@@ -34,7 +43,8 @@ module Caracal
               }
               color_opts = theme_color_options model.send("#{type}_border_#{dir}_theme_color"), model.send("#{type}_border_#{dir}_color"), 'w:color'
 
-              w.send Caracal::Core::Models::BorderModel.formatted_type(dir), options.merge(color_opts)
+              name = (paragraph and dir == 'horizontal') ? 'between' : Caracal::Core::Models::BorderModel.formatted_type(dir)
+              w.send name, options.merge(color_opts)
             end
           end
         end
@@ -46,7 +56,7 @@ module Caracal
             'w:themeColor' => theme.theme_color_ref,
             'w:themeTint'  => theme.theme_color_tint,
             'w:themeShade' => theme.theme_color_shade,
-            attr           => theme.theme_color_val
+            attr           => theme_color_value(theme)
           }.compact
         elsif color
           {attr => color}
@@ -55,13 +65,22 @@ module Caracal
         end
       end
 
+      # the theme color's hex value, the fallback for consumers that ignore themes
+      def theme_color_value(theme)
+        val = theme.theme_color_val
+        return val unless val.nil? or val == 'auto'
+
+        hex = document.document_theme.color_for theme.theme_color_ref
+        hex ? theme.adjust(hex) : 'auto'
+      end
+
       def render_color(w, model, type = nil)
         if theme = type ? model.send("#{type}_theme_color") : model[:theme_color]
           attrs = {
             'w:themeColor' => theme.theme_color_ref,
             'w:themeTint'  => theme.theme_color_tint,
             'w:themeShade' => theme.theme_color_shade,
-            'w:val'        => theme.theme_color_val
+            'w:val'        => theme_color_value(theme)
           }.compact
           w.color attrs unless attrs.empty?
         elsif color = type ? model.send("#{type}_color") : model[:color]
@@ -76,7 +95,7 @@ module Caracal
           bgstyle = type ? model.send("#{type}_bgstyle") : model[:bgstyle]
           attrs = {
             'w:val'        => (bgstyle || 'solid'),
-            'w:color'      => theme.theme_color_val,
+            'w:color'      => theme_color_value(theme),
             'w:themeColor' => theme.theme_color_ref,
             'w:themeTint'  => theme.theme_color_tint,
             'w:themeShade' => theme.theme_color_shade
@@ -101,6 +120,7 @@ module Caracal
           attrs = model.run_attributes # only contains non-nil values
           unless attrs.empty? and not skip_empty
             w.rPr do
+              w.rStyle     'w:val' => attrs.style                           unless attrs.style.nil?
               render_fonts w, attrs, 'rFonts'
               unless attrs.bold.nil?
                 w.b       'w:val' => attrs.bold
@@ -113,15 +133,15 @@ module Caracal
               w.caps       'w:val' => attrs.caps                            unless attrs.caps.nil?
               w.smallCaps  'w:val' => attrs.small_caps                      unless attrs.small_caps.nil?
               w.strike     'w:val' => attrs.strike                          unless attrs.strike.nil?
+              w.vanish     'w:val' => attrs.hide_mark                       unless attrs.hide_mark.nil?
               render_color  w, attrs
               w.sz         'w:val' => attrs.size                            unless attrs.size.nil?
-              # w.highlight  'w:val' => attrs.highlight_color                 unless attrs.highlight_color.nil?
+              w.highlight  'w:val' => attrs.highlight_color                 unless attrs.highlight_color.nil?
               w.u          'w:val' => (attrs.underline ? 'single' : 'none') unless attrs.underline.nil?
               # TODO: w.bdr
               render_background w, attrs
               w.vertAlign  'w:val' => attrs.vertical_align                  unless attrs.vertical_align.nil?
               w.rtl        'w:val' => attrs.rtl                             unless attrs.rtl.nil?
-              w.vanish     'w:val' => attrs.hide_mark                       unless attrs.hide_mark.nil?
               w.specVanish 'w:val' => attrs.hide_mark                       unless attrs.hide_mark.nil?
             end
           end

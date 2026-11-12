@@ -6,12 +6,14 @@ module Caracal
       class ThemeModel < BaseModel
         use_prefix :theme
 
-        COLORS = [
-          :dark1, :light1, :dark2, :light2,
-          :text1, :background, :text2, :background2,
-          :accent1, :accent2, :accent3,  :accent4, :accent5, :accent6,
-          :hyperlink, :visited_hyperlink
-        ]
+        # ST_ThemeColor values and the attributes holding their colors
+        REF_ATTRS = {
+          dark1: :text1, text1: :text1, light1: :background1, background1: :background1,
+          dark2: :text2, text2: :text2, light2: :background2, background2: :background2,
+          accent1: :accent1, accent2: :accent2, accent3: :accent3,
+          accent4: :accent4, accent5: :accent5, accent6: :accent6,
+          hyperlink: :hyperlink, followedHyperlink: :visited_hyperlink
+        }
 
         has_string_attribute :name,          default: 'Caracal'
         has_string_attribute :color_text1,   default: '000000'
@@ -43,7 +45,7 @@ module Caracal
           @theme_color_text1       = DEFAULT_THEME_COLOR_TEXT1
           @theme_color_background1 = DEFAULT_THEME_COLOR_BACKGROUND1
           @theme_color_text2       = DEFAULT_THEME_COLOR_TEXT2
-          @theme_color_background1 = DEFAULT_THEME_COLOR_BACKGROUND2
+          @theme_color_background2 = DEFAULT_THEME_COLOR_BACKGROUND2
           @theme_color_accent1     = DEFAULT_THEME_COLOR_ACCENT1
           @theme_color_accent2     = DEFAULT_THEME_COLOR_ACCENT2
           @theme_color_accent3     = DEFAULT_THEME_COLOR_ACCENT3
@@ -56,10 +58,10 @@ module Caracal
           super options, &block
         end
 
-        private
-
-        def option_keys
-          COLORS + [:name]
+        # hex value for an ST_ThemeColor reference
+        def color_for(ref)
+          attr = REF_ATTRS[ref&.to_sym]
+          self.send "theme_color_#{attr}" if attr
         end
 
       end

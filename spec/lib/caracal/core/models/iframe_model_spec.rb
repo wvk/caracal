@@ -61,6 +61,32 @@ describe Caracal::Core::Models::IFrameModel do
       end
     end
 
+    #=============== PROCESSING =======================
+
+    describe '.preprocess!' do
+      let(:fixture)  { File.expand_path '../../../../support/_fixtures/snippet.docx', __dir__ }
+      let(:document) { Caracal::Document.new }
+      let(:model)    { described_class.new url: source, document: document }
+
+      describe 'when url is a local path' do
+        let(:source) { fixture }
+
+        before { model.preprocess! }
+
+        it { expect(model.namespaces).not_to be_empty }
+      end
+      describe 'when url is a web address' do
+        let(:source) { 'https://www.example.com/snippet.docx' }
+
+        before do
+          allow(URI).to receive(:open).with(source, 'rb').and_yield(StringIO.new(File.binread fixture))
+          model.preprocess!
+        end
+
+        it { expect(model.namespaces).not_to be_empty }
+      end
+    end
+
   end
 
 

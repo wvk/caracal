@@ -21,6 +21,16 @@ describe Caracal::Core::Models::RuleModel do
       it { expect(subject).to be_a(Caracal::Core::Models::BorderModel) }
     end
 
+    describe 'defaults' do
+      subject { described_class.new }
+
+      it { expect(subject.rule_color).to   eq 'auto' }
+      it { expect(subject.rule_line).to    eq :single }
+      it { expect(subject.rule_size).to    eq 4 }
+      it { expect(subject.rule_spacing).to eq 1 }
+      it { expect(subject.valid?).to eq true }
+    end
+
     # accessors
     describe 'accessors' do
       it { expect(subject.rule_color).to   eq '666666' }

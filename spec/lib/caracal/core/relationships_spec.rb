@@ -15,7 +15,7 @@ describe Caracal::Core::Relationships do
 
     # .default_relationships
     describe '.default_relationships' do
-      let(:expected) { [:font, :footer, :numbering, :setting, :style] }
+      let(:expected) { [:font, :numbering, :setting, :style, :theme] }
       let(:actual)   { subject.class.default_relationships.map { |r| r[:type] } }
 
       it { expect(actual).to eq expected }
@@ -73,7 +73,7 @@ describe Caracal::Core::Relationships do
 
     # .register_relationship
     describe '.register_relationship' do
-      let(:default_length) { 4 }
+      let(:default_length) { 5 }
 
       describe 'when not already registered' do
         before do
@@ -94,7 +94,7 @@ describe Caracal::Core::Relationships do
 
     # .unregister_relationship
     describe '.unregister_relationship' do
-      let(:default_length) { 4 }
+      let(:default_length) { 5 }
 
       describe 'when registered' do
         before do

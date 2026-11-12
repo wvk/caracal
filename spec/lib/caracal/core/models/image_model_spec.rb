@@ -26,8 +26,8 @@ describe Caracal::Core::Models::ImageModel do
     # constants
     describe 'constants' do
       it { expect(described_class::DEFAULT_IMAGE_PPI).to eq 72 }
-      it { expect(described_class::DEFAULT_IMAGE_WIDTH).to eq 0 }
-      it { expect(described_class::DEFAULT_IMAGE_HEIGHT).to eq 0 }
+      it { expect(described_class::DEFAULT_IMAGE_WIDTH).to eq nil }
+      it { expect(described_class::DEFAULT_IMAGE_HEIGHT).to eq nil }
       it { expect(described_class::DEFAULT_IMAGE_ALIGN).to eq :left }
       it { expect(described_class::DEFAULT_IMAGE_TOP).to eq 8 }
       it { expect(described_class::DEFAULT_IMAGE_BOTTOM).to eq 8 }
@@ -166,11 +166,24 @@ describe Caracal::Core::Models::ImageModel do
       describe 'when all values okay' do
         it { expect(subject.valid?).to eq true }
       end
-      [:width, :height, :top, :bottom, :left, :right].each do |d|
+      [:width, :height].each do |d|
         describe "when #{ d } lte 0" do
           before do
             allow(subject).to receive("image_#{ d }").and_return(0)
           end
+
+          it { expect(subject.valid?).to eq false }
+        end
+      end
+      [:top, :bottom, :left, :right].each do |d|
+        describe "when #{ d } is 0" do
+          before { subject.send d, 0 }
+
+          it { expect(subject.valid?).to eq true }
+        end
+
+        describe "when #{ d } is negative" do
+          before { subject.send d, -1 }
 
           it { expect(subject.valid?).to eq false }
         end
@@ -189,7 +202,7 @@ describe Caracal::Core::Models::ImageModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:url, :data, :width, :height, :align, :top, :bottom, :left, :right, :anchor].sort }
+      let(:expected) { [:url, :data, :width, :height, :align, :top, :bottom, :left, :right, :anchor, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap].sort }
 
       it { expect(actual).to eq expected }
     end

@@ -9,6 +9,9 @@ module Caracal
       # method.
       #
       class RuleModel < BorderModel
+        DEFAULT_BORDER_SIZE    = 4
+        DEFAULT_BORDER_SPACING = 1
+
         #-------------------------------------------------------------
         # Configuration
         #-------------------------------------------------------------

@@ -105,7 +105,7 @@ describe Caracal::Core::Models::BookmarkModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:name, :start].sort }
+      let(:expected) { [:id, :name, :start].sort }
 
       it { expect(actual).to eq expected }
     end

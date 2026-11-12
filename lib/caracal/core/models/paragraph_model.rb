@@ -26,6 +26,7 @@ module Caracal
         has_string_attribute :style
 
         has_symbol_attribute :align
+        has_symbol_attribute :line_rule
 
         has_integer_attribute :line
 
@@ -61,20 +62,22 @@ module Caracal
         end
 
         def plain_text
-          runs.collect { |run| run.try(:text_content).to_s }.join(' ').strip
+          runs.collect { |run| (run.text_content if run.respond_to? :text_content).to_s }.join(' ').strip
         end
 
         def spacing_options
           {
             top:    self.paragraph_top,
             bottom: self.paragraph_bottom,
-            line:   self.paragraph_line
+            line:   self.paragraph_line,
+            line_rule: self.paragraph_line_rule
           }
         end
 
         def paragraph_attributes
           {
             line:          self.paragraph_line,
+            line_rule:     self.paragraph_line_rule,
             align:         self.paragraph_align,
             keep_next:     self.paragraph_keep_next,
             keep_lines:    self.paragraph_keep_lines,
@@ -174,8 +177,8 @@ module Caracal
 
         # .text
         def text(*args, &block)
-          options = Caracal::Utilities.extract_options! args
-          options.merge! self.run_attributes.to_h.except(:hide_mark)
+          options = self.run_attributes.to_h.except(:hide_mark)
+          options.merge! Caracal::Utilities.extract_options!(args)
           options.merge! content: args.first if args.first
 
           model = Caracal::Core::Models::TextModel.new options, &block
@@ -211,11 +214,14 @@ module Caracal
         #========== VALIDATION ============================
 
         def valid?
-          runs.any? and self.valid_bgstyle? and self.valid_run_attributes?
+          runs.any? and
+              validate_inclusion :line_rule, within: StyleModel::LINE_RULES.keys and
+              self.valid_bgstyle? and
+              self.valid_run_attributes?
         end
 
         def self.option_keys
-          %i[content style align tabs top bottom line keep_next keep_lines widow_control hide_mark] +
+          %i[content style align tabs top bottom line line_rule keep_next keep_lines widow_control hide_mark] +
               HasMargins::ATTRS +
               HasRunAttributes::ATTRS
         end

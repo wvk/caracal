@@ -3,7 +3,6 @@
 # Caracal
 
 This fork includes fixes and functionalities from pending PRs from the original project, to be able to use them while waiting for the PRs to be merged there.
-Fork gem version = 1.7.2
 Original [![Gem Version](http://img.shields.io/gem/v/caracal.svg?style=flat)](https://rubygems.org/gems/caracal)
 
 ## Overview
@@ -84,12 +83,12 @@ Only after all the programmer instructions have been parsed does the document at
 
 You may not know that .docx files are simply a zipped collection of XML documents that follow the OOXML standard. (We didn't, in any event.) This means constructing a .docx file from scratch actually requires the creation of several files.  Caracal abstracts users from this process entirely.
 
-For each Caracal request, the following document structure will be created and zipped into the final output file:
+For each Caracal request, the following document structure will be created and zipped into the final output file (parts marked * only when used):
 
 ```
     example.docx
       |- _rels
-      	|- .rels
+        |- .rels
       |- docProps
         |- app.xml
         |- core.xml
@@ -97,17 +96,21 @@ For each Caracal request, the following document structure will be created and z
       |- word
         |- _rels
           |- document.xml.rels
-          |- fontTable.xml.rels
-        |- fonts
+          |- fontTable.xml.rels    *
+          |- header1.xml.rels      *
+          |- footer1.xml.rels      *
+        |- fonts                   *
           |- font1.odttf
           ...
-        |- media
-          |- image001.png
-          |- image002.png
+        |- media                   *
+          |- image-3f2a9c41d07e5b68.png
           ...
+        |- theme
+          |- theme1.xml
         |- document.xml
         |- fontTable.xml
-        |- footer.xml
+        |- footer1.xml             *
+        |- header1.xml             *
         |- numbering.xml
         |- settings.xml
         |- styles.xml
@@ -135,7 +138,7 @@ Specifies the custom document properties. *This file is generated automatically 
 Defines an internal identifier and type with all external content items (images, links, etc). *This file is generated automatically by the library based on other user directives.*
 
 **word/media/**
-A collection of media assets (each of which should have an entry in document.xml.rels).
+The images, named `image-<16 hex digits>.<ext>` after their URL and data. Each has an entry in the `.rels` file of the part showing it.
 
 **word/document.xml**
 The main content file for the document.
@@ -146,11 +149,14 @@ Specifies the fonts used in the document.
 **word/fonts/** and **word/_rels/fontTable.xml.rels**
 Embedded font files and their links from the font table. Only present when fonts are embedded.
 
-**word/footer.xml**
-Defines the formatting of the document footer.
+**word/header1.xml** and **word/footer1.xml**
+The page header and footer. Only present when the document has a header or footer. A different first page adds `header2.xml` and `footer2.xml`. Their images and links are listed in `word/_rels/header1.xml.rels` and `footer1.xml.rels`.
 
 **word/numbering.xml**
 Defines ordered and unordered list styles.
+
+**word/theme/theme1.xml**
+The color and font theme. See [Color Themes](#color-themes).
 
 **word/settings.xml**
 Defines global directives for the document (e.g., whether to show background images, tab widths, etc). Also, establishes compatibility with older versions on Word.
@@ -167,22 +173,22 @@ Pairs extensions and XML files with schema content types so Word can parse them 
 OpenXML properties are specified in several different units, depending on which attribute is being set.
 
 **Points**
-Most spacing declarations are measured in full points.
+Border and rule spacing is measured in full points.
 
 **Half Points**
 All font sizes are measure in half points.  A font size of 24 is equivalent to 12pt.
 
 **Eighth Points**
-Borders are measured in 1/8 points.  A border size of 4 is equivalent to 0.5pt.
+Border and rule sizes are measured in 1/8 points.  A border size of 4 is equivalent to 0.5pt.
 
 **Twips**
-A twip is 1/20 of a point.  Word documents are printed at 72dpi.  1in == 72pt == 1440 twips.
+A twip is 1/20 of a point.  Paragraph spacing, indentation, page sizes and page margins are measured in twips.  Word documents are printed at 72dpi.  1in == 72pt == 1440 twips.
 
 **Pixels**
 In Word documents, pixels are equivalent to points.
 
 **EMUs (English Metric Unit)**
-EMUs are a virtual unit designed to facilitate the smooth conversion between inches, millimeters, and pixels for images and vector graphics.  1in == 914400 EMUs == 72dpi x 100 x 254.
+EMUs are a virtual unit designed to facilitate the smooth conversion between inches, millimeters, and pixels for images and vector graphics.  1in == 914400 EMUs.  1px at 72dpi == 1pt == 12700 EMUs.
 
 At present, Caracal expects values to be specified in whichever unit OOXML requires. This is admittedly difficult for new Caracal users. Eventually, we'll probably implement a utility object under the hood to convert user-specified units into the format expected by OOXML.
 
@@ -218,6 +224,8 @@ In forthcoming versions of Caracal, we'll be looking to expand the `InvalidModel
 
 
 ## Installation
+
+Caracal requires Ruby 3.2 or later.
 
 Add this line to your application's Gemfile:
 
@@ -264,11 +272,11 @@ docx.name    # => 'example_document.docx'
 
 ### Page Size
 
-Page dimensions can be set using the `page_size` method.  The method accepts two parameters for controlling the width and height of the document.
+Page dimensions can be set using the `page_size` method.  The method accepts two parameters for controlling the width and height of the document. Parameters not given keep their current value.
 It also accepts a third parameter for setting the page orientation.  If you want landscape orientation, you need to change both the page
 dimensions and the orientation explicitly.
 
-*Page size defaults to United States standard A4, portrait dimensions (8.5in x 11in).*
+*Page size defaults to US Letter, portrait dimensions (8.5in x 11in).*
 
 ```ruby
 docx.page_size do
@@ -283,7 +291,7 @@ Both the `width` and `height` attributes require positive integer values.
 
 ### Page Margins
 
-Page margins can be set using the `page_margins` method.  The method accepts four parameters for controlling the margins of the document.
+Page margins can be set using the `page_margins` method.  The method accepts four parameters for controlling the margins of the document. Sides not given keep their current value.
 
 *Margins default to 1.0in for all sides.*
 
@@ -296,7 +304,7 @@ docx.page_margins do
 end
 ```
 
-All attributes require positive integer values. Additionally, the combined size of the margins on either axis cannot exceed the page size on that axis (e.g., the sum of the `left` and `right` values must be less than the `page_width`).
+All attributes require positive integer values. The margins on either axis must sum to less than the page size on that axis (e.g., `left` + `right` < page width); `page_margins` and `page_size` raise `Caracal::Errors::InvalidModelError` otherwise.
 
 
 ### Page Breaks
@@ -310,18 +318,19 @@ docx.page     # starts a new page.
 
 ### Page Numbers
 
-Page numbers can be added to the footer via the `page_numbers` method.  The method accepts optional parameters for controlling the alignment, label and size of the text.
+The `page_numbers` method adds a paragraph with the page number to the end of the footer, creating the footer if needed.
 
 *Page numbers are turned off by default.*
 
 ```ruby
 docx.page_numbers true do
-  align        :right  # sets the alignment. accepts :left, :center, and :right.
-  label        'Page'  # sets the text that will go to the left of the page number. Defaults to nil.
-  size:        24      # sets the label and number size simultaneously. units in half points.
-  label_size:  24      # sets the label size only. units in half points.
-  number_size: 20      # sets the number size only. units in half points.
+  align       :right  # sets the alignment. accepts :left, :center, and :right. defaults to :center.
+  label       'Page'  # sets the text that will go to the left of the page number. defaults to nil.
+  label_size  24      # sets the label size only. units in half points.
+  number_size 20      # sets the number size only. units in half points.
 end
+
+docx.page_numbers true, label: 'Page', size: 24  # size sets the label and number size simultaneously.
 ```
 
 The `size` option and the `label_size` and `number_size` options are mutually exclusive.
@@ -374,7 +383,7 @@ Paragraph style classes can be defined using the `style` method.  The method acc
 docx.style do
   id              'Heading1'  # sets the internal identifier for the style.
   name            'heading 1' # sets the friendly name of the style.
-  type            'paragraph' # sets the style type. accepts `paragraph` or `character`
+  type            'paragraph' # sets the style type. accepts `paragraph`, `character` or `table` (see Table Styles).
   font            'Palantino' # sets the font family.
   color           '333333'    # sets the text color. accepts hex RGB.
   size            28          # sets the font size. units in half points.
@@ -383,7 +392,8 @@ docx.style do
   underline       false       # sets whether or not to underline the text.
   caps            false       # sets whether or not text should be rendered in all capital letters.
   align           :left       # sets the alignment. accepts :left, :center, :right, and :both.
-  line            360         # sets the line height. units in twips.
+  line            360         # sets the minimum line height. units in twips.
+  line_rule       :at_least   # accepts :at_least, :exact and :auto (line in 240ths of a line).
   top             100         # sets the spacing above the paragraph. units in twips.
   bottom          0           # sets the spacing below the paragraph. units in twips.
   indent_left     360         # sets the left indent. units in twips.
@@ -407,6 +417,8 @@ Caracal establishes a standard set of default styles for every document. Default
 Styles are declared as `paragraph` by default. If you need to adjust inline text styles repeatedly, you might
 benefit from defining a `character` style.  Paragraph styles affects all text runs within a paragraph; character styles
 are used to style individual runs within a larger text block.
+Character styles use the text options only (font, color, size, bold, …) and are applied to text runs and links with the
+`style` option, e.g. `text 'x', style: 'MyCharStyle'`.
 
 One-off inline text styling can also be accomplished by passing the `text` command override arguments (see below).
 
@@ -421,9 +433,12 @@ docx.custom_property do
   value     'test'            # sets the value of the custom property.
   type      :text             # sets the property type. accepts :text, :number, :date, :boolean.
 end
+
+docx.custom_property name: 'Due', value: Date.new(2024, 5, 17), type: :date
+docx.custom_property name: 'Amount', value: 12.5, type: :number
 ```
 
-The `name`, `value`, and `height` attributes are required. If any of the attributes are missing, the custom property will not be created.
+The `name`, `value`, and `type` attributes are required. A `:date` value may be a Date, Time, DateTime or parseable String. A `:number` value is stored as an integer or, if it has a fraction, as a floating point number. Invalid properties raise `Caracal::Errors::InvalidModelError`.
 
 A document may have zero or many custom properties. Each custom property's `name` should be unique with its `type`.
 
@@ -449,11 +464,17 @@ docx.p 'Sample text.' do
   italic          false             # sets whether or not render the text in italic style.
   underline       false             # sets whether or not to underline the text.
   bgcolor         'cccccc'          # sets the background color.
-  highlight_color 'yellow'          # sets the highlight color. only accepts OOXML enumerations. see http://www.datypic.com/sc/ooxml/t-w_ST_HighlightColor.html.
+  highlight_color 'yellow'          # sets the highlight color. accepts the names listed below.
   vertical_align  'superscript'     # sets the vertical alignment.
   keep_next       false             # sets whether or not to keep this paragraph with the next paragraph when separated by page break.
+  line            360               # sets the minimum line height. units in twips.
+  line_rule       :at_least         # accepts :at_least, :exact and :auto (line in 240ths of a line).
 end
 ```
+
+`highlight_color` accepts `black`, `blue`, `cyan`, `green`, `magenta`, `red`, `yellow`, `white`, `darkBlue`, `darkCyan`, `darkGreen`, `darkMagenta`, `darkRed`, `darkYellow`, `darkGray`, `lightGray` and `none` for paragraphs, text runs, links and styles. Other values raise `Caracal::Errors::InvalidModelError`.
+
+Paragraphs and paragraph styles accept the table border options (see Tables), e.g. `docx.p 'Boxed', border_color: '666666'` or `border_bottom: { size: 12 }`. `border_horizontal` sets the line between consecutive paragraphs with the same borders.
 
 More complex paragraph runs can be accomplished by using the `text` method instead the paragraph's block.
 
@@ -472,20 +493,21 @@ end
 
 ### Links
 
-Links can be added inside paragraphs using the `link` method.  The method accepts several optional parameters for controlling the style and behavior of the rule.
+Links can be added inside paragraphs using the `link` method.  The method accepts several optional parameters for controlling the style and behavior of the link.
 
 ```ruby
-p do
-  link 'Example Text', 'https://wwww.example.com' do
-    internal        false             # sets whether or not the link references an external url. defaults to false.
+docx.p do
+  link 'Example Text', 'https://www.example.com' do
+    internal        false             # links to the bookmark named by the second argument instead of a url. defaults to false.
+    style           'Hyperlink'       # sets the character style. defaults to nil.
     font            'Courier New'     # sets the font name to use. defaults to nil.
-    color           '0000ff'          # sets the color of the text. defaults to 1155cc.
+    color           '0000ff'          # sets the color of the text. defaults to 1155cc, or the style's.
     size            24                # sets the font size. units in half-points. defaults to nil.
     bold            false             # sets whether or not the text will be bold. defaults to false.
     italic          false             # sets whether or not the text will be italic. defaults to false.
-    underline       true              # sets whether or not the text will be underlined. defaults to true.
+    underline       true              # sets whether or not the text will be underlined. defaults to true, or the style's.
     bgcolor         'cccccc'          # sets the background color.
-    highlight_color 'yellow'          # sets the highlight color. only accepts OOXML enumerations. see http://www.datypic.com/sc/ooxml/t-w_ST_HighlightColor.html.
+    highlight_color 'yellow'          # sets the highlight color. accepts the names listed under Paragraphs.
   end
 end
 ```
@@ -495,16 +517,17 @@ end
 
 Bookmarks can be added directly to the document or inside paragraph blocks using the `bookmark_start` and `bookmark_end`
 methods. Bookmarks can be inserted at the document-level to describe section headings, etc. or inside
-of a paragraph block for fine-grained linking.
+of a paragraph block for fine-grained linking. The optional `id` (string or integer) pairs a `bookmark_start` with its
+`bookmark_end`; without it, `bookmark_end` closes the most recently opened bookmark.
 
 ```ruby
 # document-level bookmark
-dox.bookmark_start id: 's1', name: 'section1'
+docx.bookmark_start id: 's1', name: 'section1'
 docx.h2 'Section Heading'
 docx.bookmark_end id: 's1'
 docx.p  'Section content.'
 
-# pargraph-level bookmark
+# paragraph-level bookmark
 docx.h2 'Section Heading'
 docx.p do
   text 'Pretend this paragraph has a lot of text and we want to bookmark '
@@ -532,6 +555,21 @@ docx.h2 do
 end
 ```
 
+#### Heading Numbering
+
+`heading_numbering` numbers the headings. `text` is the number's text, with `%1` to `%6` standing for the counters of `h1` to `h6`.
+
+```ruby
+docx.heading_numbering do
+  h1 fmt: 'decimal', text: '%1.'
+  h2 text: '%1.%2', suff: 'tab'
+end
+
+docx.heading_numbering h1: { text: '%1.' }, h2: { fmt: 'lowerLetter', text: '%1.%2' }
+```
+
+`fmt` is one of `decimal` (default), `decimalZero`, `lowerLetter`, `upperLetter`, `lowerRoman`, `upperRoman`, `ordinal` and `none`. `suff` follows the number: `space` (default), `tab` or `nothing`. Levels not given stay unnumbered.
+
 
 ### Rules
 
@@ -542,7 +580,7 @@ docx.hr do
   color   '333333'   # sets the color of the line. defaults to auto.
   line    :double    # sets the line style (single or double). defaults to single.
   size    8          # sets the thickness of the line. units in 1/8 points. defaults to 4.
-  spacing 4          # sets the spacing around the line. units in 1/8 points. defaults to 1.
+  spacing 4          # sets the spacing above the line. units in points. defaults to 1.
 end
 ```
 
@@ -640,15 +678,16 @@ end
 
 ### Images
 
-Images can be added by using the `img` method.  The method accepts several optional parameters for controlling the style and placement of the asset.
+Images can be added by using the `img` method. The other parameters control the size, style and placement of the asset.
 
 *Caracal will automatically embed the image in the Word document.*
 
 ```ruby
 docx.img 'https://www.example.com/logo.png' do
   data    raw_data  # sets the file data directly instead of opening the url
-  width   396       # sets the image width. units specified in pixels.
-  height  216       # sets the image height. units specified in pixels.
+  width   396       # sets the image width. units specified in pixels. defaults to the image's own width.
+  height  216       # sets the image height. units specified in pixels. defaults to the image's own height.
+  ppi     96        # sets the pixels per inch. default is 72.
   align   :right    # controls the justification of the image. default is :left.
   top     10        # sets the top margin. units specified in pixels.
   bottom  10        # sets the bottom margin. units specified in pixels.
@@ -657,6 +696,8 @@ docx.img 'https://www.example.com/logo.png' do
 end
 ```
 
+*Width and height are read from PNG, JPEG and GIF data; give one of them to scale the image keeping its aspect ratio. Other formats need both. Pixel sizes are converted at `ppi`; without `ppi`, the image's own size uses the density stored in PNG and JPEG files (horizontal for width, vertical for height), else 96.*
+
 *Note: If you provide the image data, you should still supply a URL. I know this
 is a bit hacky, but it allows the library to key the image more effectively and
 Caracal needs a file extension to apply to the renamed media file. This seemed
@@ -664,7 +705,18 @@ the simplest solution to both problems.*
 
 #### Anchored Images
 
-By default, Caracal will place the image inline (inside a paragraph). If you want thhe image to be anchored to the page instead, just provide `anchor: true`. `top`, `left` etc. values will be measured relative to the page. **This behaviour will change** as soon as we add support for a more sophisticated anchor model.
+Images are placed inline by default. `anchor: true` positions the image freely instead; `top`, `bottom`, `left` and `right` then set the distance to the surrounding text.
+
+```ruby
+docx.img 'https://www.example.com/logo.png', width: 120, height: 60, anchor: true do
+  x           1440      # horizontal offset in twips. default aligns the image by its align value.
+  y           720       # vertical offset in twips. default is the top.
+  relative_to :margin   # :page (default), :margin, :column or :paragraph.
+  wrap        :square   # :top_and_bottom (default), :square, :none (in front of text) or :behind (behind text).
+end
+```
+
+`relative_to_x` and `relative_to_y` set the reference per axis. Vertically, `:column` measures from the margin; horizontally, `:paragraph` measures from the column.
 
 ### Tables
 
@@ -680,14 +732,16 @@ The `table` command accepts data in the form of a two-dimensional arrays. This c
 docx.table [['Header 1','Header 2'],['Cell 1', 'Cell 2']] do
   border_color   '666666'   # sets the border color. defaults to 'auto'.
   border_line    :single    # sets the border style. defaults to :single. see OOXML docs for details.
-  border_size    4          # sets the border width. defaults to 0. units in twips.
-  border_spacing 4          # sets the spacing around the border. defaults to 0. units in twips.
-  column_widths  [80, 120]  # sets the column widths. defaults to auto. units in twips.
+  border_size    4          # sets the border width. defaults to 4. units in 1/8 points.
+  border_spacing 4          # sets the cell spacing (units in twips) and the spacing around the border (units in points). defaults to 0.
+  column_widths  [80, 120]  # sets the column widths and, unless `width` is given, the table width. defaults to auto. units in twips.
   repeat_header  1		      # sets the number of header rows that is repeated on each page. defaults to 0.
 end
 ```
 
-Table borders can be further styled with position-specific options. Caracal supports styling the top, bottom, left, right, inside horizontal, and inside vertical borders with the `border_top`, `border_bottom`, `border_left`, `border_right`, `border_horizontal`, and `border_vertical`, respectively. Options have the same meaning as those set at the table level.
+Any table-level border option draws all table borders. A table without border options has no borders.
+
+Table borders can be further styled with position-specific options. Caracal supports styling the top, bottom, left, right, inside horizontal, and inside vertical borders with the `border_top`, `border_bottom`, `border_left`, `border_right`, `border_horizontal`, and `border_vertical`, respectively. Options have the same meaning as those set at the table level, and options not given fall back to the table-level ones.
 
 ```ruby
 docx.table data, border_size: 4 do
@@ -725,18 +779,35 @@ end
 
 *Note: content of cells 21 and 24 will disappear*
 
+#### Table Styles
+
+Table styles take the style options plus conditional formats for parts of the table. A table's `look` selects which parts get them.
+
+```ruby
+docx.style id: 'Grid', name: 'grid', type: :table, border_color: '666666' do
+  conditional_format type: :firstRow, bold: true, bgcolor: 'cccccc'
+  conditional_format type: :band2Horz, bgcolor: 'eeeeee'
+end
+
+docx.table data, style: 'Grid' do
+  look first_row: true, last_row: true, first_col: true, last_col: true # default false. hband and vband default to true.
+end
+```
+
+Conditional format types are `wholeTable`, `firstRow`, `lastRow`, `firstCol`, `lastCol`, `band1Horz`, `band2Horz`, `band1Vert`, `band2Vert` and the corner cells `nwCell`, `neCell`, `swCell`, `seCell`. Header and total rows and columns are not banded.
+
 ### Table Cells
 
-If your table contains more complex data (multiple paragraphs, images, lists, etc.), you will probably want to instantiate your `TableCellModel` instances directly.  With the exception of page breaks, table cells can contain anything the document can contain, including another table.
+If your table contains more complex data (multiple paragraphs, images, lists, etc.), you will probably want to instantiate your `TableCellModel` instances directly.  Table cells can contain anything the document can contain, including another table, except page breaks, iframes and a table of contents.
 
 ```ruby
 c1 = Caracal::Core::Models::TableCellModel.new do
-  bgcolor 'cccccc'    # sets the background color. defaults to 'ffffff'.
+  bgcolor 'cccccc'    # sets the background color.
   margins do
-    top                  # sets the top margin. defaults to 100. units in twips.
-    bottom               # sets the bottom margin. defaults to 100. units in twips.
-    left                 # sets the left margin. defaults to 100. units in twips.
-    right                # sets the right margin. defaults to 100. units in twips.
+    top     100       # sets the top margin. units in twips.
+    bottom  100       # sets the bottom margin. units in twips.
+    left    100       # sets the left margin. units in twips.
+    right   100       # sets the right margin. units in twips.
   end
 
   p 'This is a sentence above an image.'
@@ -745,26 +816,20 @@ c1 = Caracal::Core::Models::TableCellModel.new do
 end
 ```
 
+*Background and margins are unset by default, so the table style applies. `margins` also accepts a hash (`margins top: 0, left: 100`), as does `cell_style`; sides not given stay unchanged.*
+
 To display images side-by-side, they need to be laid out horizontally in a table.
 
 ```ruby
-# When the URL or data can be hard-coded, pass a block to TableCellModel.new
 image_1_cell = Caracal::Core::Models::TableCellModel.new do
-  img('https://www.example.com/logo.png', width: 200, height: 150)
+  img 'https://www.example.com/logo.png'
 end
 
-# When the data comes from a variable, you need to instantiate the ImageModel directly
-# to preserve lexical scope (because the @image variable is not available to the block).
-# Given an ActiveStorage item in @image, the following code would generate a cell with the image inside.
-image_2_cell = Caracal::Core::Models::TableCellModel.new(
-  content: Caracal::Core::Models::ImageModel.new(
-    url: @image.name,
-    data: @image.download,
-    width: @image.metadata[:width],
-    height: @image.metadata[:height]
-  )
-)
-# Generate the table as usual, passing the cells in a 2-dimensional array
+# a block argument keeps the surrounding scope, e.g. for an ActiveStorage attachment in @image
+image_2_cell = Caracal::Core::Models::TableCellModel.new do |cell|
+  cell.img @image.filename.to_s, data: @image.download
+end
+
 docx.table [[image_1_cell, image_2_cell]]
 ```
 
@@ -799,7 +864,7 @@ end
 
 Instead of specifying a `color` or `bgcolor` value in your styles or other models, you may use their theme counterparts `theme_color` or `theme_bgcolor`, respectively. This combined with a custom color theme allows the consumers of your DOCX file to switch to their own color theme and have all your styles magically honor them.
 
-Word allows the following theme colors: dark1, light1, dark2, light1, accent1 ... accent1, hyperlink, visited_hyperlink. Define your color thime like so:
+`theme_color` and `theme_bgcolor` accept dark1, light1, dark2, light2, accent1 to accent6, hyperlink, visited_hyperlink (or followedHyperlink), text1, background1, text2, background2 and none. Every document includes caracal's default color theme; customize it like so:
 
 ```ruby
 docx.theme do
@@ -825,27 +890,19 @@ end
 
 ## Experimental Features
 
-### Headers
+### Headers and Footers
 
-Pages can also include headers, which will be repeated on every page in the document.
+Headers and footers are repeated on every page. They take the same content as the document body, in the order given, except page breaks and a table of contents.
 
 ```ruby
 docx.header.h1 'Page Header'
 
 docx.header do
-  p 'Page headers can contain headings, paragraphs, images, lists, even tables, all using the usual syntax and options.'
+  p 'Headers can contain headings, paragraphs, images, lists and tables.'
+  p 'This paragraph is right-aligned.', align: :right
 end
 
-docx.header.p 'Contents added without the `align` option will be displayed after content laid out in the header table, even if it comes earlier in the code.'
-
-# Using the align option, content can be laid out horizontally inside headers.
-docx.header do
-  p 'This paragraph will be left-aligned and placed in the leftmost column.',   align: :left
-  p 'This paragraph will be centered and placed in the center column.',         align: :center
-  p 'This paragraph will be right-aligned and placed in the rightmost column.', align: :right
-end
-
-docx.header.img "http://example.com/image.png" do
+docx.header.img 'http://example.com/image.png' do
   width  60
   height 60
   align :right
@@ -869,19 +926,31 @@ docx.header.table [['11', '1213', '14'], ['21', '22', '23', '24']] do
 end
 
 docx.header.hr
+
+docx.footer.p 'Footers work the same way.', align: :center
+```
+
+To give the first page its own header and footer, use `type: :first`; page numbers are not added there. `different_first_page` leaves the first page blank instead.
+
+```ruby
+docx.header type: :first do
+  p 'First page header'
+end
+
+docx.different_first_page
 ```
 
 
 ### Table of contents
 
-Table of contents can be automatically generated.
+Caracal lists the document's headings in a table of contents. Word updates it, including page numbers, when it opens the document.
 
 ```ruby
 docx.table_of_contents
 # Or, for brevity:
 docx.toc
 
-# Both methods accept the same options: legend, start_level, and end_level
+# Both methods accept the same options: legend, start_level, end_level, and placeholder
 
 docx.toc legend: 'Table of contents', start_level: 1, end_level: 3
 # or using block form:
@@ -889,8 +958,11 @@ docx.toc do
   legend      'Table of contents' # Default is nil
   start_level 1                   # Default is 1 (headings level 1, aka docx.h1 or p style: 'Heading1')
   end_level   3                   # Default is 3 (headings level 3, aka docx.h3 or p style: 'Heading3')
+  placeholder '#'                 # Default is '#', shown as page number until the TOC is updated
 end
 ```
+
+To start the table of contents on a new page, add `docx.page` before it.
 
 ### IFrames
 
@@ -934,19 +1006,19 @@ end
 
 ### Using Tabs
 
-Tabs are defined per paragraph as an Array of twips like so:
+Tab stops are defined per paragraph as an Array of positions in twips. `end_tab: true` adds a tab after a text run:
 
 ```ruby
 docx.p do
-  tabs [400]
-  text 'first tabbed column at pos 0', end_tab: true
-  text 'second tabbed column at pos 400 twips'
+  tabs [2880]
+  text 'column at 0', end_tab: true
+  text 'column at 2880 twips (2in)'
 end
 
-docx.p tabs: [400, 800] do
-  text 'first tabbed column at pos 0', end_tab: true
-  text 'second tabbed column at pos 800 twips', end_tab: true
-  text 'third tabbed column'
+docx.p tabs: [2880, 5760] do
+  text 'column at 0', end_tab: true
+  text 'column at 2in', end_tab: true
+  text 'column at 4in'
 end
 ```
 
@@ -975,7 +1047,11 @@ EOXML
 
 ## Template Rendering
 
-Caracal includes [Tilt](https://github.com/rtomayko/tilt) integration to facilitate its inclusion in other frameworks.
+Caracal includes [Tilt](https://github.com/rtomayko/tilt) integration to facilitate its inclusion in other frameworks. Templates ending in `.caracal` contain Caracal commands on the `docx` variable and render to a docx string:
+
+```ruby
+Tilt.new('report.docx.caracal').render
+```
 
 Rails integration can be added via the [Caracal-Rails](https://github.com/trade-informatics/caracal-rails) gem.
 
@@ -986,7 +1062,7 @@ Lexical scope is a pretty big challenge for Caracal and it often confuses new us
 
 Alternatively, you may use the `Caracal::View` mixin to create documents, just like [Prawn](http://prawnpdf.org/api-docs/2.0/Prawn/View.html). Here is a basic example using this mixin:
 
-```
+```ruby
 class Export
   include Caracal::View
 
@@ -996,22 +1072,22 @@ class Export
   end
 
   def add_data
-    table @data, size: 22 do
-      cell_style rows[0], bold: true
-      cell_style rows[0], size: 24
+    table @data do
+      cell_style cells,   size: 22
+      cell_style rows[0], size: 24, bold: true
     end
   end
 end
 
 # Usage:
-Export.new(some_data).save_as("export #{Time.zone.today}.docx")
+Export.new(some_data).save_as("export #{Date.today}.docx")
 
 # Or send from a controller, using Rails:
 respond_to do |format|
   format.html
   format.docx do
     doc = Export.new(my_data)
-    send_data doc.render, filename: doc.file_name, disposition: :inline, type: Mime::Type.lookup_by_extension(:docx)
+    send_data doc.render, filename: doc.name, disposition: :inline, type: Mime::Type.lookup_by_extension(:docx)
   end
 end
 ```

@@ -21,7 +21,7 @@
   * Embed TrueType fonts, obfuscated by default (@wvk)
   * Number headings via `heading_numbering` (@wvk)
   * Position anchored images by offset, reference and wrap mode
-  * Character styles and `style:` on text runs
+  * Character styles and `style:` on text runs and links
   * Table styles with conditional formats and banding
   * Table cell `margins` (hash or block); table captions; cell borders and styles
   * First-page headers and footers; document footers; lists in headers and footers

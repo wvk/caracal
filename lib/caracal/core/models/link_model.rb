@@ -31,10 +31,13 @@ module Caracal
 
         # initialization
         def initialize(options={}, &block)
-          @text_color     = DEFAULT_LINK_COLOR
-          @text_underline = DEFAULT_LINK_UNDERLINE
-
           super options, &block
+
+          # a character style formats the link instead of the defaults
+          unless text_style
+            @text_color     = DEFAULT_LINK_COLOR     if text_color.nil?
+            @text_underline = DEFAULT_LINK_UNDERLINE if text_underline.nil?
+          end
         end
 
         #========== STATE HELPERS =========================

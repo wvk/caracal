@@ -48,5 +48,17 @@ describe 'character styles' do
     it { expect(document.at_xpath('//w:hyperlink/w:r/w:rPr/*[1]', ns).name).to eq 'rStyle' }
     it { expect(document.at_xpath('//w:hyperlink/w:r/w:rPr/w:rStyle/@w:val', ns).value).to eq 'Derived' }
     it { expect(document.at_xpath('//w:pPr/w:rPr/w:rStyle', ns)).to be_nil }
+    it { expect(document.xpath('//w:hyperlink/w:r/w:rPr/*', ns).map(&:name)).to eq %w(rStyle) }
+  end
+
+  describe 'a styled link with explicit options' do
+    let(:docx) do
+      Caracal::Document.new {|docx| docx.p { link 'link', 'https://example.com', style: 'Hyperlink', color: 'ff0000', underline: false } }
+    end
+    let(:rpr) { document.at_xpath('//w:hyperlink/w:r/w:rPr', ns) }
+
+    it { expect(rpr.xpath('*', ns).map(&:name)).to eq %w(rStyle color u) }
+    it { expect(rpr.at_xpath('w:color/@w:val', ns).value).to eq 'ff0000' }
+    it { expect(rpr.at_xpath('w:u/@w:val', ns).value).to eq 'none' }
   end
 end

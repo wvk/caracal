@@ -79,6 +79,10 @@ module Caracal
       document.next_numbering_id
     end
 
+    def next_drawing_id
+      document.next_drawing_id
+    end
+
     def find_list_style(type, level)
       document.find_list_style type, level
     end

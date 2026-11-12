@@ -185,6 +185,11 @@ module Caracal
       with_heading_numbering {|model| model.id = next_numbering_id }
     end
 
+    # docPr/cNvPr ids are unique across body, headers and footers
+    def next_drawing_id
+      @drawing_counter = @drawing_counter.to_i + 1
+    end
+
     #============ RENDERING ===============================
 
     # This method renders the word document instance into
@@ -192,6 +197,7 @@ module Caracal
     #
     def render
       reset_numbering
+      @drawing_counter = 0
       prepare_headers_and_footers
 
       buffer = ::Zip::OutputStream.write_buffer do |zip|

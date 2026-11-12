@@ -204,9 +204,8 @@ module Caracal
         end
       end
 
-      # docPr/cNvPr ids must be unique per document part
       def next_drawing_id
-        @drawing_counter = @drawing_counter.to_i + 1
+        document.next_drawing_id
       end
 
       def render_image(xml, model, **options)

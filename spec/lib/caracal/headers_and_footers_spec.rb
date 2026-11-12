@@ -90,6 +90,32 @@ describe 'headers and footers' do
     end
   end
 
+  describe 'drawing ids' do
+    let(:wp) { { 'wp' => 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing' } }
+    let(:docx) do
+      Caracal::Document.new do
+        header.img 'https://example.com/h.png', data: 'png', width: 10, height: 10
+        footer.img 'https://example.com/f.png', data: 'png', width: 10, height: 10
+        img 'https://example.com/b.png', data: 'png', width: 10, height: 10
+      end
+    end
+
+    def doc_pr_ids(rendered)
+      %w(word/header1.xml word/footer1.xml word/document.xml).flat_map do |name|
+        Nokogiri::XML(rendered.fetch name).xpath('//wp:docPr/@id', wp).map(&:value)
+      end
+    end
+
+    it 'are unique across all parts' do
+      expect(doc_pr_ids(parts docx).sort).to eq %w(1 2 3)
+    end
+
+    it 'restart with each rendering' do
+      parts docx
+      expect(doc_pr_ids(parts docx).sort).to eq %w(1 2 3)
+    end
+  end
+
   describe 'footer contents' do
     it 'evaluates the block form and renders all contents in order' do
       docx = Caracal::Document.new do

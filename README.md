@@ -675,7 +675,7 @@ docx.img 'https://www.example.com/logo.png' do
 end
 ```
 
-*Width and height are read from PNG, JPEG and GIF data; give one of them to scale the image keeping its aspect ratio. Other formats need both.*
+*Width and height are read from PNG, JPEG and GIF data; give one of them to scale the image keeping its aspect ratio. Other formats need both. Pixel sizes are converted at `ppi`; without `ppi`, the image's own size uses the density stored in PNG and JPEG files (horizontal for width, vertical for height), else 96.*
 
 *Note: If you provide the image data, you should still supply a URL. I know this
 is a bit hacky, but it allows the library to key the image more effectively and

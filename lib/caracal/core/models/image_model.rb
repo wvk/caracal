@@ -15,7 +15,7 @@ module Caracal
         RELATIVE_TOS = [:page, :margin, :column, :paragraph]
         WRAPS        = [:square, :top_and_bottom, :none, :behind]
 
-        has_integer_attribute :ppi,    default: 72 # pixels per inch
+        has_integer_attribute :ppi,    default: 96 # pixels per inch. defaults to the image's own density for its own size.
         has_integer_attribute :width               # units in pixels. defaults to the image's own size.
         has_integer_attribute :height              # units in pixels. defaults to the image's own size.
         has_integer_attribute :top,    default: 8  # units in pixels.
@@ -39,7 +39,6 @@ module Caracal
 
         # initialization
         def initialize(options={}, &block)
-          @image_ppi    = DEFAULT_IMAGE_PPI
           @image_width  = DEFAULT_IMAGE_WIDTH
           @image_height = DEFAULT_IMAGE_HEIGHT
           @image_align  = DEFAULT_IMAGE_ALIGN
@@ -52,6 +51,8 @@ module Caracal
           @image_wrap   = DEFAULT_IMAGE_WRAP
 
           super(options, &block).tap do
+            @ppi_given = (not @image_ppi.nil?)
+            @image_ppi ||= DEFAULT_IMAGE_PPI
             complete_size
             formatted_width
             formatted_height
@@ -60,10 +61,11 @@ module Caracal
 
         #=============== GETTERS ==============================
 
-        [:width, :height].each do |m|
+        [:width, :height].each_with_index do |m, axis|
           define_method "formatted_#{m}" do
             value = send("image_#{m}")
-            instance_variable_get "@cached_image_#{m}" or instance_variable_set "@cached_image_#{m}", pixels_to_emus(value, image_ppi)
+            ppi   = @density ? @density[axis] : image_ppi
+            instance_variable_get "@cached_image_#{m}" or instance_variable_set "@cached_image_#{m}", pixels_to_emus(value, ppi)
           end
         end
 
@@ -105,6 +107,7 @@ module Caracal
 
         # Fills in a missing width and/or height from the image data, keeping
         # the aspect ratio. Data read from the url is kept for the media part.
+        # The image's own size uses its own density unless ppi is given.
         def complete_size
           return if image_width and image_height
 
@@ -125,6 +128,7 @@ module Caracal
             @image_width = (image_height * w / h.to_f).round
           else
             @image_width, @image_height = w, h
+            @density = Caracal::ImageSize.density image_data unless @ppi_given
           end
         end
 

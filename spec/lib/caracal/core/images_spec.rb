@@ -37,8 +37,9 @@ describe Caracal::Core::Images do
 
   describe 'intrinsic size' do
     # PNG header only; enough to read the size
-    def png_of(w, h)
-      "\x89PNG\r\n\x1a\n".b + [13].pack('N') + 'IHDR' + [w, h, 8, 2, 0, 0, 0].pack('NNC5') + [0].pack('N')
+    def png_of(w, h, ppm: nil)
+      phys = ppm ? [9].pack('N') + 'pHYs' + [*ppm, 1].pack('NNC') + [0].pack('N') : ''
+      "\x89PNG\r\n\x1a\n".b + [13].pack('N') + 'IHDR' + [w, h, 8, 2, 0, 0, 0].pack('NNC5') + [0].pack('N') + phys
     end
 
     let(:model) { subject.contents.last }
@@ -48,7 +49,36 @@ describe Caracal::Core::Images do
       before { subject.img 'image.png', data: png_of(400, 300) }
 
       it { expect(size).to eq [400, 300] }
-      it { expect(model.formatted_width).to eq 400 * 12700 }
+      it { expect(model.formatted_width).to eq 400 * 9525 }   # 96 ppi
+    end
+
+    context 'with a density in the file' do
+      before { subject.img 'image.png', data: png_of(600, 300, ppm: [11811, 5906]) }
+
+      it { expect(size).to eq [600, 300] }
+      it { expect(model.formatted_width).to eq 2 * 914400 }   # 300 ppi
+      it { expect(model.formatted_height).to eq 2 * 914400 }  # 150 ppi
+    end
+
+    context 'with a density in the file and an explicit ppi' do
+      before { subject.img 'image.png', data: png_of(600, 300, ppm: [11811, 5906]), ppi: 150 }
+
+      it { expect(model.formatted_width).to eq 4 * 914400 }
+      it { expect(model.formatted_height).to eq 2 * 914400 }
+    end
+
+    context 'with a density in the file and an explicit width' do
+      before { subject.img 'image.png', data: png_of(600, 300, ppm: [11811, 11811]), width: 192 }
+
+      it { expect(size).to eq [192, 96] }
+      it { expect(model.formatted_width).to eq 2 * 914400 }   # 96 ppi
+    end
+
+    context 'with explicit width, height and ppi' do
+      before { subject.img 'image.png', data: png_of(1, 1), width: 144, height: 72, ppi: 72 }
+
+      it { expect(model.formatted_width).to eq 2 * 914400 }
+      it { expect(model.formatted_height).to eq 914400 }
     end
 
     # README "Table Cells"

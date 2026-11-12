@@ -666,7 +666,7 @@ docx.img 'https://www.example.com/logo.png' do
   data    raw_data  # sets the file data directly instead of opening the url
   width   396       # sets the image width. units specified in pixels. defaults to the image's own width.
   height  216       # sets the image height. units specified in pixels. defaults to the image's own height.
-  ppi     96        # sets the pixels per inch. default is 72.
+  ppi     300       # sets the pixels per inch. default is 96.
   align   :right    # controls the justification of the image. default is :left.
   top     10        # sets the top margin. units specified in pixels.
   bottom  10        # sets the bottom margin. units specified in pixels.
@@ -675,7 +675,7 @@ docx.img 'https://www.example.com/logo.png' do
 end
 ```
 
-*Width and height are read from PNG, JPEG and GIF data; give one of them to scale the image keeping its aspect ratio. Other formats need both.*
+*Width and height are read from PNG, JPEG and GIF data; give one of them to scale the image keeping its aspect ratio. Other formats need both. The image's own size uses the density stored in PNG and JPEG files (horizontal for width, vertical for height) unless `ppi` is given.*
 
 *Note: If you provide the image data, you should still supply a URL. I know this
 is a bit hacky, but it allows the library to key the image more effectively and

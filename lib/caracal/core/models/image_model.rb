@@ -15,7 +15,7 @@ module Caracal
         RELATIVE_TOS = [:page, :margin, :column, :paragraph]
         WRAPS        = [:square, :top_and_bottom, :none, :behind]
 
-        has_integer_attribute :ppi,    default: 96 # pixels per inch. defaults to the image's own density for its own size.
+        has_integer_attribute :ppi,    default: 72 # pixels per inch. the image's own size defaults to its own density, else 96.
         has_integer_attribute :width               # units in pixels. defaults to the image's own size.
         has_integer_attribute :height              # units in pixels. defaults to the image's own size.
         has_integer_attribute :top,    default: 8  # units in pixels.
@@ -107,7 +107,7 @@ module Caracal
 
         # Fills in a missing width and/or height from the image data, keeping
         # the aspect ratio. Data read from the url is kept for the media part.
-        # The image's own size uses its own density unless ppi is given.
+        # The image's own size uses its own density, else 96, unless ppi is given.
         def complete_size
           return if image_width and image_height
 
@@ -128,7 +128,7 @@ module Caracal
             @image_width = (image_height * w / h.to_f).round
           else
             @image_width, @image_height = w, h
-            @density = Caracal::ImageSize.density image_data unless @ppi_given
+            @density = (Caracal::ImageSize.density image_data or [96, 96]) unless @ppi_given
           end
         end
 

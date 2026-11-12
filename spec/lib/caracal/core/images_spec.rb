@@ -49,7 +49,8 @@ describe Caracal::Core::Images do
       before { subject.img 'image.png', data: png_of(400, 300) }
 
       it { expect(size).to eq [400, 300] }
-      it { expect(model.formatted_width).to eq 400 * 9525 }   # 96 ppi
+      it { expect(model.formatted_width).to eq 400 * 9525 }   # 96 ppi without a stored density
+      it { expect(model.formatted_height).to eq 300 * 9525 }
     end
 
     context 'with a density in the file' do
@@ -68,10 +69,25 @@ describe Caracal::Core::Images do
     end
 
     context 'with a density in the file and an explicit width' do
-      before { subject.img 'image.png', data: png_of(600, 300, ppm: [11811, 11811]), width: 192 }
+      before { subject.img 'image.png', data: png_of(600, 300, ppm: [11811, 11811]), width: 144 }
 
-      it { expect(size).to eq [192, 96] }
-      it { expect(model.formatted_width).to eq 2 * 914400 }   # 96 ppi
+      it { expect(size).to eq [144, 72] }
+      it { expect(model.formatted_width).to eq 2 * 914400 }   # 72 ppi
+      it { expect(model.formatted_height).to eq 914400 }
+    end
+
+    context 'with an explicit height' do
+      before { subject.img 'image.png', data: png_of(400, 300), height: 72 }
+
+      it { expect(model.formatted_width).to eq 96 * 12700 }   # 72 ppi
+      it { expect(model.formatted_height).to eq 914400 }
+    end
+
+    context 'with explicit width and height' do
+      before { subject.img 'image.png', data: png_of(1, 1, ppm: [11811, 11811]), width: 144, height: 72 }
+
+      it { expect(model.formatted_width).to eq 2 * 914400 }   # 72 ppi
+      it { expect(model.formatted_height).to eq 914400 }
     end
 
     context 'with explicit width, height and ppi' do

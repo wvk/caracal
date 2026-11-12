@@ -777,7 +777,7 @@ Conditional format types are `wholeTable`, `firstRow`, `lastRow`, `firstCol`, `l
 
 ### Table Cells
 
-If your table contains more complex data (multiple paragraphs, images, lists, etc.), you will probably want to instantiate your `TableCellModel` instances directly.  With the exception of page breaks, table cells can contain anything the document can contain, including another table.
+If your table contains more complex data (multiple paragraphs, images, lists, etc.), you will probably want to instantiate your `TableCellModel` instances directly.  Table cells can contain anything the document can contain, including another table, except page breaks, iframes and a table of contents.
 
 ```ruby
 c1 = Caracal::Core::Models::TableCellModel.new do
@@ -871,7 +871,7 @@ end
 
 ### Headers and Footers
 
-Headers and footers are repeated on every page. They take the same content as the document body, in the order given.
+Headers and footers are repeated on every page. They take the same content as the document body, in the order given, except page breaks and a table of contents.
 
 ```ruby
 docx.header.h1 'Page Header'

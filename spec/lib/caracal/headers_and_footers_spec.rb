@@ -67,6 +67,21 @@ describe 'headers and footers' do
       expect(num_id['word/header1.xml']).not_to eq num_id['word/document.xml']
     end
 
+    it 'renders bookmarks and raw xml' do
+      docx = Caracal::Document.new do
+        header do
+          bookmark_start id: 'h', name: 'head'
+          p 'head'
+          bookmark_end id: 'h'
+          raw_xml '<w:p><w:r><w:t>raw</w:t></w:r></w:p>'
+        end
+      end
+      header = xml docx, 'word/header1.xml'
+      expect(header.root.elements.map(&:name)).to eq %w(bookmarkStart p bookmarkEnd p)
+      expect(header.xpath('//w:bookmarkStart/@w:id | //w:bookmarkEnd/@w:id', ns).map(&:value)).to eq %w(1 1)
+      expect(texts header).to eq %w(head raw)
+    end
+
     it 'renders an empty paragraph when empty' do
       docx = Caracal::Document.new { header }
       header = xml docx, 'word/header1.xml'

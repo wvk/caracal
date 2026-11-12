@@ -189,6 +189,31 @@ describe Caracal::Renderers::DocumentRenderer do
     it { expect(cell_texts(xml.at_xpath('//w:tbl/w:tr', ns))).to eq %w(lambda proc arg) }
   end
 
+  describe 'bookmarks and raw xml in table cells' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.bookmark_start id: 'b', name: 'body'
+        docx.p 'body'
+        docx.bookmark_end id: 'b'
+        cell = Caracal::Core::Models::TableCellModel.new do
+          bookmark_start id: 'c', name: 'cell'
+          p 'cell'
+          bookmark_end id: 'c'
+          raw_xml '<w:p><w:r><w:t>raw</w:t></w:r></w:p>'
+        end
+        docx.table [[cell]]
+      end
+    end
+    let(:tc) { xml.at_xpath('//w:tc', ns) }
+
+    # a cell not ending in a paragraph model gets an empty one
+    it { expect(tc.elements.map(&:name)).to eq %w(tcPr bookmarkStart p bookmarkEnd p p) }
+    it { expect(cell_texts(xml.at_xpath('//w:tr', ns))).to eq ['cellraw'] }
+    it { expect(tc.at_xpath('w:bookmarkStart/@w:name', ns).value).to eq 'cell' }
+    it { expect(xml.xpath('//w:bookmarkStart/@w:id', ns).map(&:value)).to eq %w(1 2) }
+    it { expect(tc.at_xpath('w:bookmarkEnd/@w:id', ns).value).to eq '2' }
+  end
+
   describe 'table cell margins' do
     def tc_mar(tc)
       tc.xpath('w:tcPr/w:tcMar/*', ns).map {|m| [m.name, m['w:w']] }

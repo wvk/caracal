@@ -190,6 +190,11 @@ module Caracal
       @drawing_counter = @drawing_counter.to_i + 1
     end
 
+    # bookmark ids are unique across body, headers and footers
+    def next_bookmark_id
+      @bookmark_counter = @bookmark_counter.to_i + 1
+    end
+
     #============ RENDERING ===============================
 
     # This method renders the word document instance into
@@ -198,6 +203,7 @@ module Caracal
     def render
       reset_numbering
       @drawing_counter = 0
+      @bookmark_counter = 0
       prepare_headers_and_footers
 
       buffer = ::Zip::OutputStream.write_buffer do |zip|

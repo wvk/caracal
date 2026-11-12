@@ -83,7 +83,7 @@ module Caracal
       end
 
       def next_bookmark_id
-        @bookmark_counter = @bookmark_counter.to_i + 1
+        document.next_bookmark_id
       end
 
       def close_bookmark(key)

@@ -83,6 +83,10 @@ module Caracal
       document.next_drawing_id
     end
 
+    def next_bookmark_id
+      document.next_bookmark_id
+    end
+
     def find_list_style(type, level)
       document.find_list_style type, level
     end

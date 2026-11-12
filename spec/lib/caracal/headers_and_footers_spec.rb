@@ -116,6 +116,33 @@ describe 'headers and footers' do
     end
   end
 
+  describe 'bookmark ids' do
+    let(:docx) do
+      Caracal::Document.new do
+        header { bookmark_start id: 'h', name: 'head'; p 'head'; bookmark_end id: 'h' }
+        footer { bookmark_start id: 'f', name: 'foot'; p 'foot'; bookmark_end id: 'f' }
+        bookmark_start id: 'b', name: 'body'
+        p 'body'
+        bookmark_end id: 'b'
+      end
+    end
+
+    def bookmark_ids(rendered)
+      %w(word/header1.xml word/footer1.xml word/document.xml).map do |name|
+        Nokogiri::XML(rendered.fetch name).xpath('//w:bookmarkStart/@w:id', ns).map(&:value)
+      end
+    end
+
+    it 'are unique across all parts' do
+      expect(bookmark_ids(parts docx).flatten.sort).to eq %w(1 2 3)
+    end
+
+    it 'restart with each rendering' do
+      parts docx
+      expect(bookmark_ids(parts docx).flatten.sort).to eq %w(1 2 3)
+    end
+  end
+
   describe 'footer contents' do
     it 'evaluates the block form and renders all contents in order' do
       docx = Caracal::Document.new do

@@ -352,6 +352,72 @@ describe Caracal::Document do
       end
     end
 
+    describe 'with an SVG image' do
+      let(:svg) { %(<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect width="10" height="10" fill="blue"/></svg>) }
+      let(:data) do
+        png, svg = self.png, self.svg
+        described_class.new('inner.docx') { img 'a.png', data: png, svg: svg, width: 10, height: 10 }.render.string
+      end
+
+      # the raster and the SVG media each picture of the part points at, in document order
+      def pictures(files, part)
+        blip_ns = { 'a'    => 'http://schemas.openxmlformats.org/drawingml/2006/main',
+                    'asvg' => 'http://schemas.microsoft.com/office/drawing/2016/SVG/main',
+                    'r'    => 'http://schemas.openxmlformats.org/officeDocument/2006/relationships' }
+        rels_ns = { 'r' => 'http://schemas.openxmlformats.org/package/2006/relationships' }
+        rels    = strict_xml(files["word/_rels/#{ part }.rels"])
+        media   = ->(id) { files["word/#{ rels.at_xpath("//r:Relationship[@Id='#{ id }']", rels_ns)&.attr('Target') }"] }
+
+        strict_xml(files["word/#{ part }"]).xpath('//a:blip', blip_ns).map do |blip|
+          svg_id = blip.at_xpath('a:extLst/a:ext/asvg:svgBlip/@r:embed', blip_ns)&.value
+          [media[blip['r:embed']], (media[svg_id] if svg_id)]
+        end
+      end
+
+      it 'copies the SVG part and points the picture at it' do
+        data  = self.data
+        docx  = described_class.new('test.docx') { |d| d.iframe data: data }
+        files = parts(docx)
+
+        expect(pictures(files, 'document.xml')).to eq [[png, svg]]
+        expect(files.keys.grep(%r{\Aword/media/image-\h{16}\.svg\z}).size).to eq 1
+      end
+
+      it 'points the picture at its SVG part when the parent uses its ids' do
+        jpeg, image_bytes, data = self.jpeg, self.image_bytes, self.data
+        docx = described_class.new('test.docx') do |d|
+          # the images take rId6 and rId7, the ids of the picture's parts in the snippet
+          d.img 'x.jpg', data: jpeg, width: 10, height: 10
+          d.img 'y.png', data: image_bytes, width: 10, height: 10
+          d.iframe data: data
+        end
+
+        expect(pictures(parts(docx), 'document.xml')).to eq [[jpeg, nil], [image_bytes, nil], [png, svg]]
+      end
+
+      it 'points the picture at its SVG part in every part that shows the iframe' do
+        data = self.data
+        docx = described_class.new('test.docx') do |d|
+          d.header do |h|
+            # the links take rId1 to rId6, so the raster image gets the id the SVG image has in the snippet
+            6.times { |i| h.p { link "x#{ i }", "https://x.example/#{ i }" } }
+            h.iframe data: data
+          end
+          d.footer { |f| f.iframe data: data }
+          d.page_numbers true, first_page: false   # copies header and footer to the first page
+          d.p { link 'x', 'https://x.example/' }
+          d.iframe data: data
+        end
+
+        2.times do
+          files = parts(docx)
+          %w(document.xml header1.xml header2.xml footer1.xml footer2.xml).each do |part|
+            expect(pictures(files, part)).to eq([[png, svg]]), part
+          end
+        end
+      end
+    end
+
     describe 'with hyperlinks' do
       let(:data) do
         described_class.new('inner.docx') { p { link 'embedded link', 'https://embedded.example/' } }.render.string

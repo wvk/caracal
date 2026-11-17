@@ -104,6 +104,28 @@ describe Caracal::Core::Models::IFrameModel do
           expect(model.relationships).to eq [{ id: 'rId6', type: 'link', target: 'https://embedded.example/' }]
         end
       end
+      describe 'when the document has an SVG image' do
+        let(:png) { 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='.unpack1('m') }
+        let(:svg) { '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>' }
+        let(:model) do
+          png, svg = self.png, self.svg
+          data = Caracal::Document.new do
+            img 'a.png', data: png, svg: svg, width: 10, height: 10
+            img 'b.png', data: png, width: 10, height: 10
+          end.render.string
+          described_class.new data: data, document: document
+        end
+
+        before { model.preprocess! }
+
+        it 'collects the raster and the SVG image of each picture' do
+          expect(model.relationships.map { |r| r.except(:target) }).to eq [
+            { id: 'rId6', type: 'image', data: png },
+            { id: 'rId7', type: 'image', data: svg, extension: 'svg' },
+            { id: 'rId8', type: 'image', data: png }
+          ]
+        end
+      end
       describe 'when the document has lists' do
         let(:ns) { described_class::WORDML_NS }
         let(:model) do

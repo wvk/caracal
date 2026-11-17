@@ -13,6 +13,9 @@ module Caracal
         DEFAULT_MAX_ENTRY_SIZE = 50 * 1024 * 1024   # 50MB
 
         WORDML_NS = { w: 'http://schemas.openxmlformats.org/wordprocessingml/2006/main' }.freeze
+        SVG_BLIP_NS = { a:    'http://schemas.openxmlformats.org/drawingml/2006/main',
+                        asvg: 'http://schemas.microsoft.com/office/drawing/2016/SVG/main',
+                        r:    'http://schemas.openxmlformats.org/officeDocument/2006/relationships' }.freeze
 
         has_string_attribute :url
         has_string_attribute :data
@@ -109,6 +112,12 @@ module Caracal
 
               # register relationship
               array << { id: r_id, type: 'image', target: p_name, data: p_data }
+
+              # the SVG image a picture shows instead of its raster image
+              svg_id = r_node.at_xpath('a:extLst/a:ext/asvg:svgBlip/@r:embed', SVG_BLIP_NS)&.value
+              if (svg_media = media_map[svg_id])
+                array << { id: svg_id, type: 'image', target: p_name, data: self.class.read_entry(zip.glob(svg_media).first), extension: 'svg' }
+              end
               array
             end
 

@@ -464,8 +464,22 @@ All styles of one font should be files of the same font family: Word uses only o
 
 Embedded fonts are obfuscated as required by ECMA-376 §17.8.1. Use `obfuscate false` to embed the plain font files instead; Word reads those as well.
 
+The fonts embedded in a Word template are obfuscated `.odttf` files in its `word/fonts/` folder. Pass such a file with its `key`: the `w:fontKey` GUID of the `w:embedRegular`, `w:embedBold`, … element in the template's `word/fontTable.xml` whose `r:id` names the file in `word/_rels/fontTable.xml.rels`. Word gives every file its own key, so `key` takes one GUID for all styles of the font or a Hash of GUIDs by style; styles without a key are read as plain font files. The braces around the GUID are optional. Caracal de-obfuscates each file and embeds it like any other font file.
+
+```ruby
+docx.font name: 'Work Sans', regular: 'template/word/fonts/font4.odttf', key: '{6F1C2A9E-4B7D-4E21-A3C5-8D90B1E2F347}'
+
+docx.font do
+  name    'Assistant'
+  regular 'template/word/fonts/font1.odttf'
+  bold    'template/word/fonts/font2.odttf'
+  key     regular: '{3D8A5B10-7C2E-4F69-9E41-B6A0C5D7E812}', bold: '{A47E0C93-1B5F-4D28-8C6A-2F9E3B4D5061}'
+end
+```
+
 Caracal checks every font file when it is added and raises `Caracal::Errors::InvalidFontError` if
 
+* an `.odttf` file does not de-obfuscate to a font with its `key`, as with a wrong key, or the key is not a GUID,
 * the file is not a single TrueType/OpenType font (font collections and WOFF files are not supported),
 * the font has CFF (PostScript) outlines, which is common for `.otf` files: only TrueType outlines are supported,
 * the font's license forbids embedding (OpenType `fsType`: Restricted License, or Bitmap embedding only).

@@ -106,6 +106,7 @@ module Caracal
         # sum of the grid columns it spans.
         #
         def calculate_width(container_width, container)
+          fit_contents?
           if self.table_width.to_i.zero?
             # column widths covering the whole grid define the table width
             given = table_column_widths.to_a.first grid_column_count
@@ -120,6 +121,17 @@ module Caracal
             cell.width cell_width
             cell.calculate_width cell_width, self
           end
+        end
+
+        # Whether Word sizes the columns to their contents: an autofit
+        # table given no table, column or cell widths. Decided before
+        # calculate_width fills in the widths.
+        def fit_contents?
+          if @fit_contents.nil?
+            @fit_contents = (table_layout == :autofit and table_width.to_i.zero? and
+                table_column_widths.nil? and cells.none? {|cell| cell.cell_width.to_i > 0 })
+          end
+          @fit_contents
         end
 
         # Widths of the table grid columns. Explicit column_widths win.

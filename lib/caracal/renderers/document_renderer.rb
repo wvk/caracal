@@ -518,7 +518,11 @@ module Caracal
             w.tblStyle            'w:val' => model.table_style || 'TableNormal'         #unless model.table_style.nil?
             # w.tblStyleRowBandSize 'w:val' => model.table_row_band_size unless model.table_row_band_size.nil?
             # w.tblStyleColBandSize 'w:val' => model.table_col_band_size unless model.table_col_band_size.nil?
-            w.tblW                'w:w'   => model.table_width.to_i, 'w:type' => 'dxa' unless model.table_width.nil?
+            if model.fit_contents?
+              w.tblW              'w:w'   => 0, 'w:type' => 'auto'
+            elsif model.table_width
+              w.tblW              'w:w'   => model.table_width.to_i, 'w:type' => 'dxa'
+            end
             w.jc                  'w:val' => model.table_align
             w.tblCellSpacing      'w:w'   => model.table_border_spacing, 'w:type' => 'dxa' unless model.table_border_spacing.nil?
             w.tblInd              'w:w'   => model.table_indent, 'w:type' => 'dxa' unless model.table_indent.nil?
@@ -570,7 +574,9 @@ module Caracal
                     end
 
                     spanned = column_widths[grid_col, tc.grid_span].to_a
-                    if spanned.size == tc.grid_span and spanned.all?
+                    if model.fit_contents?
+                      w.tcW 'w:w' => 0, 'w:type' => 'auto'
+                    elsif spanned.size == tc.grid_span and spanned.all?
                       w.tcW 'w:w' => spanned.sum, 'w:type' => 'dxa'
                     end
 

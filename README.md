@@ -887,6 +887,8 @@ end
 
 *`column_widths` covering every column also sets the table width, unless `width` is given; other columns share the rest of the table width.*
 
+*`layout :autofit` without `width`, `column_widths` or cell widths lets Word size the columns to their contents. Given widths stay the preferred widths.*
+
 Any table-level border option draws all table borders. A table without border options shows its style's borders; the default style has none.
 
 Table borders can be further styled with position-specific options. Caracal supports styling the top, bottom, left, right, inside horizontal, and inside vertical borders with the `border_top`, `border_bottom`, `border_left`, `border_right`, `border_horizontal`, and `border_vertical`, respectively. Options have the same meaning as those set at the table level, and options not given fall back to the table-level ones.

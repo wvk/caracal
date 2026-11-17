@@ -291,4 +291,43 @@ describe Caracal::Renderers::DocumentRenderer do
       expect(Nokogiri::XML(described_class.render(doc)).at_xpath('//w:trHeight/@w:val', ns).value).to eq '300'
     end
   end
+
+  describe 'autofit to contents' do
+    let(:tbl_w) { xml.xpath('//w:tbl/w:tblPr/w:tblW', ns).map {|w| [w['w:w'], w['w:type']] } }
+    let(:tc_w)  { xml.xpath('//w:tbl/w:tr/w:tc/w:tcPr/w:tcW', ns).map {|w| [w['w:w'], w['w:type']] } }
+
+    describe 'without widths' do
+      let(:document) { Caracal::Document.new {|docx| docx.table [['short', 'longer content']], layout: :autofit } }
+
+      it { expect(tbl_w).to eq [%w(0 auto)] }
+      it { expect(tc_w).to eq [%w(0 auto), %w(0 auto)] }
+      it { expect(xml.xpath('//w:tblGrid/w:gridCol/@w:w', ns).map(&:value)).to eq %w(4680 4680) }
+      it { expect(xml.at_xpath('//w:tblLayout/@w:type', ns).value).to eq 'autofit' }
+    end
+
+    describe 'with column widths' do
+      let(:document) { Caracal::Document.new {|docx| docx.table [['a', 'b']], layout: :autofit, column_widths: [2000, 3000] } }
+
+      it { expect(tbl_w).to eq [%w(5000 dxa)] }
+      it { expect(tc_w).to eq [%w(2000 dxa), %w(3000 dxa)] }
+    end
+
+    describe 'with a cell width' do
+      let(:document) do
+        Caracal::Document.new do |docx|
+          docx.table [['a', 'b']], layout: :autofit do
+            cell_style rows[0][0], width: 2000
+          end
+        end
+      end
+
+      it { expect(tc_w).to eq [%w(2000 dxa), %w(7360 dxa)] }
+    end
+
+    describe 'with a fixed layout' do
+      let(:document) { Caracal::Document.new {|docx| docx.table [['a', 'b']] } }
+
+      it { expect(tbl_w).to eq [%w(9360 dxa)] }
+    end
+  end
 end

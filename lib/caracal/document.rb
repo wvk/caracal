@@ -21,6 +21,7 @@ require 'caracal/core/page_numbers'
 require 'caracal/core/page_settings'
 require 'caracal/core/relationships'
 require 'caracal/core/rules'
+require 'caracal/core/sections'
 require 'caracal/core/styles'
 require 'caracal/core/tables'
 require 'caracal/core/table_of_contents'
@@ -65,6 +66,7 @@ module Caracal
     include Caracal::Core::Fonts
     include Caracal::Core::PageSettings
     include Caracal::Core::PageNumbers
+    include Caracal::Core::Sections
     include Caracal::Core::Styles
     include Caracal::Core::ListStyles
     include Caracal::Core::Theme
@@ -277,29 +279,53 @@ module Caracal
       end
     end
 
-    # Decides which header and footer parts the document writes. The page
-    # number goes below the default footer's content, which is created if
-    # necessary, and on the first page too unless first_page: false. A first
-    # page without its own header or footer shows the default one's content.
+    # Decides which header and footer parts the document writes and which
+    # section refers to which. The document's header and footer start the
+    # first section; a later section shows its own or else the previous
+    # section's. The page number goes below the default footer's content,
+    # which is created if necessary, and on the first page too unless
+    # first_page: false. A first page without its own header or footer
+    # shows the default one's content.
     def prepare_headers_and_footers
       footer if page_number_show
 
-      parts = [headers[:default], footers[:default]]
-      if title_page?
-        parts << (headers[:first] || first_page_copy(Header, headers[:default]))
-        parts << (footers[:first] || first_page_copy(Footer, footers[:default]))
-      end
-      parts.compact!
+      chosen   = [] # [section, part, type]
+      defaults = {} # part class => the default part the previous section shows
+      sections.each_with_index do |section, index|
+        section.references = []
+        title_page = section.title_page? index.zero?
 
-      parts.grep(Footer).each do |part|
-        shown = (part.type == :default or page_number_first_page)
-        part.page_number_paragraph = (page_number_paragraph if shown)
+        { Header => [headers, section.headers], Footer => [footers, section.footers] }.each do |klass, (document_parts, own)|
+          own   = document_parts.merge own if index.zero?
+          slots = { default: own[:default] }
+          defaults[klass] = own[:default] if own[:default]
+          if title_page
+            slots[:first] = own[:first] || first_page_copy(klass, defaults[klass], (section unless section.document_level?))
+          end
+
+          slots.each do |type, part|
+            next if part.nil?
+
+            if part.is_a? Footer
+              part.page_number_paragraph = (page_number_paragraph if type == :default or page_number_first_page)
+            end
+
+            # the first section leaves a blank first-page part out, like
+            # upstream caracal does: with titlePg set, the first page shows
+            # nothing where no part is referenced. A later section's would
+            # show an earlier section's part.
+            blank = (part.contents.empty? and not (part.is_a? Footer and part.page_number_paragraph))
+            next if type == :first and blank and index.zero?
+
+            chosen << [section, part, type]
+          end
+        end
       end
 
-      # a blank first-page part is left out, like upstream caracal does: with
-      # titlePg set, the first page shows nothing where no part is referenced
-      parts.reject! do |part|
-        part.type == :first and part.contents.empty? and not (part.is_a? Footer and part.page_number_paragraph)
+      # the parts of sections follow the document's own header1 and header2
+      parts = chosen.map {|_, part, _| part }.uniq
+      [Header, Footer].each do |klass|
+        parts.grep(klass).select(&:section).each_with_index {|part, i| part.index = 3 + i }
       end
 
       parts.each {|part| register_nested_iframes part.contents, part }
@@ -311,7 +337,8 @@ module Caracal
           relationships.delete rel unless wanted[rel.relationship_target].equal? rel.owner
         end
       end
-      parts.each {|part| relationship part.relationship_params }
+      rels = parts.to_h {|part| [part, relationship(part.relationship_params)] }
+      chosen.each {|section, part, type| section.references << [rels[part], type] }
     end
 
     # Numbers the footnotes in the order of their references. The document
@@ -343,14 +370,18 @@ module Caracal
     end
 
     # A first-page part showing the given default part's content, or nil
-    # when there is nothing to show.
-    def first_page_copy(klass, source)
-      return if source.nil?
-      return if source.contents.empty? and not (klass == Footer and page_number_show and page_number_first_page)
+    # when there is nothing to show. A section's may be blank, as its
+    # first page would otherwise show the previous section's.
+    def first_page_copy(klass, source, section = nil)
+      if section.nil?
+        return if source.nil?
+        return if source.contents.empty? and not (klass == Footer and page_number_show and page_number_first_page)
+      end
 
       copies = (@first_page_copies ||= {})
-      copies[klass] = klass.new(index: 2, type: :first, document: self, source: source) unless copies[klass]&.source.equal? source
-      copies[klass]
+      key    = [klass, section]
+      copies[key] = klass.new(index: 2, type: :first, document: self, source: source, section: section) unless copies[key]&.source.equal? source
+      copies[key]
     end
 
     #============ RENDERERS ===============================

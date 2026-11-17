@@ -339,6 +339,49 @@ docx.p 'Second column.'
 Rules fit one column. Tables added after `page_columns` default to the width of one column.
 
 
+### Sections
+
+The `section` method gives part of the document its own page size, margins, columns, headers and footers, such as a landscape page for a wide table in a portrait document. The content added in its block forms a section. The content before it stays in the section before, and the content after it continues in a section with the document's settings. Each section starts on a new page.
+
+```ruby
+docx.p 'Portrait text.'
+
+docx.section page_size: { width: 15840, height: 12240, orientation: :landscape }, page_margins: { top: 720, bottom: 720 } do
+  docx.table wide_data    # spans the landscape page
+end
+
+docx.p 'Portrait text again.'
+```
+
+`page_size` and `page_margins` take the options of the methods of the same name, `columns` a column count or a hash such as `{ count: 2, spacing: 360 }`. Options, dimensions and sides not given keep the document's settings; as with `page_size`, landscape needs both the dimensions and the orientation. Tables and rules added in the block fit the section's page and columns. Invalid options, margins that don't fit the page, and a `section` inside another raise `Caracal::Errors::InvalidModelError`.
+
+A section shows the headers and footers of the section before it unless it has its own; the document's `header` and `footer` start the first section. `header` and `footer` take a block with the content, such as a lambda, or a `Caracal::Header` or `Caracal::Footer` whose content the section shows, such as the document's own:
+
+```ruby
+docx.section header: -> { p 'Appendix', align: :right } do
+  docx.h1 'Appendix A'
+end
+
+docx.p 'This section shows the appendix header too.'
+
+docx.section header: docx.header do
+  docx.p 'This section shows the document header again.'
+end
+```
+
+Headers and footers given as blocks fit the section's page. A header or footer shown from elsewhere keeps the width of the page it was made for.
+
+For a different first page, pass a hash with `default` and `first`. As on the document's first page, a first page without its own header or footer shows the section's default one, and the page number unless `page_numbers` has `first_page: false`. An empty block leaves it blank:
+
+```ruby
+docx.section header: { default: -> { p 'Chapter 2' }, first: -> {} } do   # no header on the chapter's first page
+  docx.h1 'Chapter 2'
+end
+```
+
+`different_first_page: true` or `false` turns the different first page on or off; a first-page header or footer turns it on. The first section has a different first page when the document does. The page number runs on through the sections from `page_numbers`' `start` and appears below the content of a section's own footers too.
+
+
 ### Page Breaks
 
 Page breaks can be added via the `page` method.  The method accepts no parameters.

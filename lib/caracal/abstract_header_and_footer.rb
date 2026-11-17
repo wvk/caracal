@@ -43,15 +43,20 @@ module Caracal
     include Caracal::Core::Text
     include Caracal::Core::RawXml
 
-    attr_reader :index, :type, :document, :source
+    attr_reader :index, :type, :document, :source, :section
+
+    # the document numbers the parts of sections when it renders
+    attr_writer :index
 
     # A part with a source shows the source's content, e.g. a first page
-    # without its own header shows the default header's content.
-    def initialize(index: 1, type: :default, document: nil, source: nil, &block)
+    # without its own header shows the default header's content. A
+    # section's part fits the section's page.
+    def initialize(index: 1, type: :default, document: nil, source: nil, section: nil, &block)
       @index = index
       @type = type
       @document = document
       @source = source
+      @section = section
       page_size
       page_margins top: 1440, bottom: 1440, left: 1440, right: 1440
 
@@ -67,7 +72,7 @@ module Caracal
 
     # Evaluates a DSL block against this header or footer.
     def configure(&block)
-      (block.arity < 1) ? instance_eval(&block) : block[self] if block
+      (block.arity < 1) ? instance_exec(&block) : block[self] if block
       self
     end
 
@@ -104,11 +109,13 @@ module Caracal
       document.document_theme
     end
 
-    # Headers and footers span the document's page between its margins.
+    # Headers and footers span the page between its margins: their
+    # section's page, or the document's.
     def page_content_width
       return super unless document
 
-      document.page_width - document.page_margin_left - document.page_margin_right
+      page = section ? section.page : document
+      page.page_width - page.page_margin_left - page.page_margin_right
     end
   end
 end

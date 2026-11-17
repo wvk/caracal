@@ -17,31 +17,11 @@ module Caracal
             w.body do
               #============= CONTENTS ===================================
 
-              document.contents.each do |model|
-                method = render_method_for_model(model)
-                send(method, xml, model)
-              end
+              render_contents xml
 
               #============= PAGE SETTINGS ==============================
 
-              w.sectPr do
-                document.relationships_by_type(:header).each do |rel|
-                  header = rel.owner
-                  w.headerReference 'r:id' => rel.formatted_id, 'w:type' => (header.type || 'default')
-                end
-
-                document.relationships_by_type(:footer).each do |rel|
-                  footer = rel.owner
-                  w.footerReference 'r:id' => rel.formatted_id, 'w:type' => (footer.type || 'default')
-                end
-
-                w.pgSz page_size_options
-                w.pgMar page_margin_options
-                w.pgNumType 'w:start' => document.page_number_start unless document.page_number_start.nil?
-                w.cols 'w:num' => document.page_column_count, 'w:space' => document.page_column_spacing if document.page_column_count.to_i > 1
-
-                w.titlePg if document.title_page?
-              end
+              render_section_properties xml, document.sections.last
 
             end
           end
@@ -50,6 +30,50 @@ module Caracal
       end
 
       private
+
+      #============= SECTIONS ==================================
+
+      # Each section but the last ends in a paragraph holding its
+      # properties: its last paragraph, or else an empty one, 1pt high.
+      # The last section's properties end the body.
+      def render_contents(xml)
+        contents = document.contents
+        sections = document.sections
+
+        contents.each_with_index do |model, index|
+          if model.is_a? Caracal::Core::Models::SectionModel
+            next if model.equal? sections.last or (index > 0 and contents[index - 1].is_a? Caracal::Core::Models::ParagraphModel)
+
+            closing = Caracal::Core::Models::ParagraphModel.new size: 2, top: 0, bottom: 0, line: 20, line_rule: :exact
+            render_paragraph xml, closing, section: model
+          elsif model.is_a? Caracal::Core::Models::ParagraphModel
+            following = contents[index + 1]
+            closed    = following if following.is_a? Caracal::Core::Models::SectionModel and not following.equal? sections.last
+            render_paragraph xml, model, section: closed
+          else
+            send render_method_for_model(model), xml, model
+          end
+        end
+      end
+
+      def render_section_properties(xml, section)
+        w     = xml['w']
+        page  = section.page
+        first = section.equal? document.sections.first
+
+        w.sectPr do
+          section.references.to_a.each do |rel, type|
+            w.send "#{ rel.relationship_type }Reference", 'r:id' => rel.formatted_id, 'w:type' => type
+          end
+
+          w.pgSz page_size_options(page)
+          w.pgMar page_margin_options(page)
+          w.pgNumType 'w:start' => document.page_number_start if first and not document.page_number_start.nil?
+          w.cols 'w:num' => page.page_column_count, 'w:space' => page.page_column_spacing if page.page_column_count.to_i > 1
+
+          w.titlePg if section.title_page? first
+        end
+      end
 
       #============= COMMON RENDERERS ==========================
 
@@ -585,7 +609,8 @@ module Caracal
         render_pagebreak xml, model, type: 'column'
       end
 
-      def render_paragraph(xml, model, **options)
+      # A paragraph closing a section holds the section's properties.
+      def render_paragraph(xml, model, section: nil, **options)
         w = xml['w']
         w.p paragraph_options do
           w.pPr do
@@ -603,6 +628,7 @@ module Caracal
             w.contextualSpacing 'w:val' => false
             w.jc                'w:val' => model.paragraph_align unless model.paragraph_align.nil?
             render_run_attributes xml, model, skip_empty: false
+            render_section_properties xml, section if section
           end
 
           model.runs.each do |run|
@@ -866,23 +892,23 @@ module Caracal
         opts
       end
 
-      def page_margin_options
+      def page_margin_options(page)
         {
-          'w:top'    => document.page_margin_top,
-          'w:bottom' => document.page_margin_bottom,
-          'w:left'   => document.page_margin_left,
-          'w:right'  => document.page_margin_right,
+          'w:top'    => page.page_margin_top,
+          'w:bottom' => page.page_margin_bottom,
+          'w:left'   => page.page_margin_left,
+          'w:right'  => page.page_margin_right,
           'w:header' => 720,
           'w:footer' => 720,
           'w:gutter' => 0
         }
       end
 
-      def page_size_options
+      def page_size_options(page)
         {
-          'w:w'       => document.page_width,
-          'w:h'       => document.page_height,
-          'w:orient'  => document.page_orientation
+          'w:w'       => page.page_width,
+          'w:h'       => page.page_height,
+          'w:orient'  => page.page_orientation
         }
       end
 

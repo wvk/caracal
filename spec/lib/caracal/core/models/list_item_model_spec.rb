@@ -170,6 +170,27 @@ describe Caracal::Core::Models::ListItemModel do
         it { expect(subject.recursive_items.map(&:continuation?)).to eq [false, false, true] }
         it { expect(subject.runs.size).to eq 2 }
       end
+      describe 'when the nested list is at the deepest level' do
+        subject { described_class.new type: :ordered, level: 7, content: 'Item text.' }
+
+        before { subject.ol { li 'Nested item text.' } }
+
+        it { expect(subject.nested_list.list_level).to eq 8 }
+      end
+      describe 'when the item is at the deepest level' do
+        subject { described_class.new type: :ordered, level: 8, content: 'Item text.' }
+
+        it { expect { subject.ol { li 'Nested item text.' } }.to raise_error(Caracal::Errors::InvalidModelError, /nine levels deep \(levels 0 to 8\)/) }
+      end
+    end
+
+    # .ul
+    describe '.ul' do
+      describe 'when the item is at the deepest level' do
+        subject { described_class.new type: :unordered, level: 8, content: 'Item text.' }
+
+        it { expect { subject.ul { li 'Nested item text.' } }.to raise_error(Caracal::Errors::InvalidModelError, /nine levels deep \(levels 0 to 8\)/) }
+      end
     end
 
 

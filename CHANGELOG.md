@@ -17,6 +17,7 @@
   * `p` and `li` write `keep_lines` and `widow_control`; `left` and `right` indent `p`, `li` and paragraph styles (#18).
   * `toc` writes its heading only when given a `legend`; its error for invalid levels names the range 1 to 6 (#9).
   * A document with an iframe holding images renders more than once, for example `render` and then `save`; the second render raised `NoMethodError` (#4).
+  * A list nested ten levels deep raises `Caracal::Errors::InvalidModelError` when it is built, naming the nine-level limit; it raised `NoMethodError` while rendering (#7).
 
 #### v2.0.0
 

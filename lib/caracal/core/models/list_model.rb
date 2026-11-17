@@ -11,6 +11,8 @@ module Caracal
       # list data.
       #
       class ListModel < BaseModel
+        MAX_LEVEL = 8 # OOXML numbering has nine levels, 0 to 8.
+
         attr_accessor :numbering_id # identifies the numbering of this list's items. Set during document rendering.
 
         use_prefix :list

@@ -79,6 +79,31 @@ describe 'headers and footers' do
       expect(num_id['word/header1.xml']).not_to eq num_id['word/document.xml']
     end
 
+    it 'defines the numberings of a list shown in several parts' do
+      docx = Caracal::Document.new do
+        header { ol { li('header item') { ul { li 'nested item' } } } }
+        page_numbers true, first_page: false
+        p 'body'
+        section(header: header) { p 'section' }
+      end
+      rendered = parts docx
+      num_ids  = ->(part) { Nokogiri::XML(rendered.fetch part).xpath('//w:numPr/w:numId/@w:val', ns).map(&:value) }
+      headers  = rendered.keys.grep(%r{\Aword/header\d+\.xml\z}).sort
+      numbering = Nokogiri::XML rendered.fetch('word/numbering.xml')
+
+      # the default header, its first-page copy and the section's copy
+      expect(headers.size).to eq 3
+      used = headers.map {|part| num_ids[part].uniq }
+      expect(used).to all(have_attributes size: 1)
+      used = used.flatten
+      expect(used.uniq.size).to eq 3
+      expect(numbering.xpath('//w:num/@w:numId', ns).map(&:value)).to match_array used
+      used.each do |id|
+        levels = numbering.xpath("//w:abstractNum[@w:abstractNumId='#{ id }']/w:lvl/w:numFmt/@w:val", ns).map(&:value)
+        expect(levels).to eq %w(decimal bullet)
+      end
+    end
+
     it 'renders bookmarks and raw xml' do
       docx = Caracal::Document.new do
         header do

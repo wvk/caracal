@@ -36,19 +36,18 @@ module Caracal
           @items ||= []
         end
 
-        # This method returns a hash of the numberings used by this
-        # list's tree, set by assign_numbering. The keys are numbering
-        # ids and the values map each level to its list type.
-        def numberings
-          @numberings || {}
-        end
-
         # This method gives this list and its nested lists their numbering
         # ids, taking new ids from the block. A nested list shares its
         # parent's numbering unless that uses another list type at its
         # level; then it starts a new numbering, so that its markers match
         # its type.
-        def assign_numbering(numberings = (@numberings = {}), parent_id = nil, &next_id)
+        #
+        # It returns the numberings it assigned: the keys are numbering ids
+        # and the values map each level to its list type. A list shown in
+        # several parts, such as a header and its first-page copy, gets
+        # new ids each time it is rendered, so the caller keeps the
+        # numberings of every call.
+        def assign_numbering(numberings = {}, parent_id = nil, &next_id)
           inherited = numberings[parent_id]
           if inherited.nil? or not [nil, list_type].include? inherited[list_level]
             self.numbering_id = next_id.call
@@ -61,6 +60,7 @@ module Caracal
           items.each do |item|
             item.nested_lists.each {|(_, list)| list.assign_numbering numberings, numbering_id, &next_id }
           end
+          numberings
         end
 
         # This method returns a flattened array containing every

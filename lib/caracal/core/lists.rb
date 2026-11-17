@@ -34,8 +34,10 @@ module Caracal
           end
 
           #============== GETTERS ==========================
-          def toplevel_lists
-            @toplevel_lists ||= []
+          # The numberings of the lists rendered so far, by numbering id.
+          # Each maps a list level to its list type.
+          def list_numberings
+            @list_numberings ||= {}
           end
 
         end

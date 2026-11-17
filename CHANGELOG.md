@@ -19,6 +19,7 @@
   * `section` gives the content of its block its own page size, margins, columns, headers and footers, such as a landscape page in a portrait document; a section without its own headers and footers shows the previous section's (#12).
 
 * Bug fixes
+  * `numbering.xml` defines the numberings of a list shown in several parts, such as a header and its first-page copy; the earlier parts pointed at numberings it left out (#37).
   * Tables in headers and footers take the document's page width; they used US Letter's.
   * `p` and `li` write `keep_lines` and `widow_control`; `left` and `right` indent `p`, `li` and paragraph styles (#18).
   * `toc` writes its heading only when given a `legend`; its error for invalid levels names the range 1 to 6 (#9).

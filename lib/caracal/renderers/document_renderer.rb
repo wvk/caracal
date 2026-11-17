@@ -539,8 +539,7 @@ module Caracal
 
       def render_list(xml, model, **options)
         if model.list_level == 0
-          document.toplevel_lists << model
-          model.assign_numbering { document.next_numbering_id }
+          document.list_numberings.merge! model.assign_numbering { document.next_numbering_id }
         end
 
         model.items.flat_map(&:parts).each do |part|

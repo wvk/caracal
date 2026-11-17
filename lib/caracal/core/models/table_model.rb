@@ -27,6 +27,9 @@ module Caracal
         has_symbol_attribute :align, default: :center
 
         has_integer_attribute :repeat_header, default: 0
+        # upstream caracal's name for repeat_header
+        alias_method :header_rows, :repeat_header
+        alias_method :table_header_rows, :table_repeat_header
         has_integer_attribute :row_band_size, default: 1
         has_integer_attribute :col_band_size, default: 1
         has_integer_attribute :width
@@ -180,6 +183,17 @@ module Caracal
 
         #=============== SETTERS ==============================
 
+        # Keeps one row, or each of several rows, from breaking across a
+        # page, e.g. `cant_split rows[1...-1]`.
+        def cant_split(models)
+          models = [models] if rows.include? models
+          models.each {|row| cant_split_rows << rows.index(row) }
+        end
+
+        def cant_split?(row_index)
+          cant_split_rows.include? row_index
+        end
+
         # column widths
         def column_widths(value)
           @table_column_widths = value.map &:to_i if value.is_a? Array
@@ -257,13 +271,17 @@ module Caracal
           widths[cols.last] += rest
         end
 
+        def cant_split_rows
+          @cant_split_rows ||= []
+        end
+
         def option_keys
           k = []
           k << [:data, :align, :width, :style, :layout, :caption, :indent]
           k << HasBackground::ATTRS
           k << HasBorders::ATTRS
           k << [:column_widths]
-          k << [:repeat_header, :row_band_size, :col_band_size]
+          k << [:repeat_header, :header_rows, :row_band_size, :col_band_size]
           k.flatten
         end
 

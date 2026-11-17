@@ -37,8 +37,9 @@ module Caracal
 
                 w.pgSz page_size_options
                 w.pgMar page_margin_options
+                w.pgNumType 'w:start' => document.page_number_start unless document.page_number_start.nil?
 
-                w.titlePg if document.different_first_page?
+                w.titlePg if document.title_page?
               end
 
             end
@@ -98,7 +99,7 @@ module Caracal
       def render_iframe(xml, model, **options)
         ::Zip::File.open(model.file) do |zip|
           entry    = zip.glob('word/document.xml').first
-          content  = entry.get_input_stream.read
+          content  = Caracal::Core::Models::IFrameModel.read_entry entry
           doc_xml  = Nokogiri::XML(content)
           ns       = document.namespaces
           fragment = doc_xml.xpath('//w:body').first.children
@@ -265,7 +266,7 @@ module Caracal
             w.rPr
           end
           w.r do
-            w.t model.toc_legend
+            w.t xml_safe(model.toc_legend)
           end
         end
 
@@ -292,7 +293,7 @@ module Caracal
                 w.rPr do
                   w.rStyle 'w:val' => 'Hyperlink'
                 end
-                w.t bookmark[:text]
+                w.t xml_safe(bookmark[:text])
               end
               w.r do
                 w.tab
@@ -310,7 +311,7 @@ module Caracal
                 w.fldChar 'w:fldCharType' => 'separate'
               end
               w.r do
-                w.t model.toc_placeholder
+                w.t xml_safe(model.toc_placeholder)
               end
               w.r do
                 w.fldChar 'w:fldCharType' => 'end'
@@ -355,7 +356,7 @@ module Caracal
         w.hyperlink(hyperlink_options) do
           w.r run_options do
             render_run_attributes xml, model, skip_empty: true
-            w.t({ 'xml:space' => 'preserve' }, model.link_content)
+            w.t({ 'xml:space' => 'preserve' }, xml_safe(model.link_content))
           end
         end
       end
@@ -366,9 +367,12 @@ module Caracal
           model.assign_numbering { document.next_numbering_id }
         end
 
-        model.items.each do |item|
-          render_listitem xml, item, model.numbering_id
-          render_list xml, item.nested_list if item.nested_list
+        model.items.flat_map(&:parts).each do |part|
+          if part.is_a? Caracal::Core::Models::ListModel
+            render_list xml, part
+          else
+            render_listitem xml, part, model.numbering_id
+          end
         end
       end
 
@@ -381,16 +385,22 @@ module Caracal
           w.pPr do
             w.pStyle 'w:val' => model.paragraph_style || 'Normal'
             w.keepNext if model.paragraph_keep_next == true
-            w.numPr do
-              w.ilvl 'w:val' => model.list_item_level
-              w.numId 'w:val' => list_num
+            unless model.continuation?
+              w.numPr do
+                w.ilvl 'w:val' => model.list_item_level
+                w.numId 'w:val' => list_num
+              end
             end
             render_borders    w, model, 'pBdr', :paragraph
             render_background w, model, :paragraph
             render_tabs       w, model, model.paragraph_tabs if model.paragraph_tabs&.any?
             spacing = spacing_options model
             w.spacing spacing unless spacing.nil?
-            w.ind 'w:start' => ls.style_left, 'w:hanging' => hanging
+            if model.continuation?
+              w.ind 'w:start' => ls.style_left  # aligned with the item's text
+            else
+              w.ind 'w:start' => ls.style_left, 'w:hanging' => hanging
+            end
             w.contextualSpacing 'w:val' => true
             w.jc 'w:val' => model.paragraph_align unless model.paragraph_align.nil?
             render_run_attributes w, model, skip_empty: true
@@ -462,21 +472,27 @@ module Caracal
           render_run_attributes(xml, model, skip_empty: true)
           opts = {}
           opts['xml:space'] = model.text_whitespace || 'preserve'
-          w.t opts, model.text_content
+          w.t opts, xml_safe(model.text_content)
           w.tab if model.text_end_tab
         end
       end
 
+      # A complex field is a sequence of runs: begin, the instruction,
+      # separate and end. Viewers that don't evaluate fields show the
+      # (empty) result instead of the instruction text.
       def render_field(xml, model, **options)
         w = xml['w']
-        w.r run_options do
-          render_run_attributes(xml, model, skip_empty: true)
-          w.fldChar 'w:fldCharType' => 'begin'
-          w.instrText 'xml:space' => 'preserve' do
-            xml.text model.field_name
+        field_run = ->(&content) do
+          w.r run_options do
+            render_run_attributes(xml, model, skip_empty: true)
+            content.call
           end
-          w.fldChar 'w:fldCharType' => 'end'
         end
+
+        field_run.call { w.fldChar 'w:fldCharType' => 'begin' }
+        field_run.call { w.instrText({ 'xml:space' => 'preserve' }, " #{ xml_safe(model.field_name) } ") }
+        field_run.call { w.fldChar 'w:fldCharType' => 'separate' }
+        field_run.call { w.fldChar 'w:fldCharType' => 'end' }
       end
 
       def render_table(xml, model, **options)
@@ -490,7 +506,7 @@ module Caracal
               w.keepNext
             end
             w.r do
-              w.t model.table_caption
+              w.t xml_safe(model.table_caption)
             end
           end
         end
@@ -527,10 +543,10 @@ module Caracal
           model.rows.each_with_index do |row, index|
             w.tr do
               w.trPr do
+                w.cantSplit if model.cant_split? index
                 if model.table_repeat_header > 0 and index < model.table_repeat_header
                   w.tblHeader
                 end
-                # w.cantSplit # to not split table cells across pages
                 w.trHeight 'w:hRule' => 'auto'
                 # w.tblCellSpacing 'w:w' => 0, 'w:type' => 'dxa'
               end

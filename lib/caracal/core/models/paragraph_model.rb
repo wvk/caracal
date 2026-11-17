@@ -47,6 +47,7 @@ module Caracal
           # otherwise make sure there is at least one (potentially empty) run
           if self.runs.none? or not content.to_s.strip.empty?
             text content, self.run_attributes
+            content_added
           end
         end
 
@@ -227,6 +228,10 @@ module Caracal
         end
 
         private
+
+        # Called once the content run is appended, after the block's runs.
+        def content_added
+        end
 
         def option_keys
           self.class.option_keys

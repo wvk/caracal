@@ -190,7 +190,7 @@ describe 'headers and footers' do
       expect(paragraph.at_xpath('w:pPr/w:jc/@w:val', ns).value).to eq 'right'
       expect(paragraph.xpath('w:r/w:t', ns).map(&:text)).to eq ['Page ']
       expect(paragraph.at_xpath('w:r[w:t]/w:rPr/w:sz/@w:val', ns).value).to eq '24'
-      expect(paragraph.at_xpath('w:r/w:instrText', ns).text).to eq 'PAGE'
+      expect(paragraph.at_xpath('w:r/w:instrText', ns).text.strip).to eq 'PAGE'
       expect(paragraph.at_xpath('w:r[w:instrText]/w:rPr/w:sz/@w:val', ns).value).to eq '20'
     end
 
@@ -199,7 +199,7 @@ describe 'headers and footers' do
       paragraph = page_number_paragraph docx
       expect(paragraph.at_xpath('w:pPr/w:jc/@w:val', ns).value).to eq 'center'
       expect(paragraph.xpath('w:r/w:t', ns)).to be_empty
-      expect(paragraph.at_xpath('w:r/w:instrText', ns).text).to eq 'PAGE'
+      expect(paragraph.at_xpath('w:r/w:instrText', ns).text.strip).to eq 'PAGE'
     end
 
     it 'supports the block form' do
@@ -207,7 +207,7 @@ describe 'headers and footers' do
       docx.page_numbers(true) { align :left; label 'Seite'; size 18 }
       paragraph = page_number_paragraph docx
       expect(paragraph.at_xpath('w:pPr/w:jc/@w:val', ns).value).to eq 'left'
-      expect(paragraph.xpath('w:r/w:rPr/w:sz/@w:val', ns).map(&:value)).to eq %w(18 18)
+      expect(paragraph.xpath('w:r/w:rPr/w:sz/@w:val', ns).map(&:value)).to eq %w(18 18 18 18 18)  # label and the four field runs
     end
 
     it 'appends to footer contents regardless of call order' do
@@ -221,7 +221,7 @@ describe 'headers and footers' do
         footer = xml docx, 'word/footer1.xml'
         expect(footer.xpath('//w:p', ns).size).to eq 2
         expect(footer.at_xpath('//w:p[1]//w:t', ns).text).to eq 'footer text'
-        expect(footer.at_xpath('//w:p[2]//w:instrText', ns).text).to eq 'PAGE'
+        expect(footer.at_xpath('//w:p[2]//w:instrText', ns).text.strip).to eq 'PAGE'
         expect(footer_rels docx).to eq ['footer1.xml']
       end
     end
@@ -280,26 +280,44 @@ describe 'headers and footers' do
       it { expect(sect.element_children.map(&:name)).to eq %w(pgSz pgMar) }
     end
 
-    describe 'when different' do
-      let(:docx) { Caracal::Document.new { different_first_page; header.p 'h'; page_numbers true } }
+    describe 'with the page number off the first page' do
+      let(:docx) { Caracal::Document.new { header.p 'h'; page_numbers true, first_page: false } }
 
-      it { expect(sect.element_children.map(&:name)).to eq %w(headerReference headerReference footerReference footerReference pgSz pgMar titlePg) }
-      it { expect(referenced_texts docx, sect, 'header').to eq 'default' => ['h'], 'first' => [] }
-      it { expect(referenced_texts(docx, sect, 'footer')['first']).to eq [] }
-      it { expect(xml(docx, "word/footer2.xml").xpath('//w:instrText', ns)).to be_empty }
+      it { expect(sect.element_children.map(&:name)).to eq %w(headerReference headerReference footerReference pgSz pgMar titlePg) }
+      it { expect(referenced_texts docx, sect, 'header').to eq 'default' => ['h'], 'first' => ['h'] }
+      it { expect(references sect, 'footer').to eq %w(default) }
     end
 
-    describe 'when switched off again' do
-      let(:docx) { Caracal::Document.new { different_first_page; different_first_page false } }
+    describe 'with a blank first page' do
+      let(:docx) do
+        Caracal::Document.new do
+          header.p 'h'
+          footer.p 'f'
+          header first: true
+          footer first: true
+          page_numbers true, first_page: false
+        end
+      end
 
-      it { expect(sect.at_xpath('w:titlePg', ns)).to be_nil }
+      it { expect(sect.at_xpath('w:titlePg', ns)).not_to be_nil }
+      it { expect(referenced_texts docx, sect, 'header').to eq 'default' => ['h'] }
+      it { expect(referenced_texts docx, sect, 'footer').to eq 'default' => ['f'] }
+      it { expect(parts(docx).keys).not_to include('word/header2.xml', 'word/footer2.xml') }
+    end
+
+    describe 'with a first page header and page numbers' do
+      let(:docx) { Caracal::Document.new { header(first: true) { p 'cover' }; page_numbers true } }
+
+      it { expect(sect.at_xpath('w:titlePg', ns)).not_to be_nil }
+      it { expect(references(sect, 'footer').sort).to eq %w(default first) }
+      it { expect(xml(docx, 'word/footer2.xml').xpath('//w:instrText', ns)).not_to be_empty }
     end
 
     describe 'with first page header and footer' do
       let(:docx) do
         Caracal::Document.new do
-          header(type: :first) { p 'first header' }
-          footer(type: :first).p 'first footer'
+          header(first: true) { p 'first header' }
+          footer(first: true).p 'first footer'
           header.p 'header'
         end
       end
@@ -309,8 +327,16 @@ describe 'headers and footers' do
       it { expect(referenced_texts docx, sect, 'footer').to eq 'first' => ['first footer'] }
     end
 
-    it 'rejects unknown types' do
-      expect { Caracal::Document.new.header type: :even }.to raise_error(Caracal::Errors::InvalidModelError)
+    it 'renders the same section and relationships twice' do
+      docx = Caracal::Document.new { header.p 'h'; footer.p 'f'; page_numbers true, first_page: false }
+      first, second = 2.times.map { parts(docx).values_at 'word/document.xml', 'word/_rels/document.xml.rels' }
+
+      expect(second).to eq first
+    end
+
+    it 'returns the same first page header on every call' do
+      docx = Caracal::Document.new
+      expect(docx.header(first: true)).to equal docx.header(first: true)
     end
   end
 end

@@ -15,7 +15,7 @@ module Caracal
               xml.property fmtid: '{D5CDD505-2E9C-101B-9397-08002B2CF9AE}', pid: index + 2, name: property.custom_property_name do
                 case property.custom_property_type.downcase
                 when  'text'
-                  xml['vt'].lpwstr property.custom_property_value
+                  xml['vt'].lpwstr xml_safe(property.custom_property_value)
                 when 'date'
                   xml['vt'].filetime property.custom_property_date
                 when 'number'
@@ -30,7 +30,7 @@ module Caracal
                     xml['vt'].bool property.custom_property_value.to_s
                   else
                     # Not a boolean sent, so reverting to string so docx will open
-                    xml['vt'].lpwstr property.custom_property_value.to_s
+                    xml['vt'].lpwstr xml_safe(property.custom_property_value)
                   end
                 end
               end

@@ -2,7 +2,7 @@
 
 * Breaking changes
   * Require Ruby 3.2 and Tilt 2.0; ActiveSupport is not needed.
-  * Headers and footers appear on the first page. Use `docx.different_first_page` or `docx.header type: :first` for a different first page.
+  * Headers, footers and the page number appear on the first page. For a different first page, use upstream caracal's API: `header first: true`, `footer first: true` and `page_numbers first_page: false`. A first page without its own header or footer shows the default one.
   * `page_numbers` writes into the document footer; `docx.footer.page_numbers` is removed.
   * `line` is a minimum line height (`lineRule atLeast`). Use `line_rule: :exact` or `:auto` for the previous behaviours.
   * Any border option draws a single ½ pt line by default.
@@ -16,6 +16,9 @@
   * `page_size` raises if the margins don't fit; omitted dimensions and margins keep their current values.
   * Every document contains a theme part.
   * `RelationshipModel` no longer takes `key:`.
+  * Fields render as complete complex fields (begin, instruction, separate, end runs); a symbol field name is upcased, so `field :page` writes `PAGE`.
+  * Text given to `li` leads the item, ahead of runs and nested lists added in its block.
+  * Requires nokogiri 1.16.2 or later and rubyzip 1.1.6 or later; allows rubyzip 3.
 
 * Enhancements
   * Embed TrueType fonts, obfuscated by default (@wvk)
@@ -31,8 +34,20 @@
   * Paragraph tabs with position, alignment and leader
   * Nested lists of mixed types, list item alignment
   * Lambdas as document, model and table cell blocks
+  * Merged from upstream caracal 1.5.0 and 1.6.0 (@dlauer and contributors):
+    * `page_numbers start:` sets the number of the first page
+    * `cant_split` keeps table rows from breaking across pages
+    * `header_rows`, an alias of `repeat_header`
+    * Iframes in table cells
+    * Text after a nested list renders after it; an item can hold several nested lists
+    * `IFrameModel.max_entry_size` (50MB by default) caps entries read from embedded documents
+    * Image part extensions come from the image data, else the URL path; bmp, tif, tiff and svg content types
+    * Package entries are written with their size, so rubyzip 3 adds no zip64 records that LibreOffice 7.4 and older reject
+    * Security section in the README
 
 * Bug Fixes
+  * Image and iframe sources are read with `URI.open` for http(s) URLs and `File.binread` otherwise, never `Kernel#open`, so a source starting with `|` no longer runs as a shell command (from upstream 1.5.0)
+  * Control characters XML doesn't allow are removed from text, links, captions, the TOC and custom properties (from upstream 1.5.0)
   * Custom properties, tabs, TOC, iframes from URLs and saving under the default file name no longer raise
   * Header and footer blocks and `align:` paragraphs render
   * Row and column spans merge the right cells; cell widths add up to the table width

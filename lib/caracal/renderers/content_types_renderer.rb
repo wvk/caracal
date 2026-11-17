@@ -9,12 +9,16 @@ module Caracal
       def to_xml
         builder = ::Nokogiri::XML::Builder.with(declaration_xml) do |xml|
           xml.Types root_options do
+            xml.Default 'Extension' => 'bmp',  'ContentType' => 'image/bmp'
             xml.Default 'Extension' => 'gif',  'ContentType' => 'image/gif'
             xml.Default 'Extension' => 'jpeg', 'ContentType' => 'image/jpeg'
             xml.Default 'Extension' => 'jpg',  'ContentType' => 'image/jpeg'
             xml.Default 'Extension' => 'odttf', 'ContentType' => 'application/vnd.openxmlformats-officedocument.obfuscatedFont'
             xml.Default 'Extension' => 'png',  'ContentType' => 'image/png'
             xml.Default 'Extension' => 'rels', 'ContentType' => 'application/vnd.openxmlformats-package.relationships+xml'
+            xml.Default 'Extension' => 'svg',  'ContentType' => 'image/svg+xml'
+            xml.Default 'Extension' => 'tif',  'ContentType' => 'image/tiff'
+            xml.Default 'Extension' => 'tiff', 'ContentType' => 'image/tiff'
             xml.Default 'Extension' => 'ttf',  'ContentType' => 'application/x-font-ttf'
             xml.Default 'Extension' => 'xml',  'ContentType' => 'application/xml'
             xml.Override 'PartName' => '/docProps/app.xml',     'ContentType' => 'application/vnd.openxmlformats-officedocument.extended-properties+xml'

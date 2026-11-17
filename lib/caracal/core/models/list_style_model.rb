@@ -62,7 +62,7 @@ module Caracal
         private
 
         def option_keys
-          [:type, :level, :format, :value, :align, :left, :indent, :start]
+          [:type, :level, :format, :value, :align, :left, :indent, :start, :restart]
         end
 
       end

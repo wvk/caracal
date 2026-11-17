@@ -1,4 +1,3 @@
-require 'open-uri'
 require 'caracal/core/models/base_model'
 require 'caracal/image_size'
 
@@ -134,15 +133,11 @@ module Caracal
 
         # NOTICE: this potentially opens a web resource!
         def read_url
-          if image_url.match? %r{\A[a-z][a-z0-9+.-]*://}i
-            URI.open(image_url, 'rb') { |io| io.read }
-          else
-            File.binread image_url
-          end
+          Caracal::Utilities.read_resource image_url
         end
 
         def option_keys
-          [:url, :width, :height, :align, :top, :bottom, :left, :right, :data, :anchor, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap]
+          [:url, :width, :height, :ppi, :align, :top, :bottom, :left, :right, :data, :anchor, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap]
         end
 
         def pixels_to_emus(value, ppi)

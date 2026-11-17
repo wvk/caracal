@@ -75,8 +75,8 @@ module Caracal
     def self.exif_density(tiff)
       short, long = {'II' => %w[v V], 'MM' => %w[n N]}[tiff[0, 2]]
       return unless short
-      ifd   = tiff[4, 4].to_s.unpack1 long or return
-      count = tiff[ifd, 2].to_s.unpack1 short or return
+      ifd   = tiff[4, 4].to_s.unpack1(long) or return
+      count = tiff[ifd, 2].to_s.unpack1(short) or return
       tags  = {}
       count.times do |i|
         entry = tiff[ifd + 2 + i * 12, 12].to_s

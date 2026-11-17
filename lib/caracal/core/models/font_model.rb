@@ -17,6 +17,11 @@ module Caracal
       # Each style (regular, bold, italic, bold_italic) accepts a file path or an IO.
       # Embedded fonts are obfuscated as required by ECMA-376 §17.8.1; `obfuscate false`
       # embeds them as plain TrueType files instead.
+      #
+      # Obfuscated .odttf files, such as those of a Word template, are de-obfuscated
+      # with their key: one GUID for every style, or a Hash of GUIDs by style.
+      #
+      #   docx.font name: 'Work Sans', regular: 'template/word/fonts/font1.odttf', key: '{0A1B2C3D-...}'
       class FontModel < BaseModel
         use_prefix :font
 
@@ -54,17 +59,37 @@ module Caracal
 
         def initialize(options={}, &block)
           @font_obfuscate = DEFAULT_FONT_OBFUSCATE
+          @font_data      = {}
           @embedded_fonts = {}
           super options, &block
+
+          # the key may follow the files it belongs to, so the files are checked once all options are set
+          @initialized = true
+          @font_data.each_key {|style| embed style }
         end
 
         #=============== SETTERS ==============================
 
         STYLES.each do |style|
           define_method style do |source|
-            font_file = FontFile.new(read_font_source(source)).check_embeddable!
-            @embedded_fonts[style] = EmbeddedFont.new self, style, font_file, FontFile.generate_key
+            @font_data[style] = read_font_source source
+            embed style if @initialized
           end
+        end
+
+        # The key of obfuscated (.odttf) font files: a GUID for every style, or a
+        # Hash of GUIDs by style. Styles without a key are plain font files.
+        def key(value)
+          if value.is_a? Hash
+            value   = value.transform_keys(&:to_sym)
+            unknown = value.keys - STYLES
+            unless unknown.empty?
+              raise Caracal::Errors::InvalidModelError, "font key given for unknown style #{ unknown.join ', ' }, expected one of #{ STYLES.join ', ' }"
+            end
+          end
+
+          @font_key = value
+          @font_data.each_key {|style| embed style } if @initialized
         end
 
         #=============== GETTERS ==============================
@@ -93,7 +118,31 @@ module Caracal
         private
 
         def option_keys
-          [:name, :obfuscate] + STYLES
+          [:name, :obfuscate, :key] + STYLES
+        end
+
+        def embed(style)
+          font_file = read_font_file(style).check_embeddable!
+          @embedded_fonts[style] = EmbeddedFont.new self, style, font_file, FontFile.generate_key
+        end
+
+        # de-obfuscates the style's font data if it has a key (ECMA-376 §17.8.1)
+        def read_font_file(style)
+          data = @font_data[style]
+          key  = @font_key.is_a?(Hash) ? @font_key[style] : @font_key
+          return FontFile.new(data) if key.nil?
+
+          begin
+            data = FontFile.deobfuscate data, key
+          rescue ArgumentError => e
+            raise Caracal::Errors::InvalidFontError, e.message
+          end
+
+          begin
+            FontFile.new data
+          rescue Caracal::Errors::InvalidFontError => e
+            raise Caracal::Errors::InvalidFontError, "#{ style } font file does not de-obfuscate with key #{ key }: #{ e.message }"
+          end
         end
 
         def read_font_source(source)

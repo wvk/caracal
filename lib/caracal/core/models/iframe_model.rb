@@ -12,11 +12,14 @@ module Caracal
 
         DEFAULT_MAX_ENTRY_SIZE = 50 * 1024 * 1024   # 50MB
 
+        WORDML_NS = { w: 'http://schemas.openxmlformats.org/wordprocessingml/2006/main' }.freeze
+
         has_string_attribute :url
         has_string_attribute :data
 
         attr_reader :iframe_ignorables
         attr_reader :iframe_namespaces
+        attr_reader :iframe_numbering
         attr_reader :iframe_relationships
 
         attr_reader :document
@@ -123,7 +126,42 @@ module Caracal
             link_ids.each do |r_id|
               @iframe_relationships << { id: r_id, type: 'link', target: link_map[r_id] } if link_map.key?(r_id)
             end
+
+            # numbering definitions of the embedded lists
+            if (entry = zip.glob('word/numbering.xml').first)
+              @iframe_numbering = used_numbering doc_xml, Nokogiri::XML(self.class.read_entry(entry))
+            end
           end
+        end
+
+        # The embedded numbering definitions under new ids, taken from the
+        # block: each w:num gets one, and each w:abstractNum the id of the
+        # first w:num pointing at it. Returns the map from old to new numIds
+        # and the numbering part holding the renumbered definitions, which is
+        # nil when the embedded paragraphs use none. The model stays as it is.
+        def renumbered_numbering
+          return [{}, nil] if iframe_numbering.nil?
+
+          xml          = Nokogiri::XML(iframe_numbering)
+          num_ids      = {}
+          abstract_ids = {}
+
+          xml.root.xpath('w:num', WORDML_NS).each do |num|
+            num_id      = num.at_xpath('@w:numId', WORDML_NS)
+            abstract_id = num.at_xpath('w:abstractNumId/@w:val', WORDML_NS)
+            new_id      = yield.to_s
+
+            num_ids[num_id.value]            = new_id
+            abstract_ids[abstract_id.value] ||= new_id
+            num_id.value                     = new_id
+            abstract_id.value                = abstract_ids[abstract_id.value]
+          end
+
+          xml.root.xpath('w:abstractNum/@w:abstractNumId', WORDML_NS).each do |abstract_id|
+            abstract_id.value = abstract_ids[abstract_id.value]
+          end
+
+          [num_ids, xml]
         end
 
 
@@ -166,6 +204,30 @@ module Caracal
 
         def option_keys
           [:url, :data]
+        end
+
+        # The embedded numbering part, reduced to the w:num elements the
+        # embedded paragraphs use and the w:abstractNum elements they point
+        # at, in order of first use; nil when they use none. Picture bullets
+        # and nsids stay behind: the pictures live in the part's own
+        # relationships, and copies of a definition must not share its nsid.
+        def used_numbering(doc_xml, num_xml)
+          root      = num_xml.root or return
+          abstracts = root.xpath('w:abstractNum[@w:abstractNumId]', WORDML_NS).to_h {|node| [node.at_xpath('@w:abstractNumId', WORDML_NS).value, node] }
+          nums      = root.xpath('w:num[@w:numId]', WORDML_NS).to_h {|node| [node.at_xpath('@w:numId', WORDML_NS).value, node] }
+
+          used = doc_xml.xpath('//w:numPr/w:numId/@w:val', WORDML_NS).map(&:value).uniq.filter_map do |id|
+            num      = nums[id] or next
+            abstract = abstracts[num.at_xpath('w:abstractNumId/@w:val', WORDML_NS)&.value] or next
+            [abstract, num]
+          end
+          return if used.empty?
+
+          root.children.each(&:unlink)
+          (used.map(&:first).uniq + used.map(&:last)).each {|node| root << node }
+          root.xpath('.//w:nsid | .//w:lvlPicBulletId', WORDML_NS).each(&:unlink)
+
+          num_xml.to_xml(save_with: Nokogiri::XML::Node::SaveOptions::AS_XML).freeze
         end
 
       end

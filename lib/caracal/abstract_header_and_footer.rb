@@ -80,6 +80,10 @@ module Caracal
       document.toplevel_lists
     end
 
+    def iframe_numberings
+      document.iframe_numberings
+    end
+
     def next_numbering_id
       document.next_numbering_id
     end

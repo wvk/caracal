@@ -266,6 +266,12 @@ module Caracal
         part.page_number_paragraph = (page_number_paragraph if shown)
       end
 
+      # a blank first-page part is left out, like upstream caracal does: with
+      # titlePg set, the first page shows nothing where no part is referenced
+      parts.reject! do |part|
+        part.type == :first and part.contents.empty? and not (part.is_a? Footer and part.page_number_paragraph)
+      end
+
       # keep the relationships of parts still written, so renderings agree
       wanted = parts.to_h {|part| [part.relationship_params[:target], part] }
       %i(header footer).each do |kind|

@@ -609,11 +609,10 @@ describe Caracal::Document do
           end)
         end
 
-        # upstream leaves the first-page reference out; here it refers to a blank part
-        it 'shows no header on the first page' do
+        it 'refers to no header on the first page' do
           expect(section(files).at_xpath('w:titlePg', W_NS)).not_to be_nil
-          expect(refs(files, 'header')).to eq [['default', 'header1.xml'], ['first', 'header2.xml']]
-          expect(text_of(files, 'header2.xml')).to eq ''
+          expect(refs(files, 'header')).to eq [['default', 'header1.xml']]
+          expect(files).not_to have_key('word/header2.xml')
           expect_consistent_package(files)
         end
       end

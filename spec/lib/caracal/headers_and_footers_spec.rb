@@ -299,9 +299,10 @@ describe 'headers and footers' do
         end
       end
 
-      it { expect(referenced_texts docx, sect, 'header').to eq 'default' => ['h'], 'first' => [] }
-      it { expect(referenced_texts docx, sect, 'footer').to eq 'default' => ['f'], 'first' => [] }
-      it { expect(xml(docx, 'word/footer2.xml').xpath('//w:instrText', ns)).to be_empty }
+      it { expect(sect.at_xpath('w:titlePg', ns)).not_to be_nil }
+      it { expect(referenced_texts docx, sect, 'header').to eq 'default' => ['h'] }
+      it { expect(referenced_texts docx, sect, 'footer').to eq 'default' => ['f'] }
+      it { expect(parts(docx).keys).not_to include('word/header2.xml', 'word/footer2.xml') }
     end
 
     describe 'with a first page header and page numbers' do

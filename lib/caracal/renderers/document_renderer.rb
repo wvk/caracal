@@ -138,7 +138,8 @@ module Caracal
             [r_hash[:id], document.relationship(r_hash.except(:id)).formatted_id]
           end
 
-          fragment.xpath('.//a:blip/@r:embed | .//w:hyperlink/@r:id', a: ns.t('a'), r: ns.t('r'), w: ns.t('w')).each do |r_attr|
+          references = './/a:blip/@r:embed | .//asvg:svgBlip/@r:embed | .//w:hyperlink/@r:id'
+          fragment.xpath(references, a: ns.t('a'), asvg: SVG_BLIP_NAMESPACE, r: ns.t('r'), w: ns.t('w')).each do |r_attr|
             r_attr.value = ids[r_attr.value] if ids.key?(r_attr.value)
           end
 

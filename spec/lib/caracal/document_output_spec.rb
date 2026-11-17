@@ -318,6 +318,35 @@ describe Caracal::Document do
       end.string
     end
 
+    # document.xml holds more than the 100 bytes its headers declare
+    let(:understated) do
+      xml = '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' + ('<!-- padding -->' * 200) + '<w:p><w:r><w:t>Text after the padding</w:t></w:r></w:p><w:sectPr/></w:body></w:document>'
+      declare_size(embedded(xml), 'word/document.xml', 100)
+    end
+
+    def embedded(document_xml)
+      Zip::OutputStream.write_buffer do |zip|
+        zip.put_next_entry('word/_rels/document.xml.rels')
+        zip.write '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>'
+        zip.put_next_entry('word/document.xml')
+        zip.write document_xml
+      end.string
+    end
+
+    # replaces the uncompressed size in the entry's local header and
+    # central directory record
+    def declare_size(bytes, name, size)
+      bytes = bytes.b
+      { "PK\x03\x04".b => [22, 30], "PK\x01\x02".b => [24, 46] }.each do |signature, (size_at, name_at)|
+        offsets = []
+        bytes.scan(signature) { offsets << $~.begin(0) }
+        offsets.each do |o|
+          bytes[o + size_at, 4] = [size].pack('V') if bytes[o + name_at, name.bytesize] == name
+        end
+      end
+      bytes
+    end
+
     around do |example|
       previous = model.max_entry_size
       model.max_entry_size = 1024
@@ -333,6 +362,32 @@ describe Caracal::Document do
       docx = described_class.new('test.docx')
 
       expect { docx.iframe data: oversized }.to raise_error(Caracal::Errors::InvalidModelError, /over the 1024 byte limit/)
+    end
+
+    it 'refuses an entry that holds more than its declared size' do
+      docx = described_class.new('test.docx')
+
+      expect { docx.iframe data: understated }.to raise_error(Caracal::Errors::InvalidModelError, /larger than its declared 100 bytes, over the 1024 byte limit/)
+    end
+
+    it 'reads an entry of exactly the limit' do
+      head = '<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><!--'
+      tail = '--><w:p><w:r><w:t>Text after the padding</w:t></w:r></w:p><w:sectPr/></w:body></w:document>'
+      body = head + ('x' * (1024 - head.bytesize - tail.bytesize)) + tail
+      docx = described_class.new('test.docx')
+      docx.iframe data: embedded(body)
+
+      xml = strict_xml(parts(docx)['word/document.xml'])
+      expect(xml.at_xpath('//w:body/w:p/w:r/w:t[.="Text after the padding"]', W_NS)).not_to be_nil
+    end
+
+    it 'reads the whole entry when the limit is nil' do
+      model.max_entry_size = nil
+      docx = described_class.new('test.docx')
+      docx.iframe data: understated
+
+      xml = strict_xml(parts(docx)['word/document.xml'])
+      expect(xml.at_xpath('//w:body/w:p/w:r/w:t[.="Text after the padding"]', W_NS)).not_to be_nil
     end
   end
 

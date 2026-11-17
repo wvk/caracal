@@ -40,14 +40,20 @@ module Caracal
         end
 
         # Reads a single entry from an embedded document, refusing anything
-        # larger than max_entry_size.
+        # larger than max_entry_size. rubyzip does not stop reading at an
+        # entry's declared size, so the bytes read are counted as well.
         def self.read_entry(entry)
           limit = max_entry_size
           if limit and entry.size > limit
             raise Caracal::Errors::InvalidModelError, "iframe entry #{entry.name} is #{entry.size} bytes, over the #{limit} byte limit."
           end
 
-          entry.get_input_stream.read
+          content = entry.get_input_stream.read(limit && limit + 1) || ''.b
+          if limit and content.bytesize > limit
+            raise Caracal::Errors::InvalidModelError, "iframe entry #{entry.name} is larger than its declared #{entry.size} bytes, over the #{limit} byte limit."
+          end
+
+          content
         end
 
         #=============== PROCESSING =======================

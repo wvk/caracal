@@ -40,7 +40,6 @@ module Caracal
         def initialize(options={}, &block)
           @image_width  = DEFAULT_IMAGE_WIDTH
           @image_height = DEFAULT_IMAGE_HEIGHT
-          @image_align  = DEFAULT_IMAGE_ALIGN
           @image_top    = DEFAULT_IMAGE_TOP
           @image_bottom = DEFAULT_IMAGE_BOTTOM
           @image_left   = DEFAULT_IMAGE_LEFT
@@ -59,6 +58,12 @@ module Caracal
         end
 
         #=============== GETTERS ==============================
+
+        # falls back to the default, so that an image's own alignment can
+        # be told apart from none (see #apply_styles)
+        def image_align
+          @image_align || DEFAULT_IMAGE_ALIGN
+        end
 
         [:width, :height].each_with_index do |m, axis|
           define_method "formatted_#{m}" do
@@ -90,6 +95,15 @@ module Caracal
           else
             @image_anchor = nil
           end
+        end
+
+        #=============== STYLES ==============================
+
+        # A table cell passes its options on to its contents. An image
+        # takes the cell's alignment unless it has its own. The cell's
+        # other options, such as width, mean other things for an image.
+        def apply_styles(opts={}, reverse: false)
+          opts.each {|k, v| align v if k.to_sym == :align and @image_align.nil? }
         end
 
         #=============== VALIDATION ==============================

@@ -346,6 +346,36 @@ describe Caracal::Core::Models::TableCellModel do
         it { expect(table.table_bgcolor).to eq nil }
         it { expect(paragraph.runs.first.text_bold).to eq true }
       end
+
+      describe 'with rules and images' do
+        let(:cell) do
+          described_class.new do
+            hr width: 3000, align: :left
+            hr width: 3000
+            img 'a.png', data: 'png', width: 50, height: 40, align: :center
+            img 'b.png', data: 'png', width: 50, height: 40
+          end
+        end
+        let(:rules)  { cell.contents.grep Caracal::Core::Models::RuleModel }
+        let(:images) { cell.contents.grep Caracal::Core::Models::ImageModel }
+
+        before { cell.apply_styles({ width: 6000, height: 300, align: :right, size: 28, color: 'ff0000', line: 360 }) }
+
+        it { expect(rules.map(&:rule_width)).to eq [3000, 3000] }
+        it { expect(rules.map(&:rule_align)).to eq [:left, :right] }
+        it { expect(rules.map(&:rule_size)).to eq [4, 4] }
+        it { expect(rules.map(&:rule_color)).to eq ['auto', 'auto'] }
+        it { expect(rules.map(&:rule_line)).to eq [:single, :single] }
+        it { expect(images.map(&:image_width)).to eq [50, 50] }
+        it { expect(images.map(&:image_height)).to eq [40, 40] }
+        it { expect(images.map(&:image_align)).to eq [:center, :right] }
+
+        it 'keeps the alignment taken from the first cell_style' do
+          cell.apply_styles({ align: :center })
+          expect(rules.map(&:rule_align)).to eq [:left, :right]
+          expect(images.map(&:image_align)).to eq [:center, :right]
+        end
+      end
     end
 
 

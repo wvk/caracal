@@ -261,13 +261,15 @@ module Caracal
 
       def render_tableofcontent(xml, model, **options)
         w = xml['w']
-        w.p paragraph_options do
-          w.pPr do
-            w.pStyle 'w:val' => 'TOCHeading'
-            w.rPr
-          end
-          w.r do
-            w.t xml_safe(model.toc_legend)
+        unless model.toc_legend.to_s.empty?
+          w.p paragraph_options do
+            w.pPr do
+              w.pStyle 'w:val' => 'TOCHeading'
+              w.rPr
+            end
+            w.r do
+              w.t xml_safe(model.toc_legend)
+            end
           end
         end
 

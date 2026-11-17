@@ -1,6 +1,7 @@
 require 'spec_helper'
 require 'stringio'
 require 'tempfile'
+require 'tmpdir'
 
 describe Caracal::Document do
   W_NS = { 'w' => 'http://schemas.openxmlformats.org/wordprocessingml/2006/main' }
@@ -249,6 +250,53 @@ describe Caracal::Document do
 
       xml = strict_xml(parts(docx)['word/document.xml'])
       expect(xml.at_xpath('//w:body/w:p/w:r/w:t[.="Text from the iframe"]', W_NS)).not_to be_nil
+    end
+
+    describe 'with an image, rendered more than once' do
+      let(:docx) do
+        png  = self.png
+        data = described_class.new('inner.docx') { img 'a.png', data: png, width: 10, height: 10 }.render.string
+        described_class.new('test.docx') { iframe data: data }
+      end
+
+      it 'renders the same package each time' do
+        first = parts(docx)
+
+        expect(parts(docx)).to eq first
+        expect(parts(docx)).to eq first
+      end
+
+      it 'points the image at its media part each time' do
+        blip_ns = { 'a' => 'http://schemas.openxmlformats.org/drawingml/2006/main',
+                    'r' => 'http://schemas.openxmlformats.org/officeDocument/2006/relationships' }
+        rels_ns = { 'r' => 'http://schemas.openxmlformats.org/package/2006/relationships' }
+
+        2.times do
+          files = parts(docx)
+          embed = strict_xml(files['word/document.xml']).at_xpath('//a:blip/@r:embed', blip_ns).value
+          rel   = strict_xml(files['word/_rels/document.xml.rels']).at_xpath("//r:Relationship[@Id='#{ embed }']", rels_ns)
+
+          expect(files["word/#{ rel['Target'] }"]).to eq png
+        end
+      end
+
+      it 'leaves the iframe model unchanged' do
+        model = docx.contents.last
+
+        expect { docx.render }.not_to change { model.relationships }
+      end
+
+      it 'saves the package it rendered' do
+        Dir.mktmpdir do |dir|
+          docx.file_name File.join(dir, 'test.docx')
+          rendered = parts(docx)
+          docx.save
+
+          saved = {}
+          Zip::File.open(docx.path) { |zip| zip.each { |e| saved[e.name] = e.get_input_stream.read } }
+          expect(saved).to eq rendered
+        end
+      end
     end
   end
 

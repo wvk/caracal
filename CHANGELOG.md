@@ -30,6 +30,7 @@
   * Text given to `p` and `h1`–`h6` leads the paragraph, ahead of runs added in its block, as with `li` (#10).
   * Images of an iframe keep their order when the part showing it already has relationships; two of them could swap (#3).
   * Links of an iframe point at their own targets; they pointed at whatever relationship of the part showing the iframe had their id (#1).
+  * Lists of an iframe keep their own numbering, such as bullets; they took the numbering of this document's list with the same `numId` (#2).
 
 #### v2.0.0
 

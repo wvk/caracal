@@ -445,6 +445,192 @@ describe Caracal::Document do
         expect { docx.render }.not_to change { model.relationships }
       end
     end
+
+    describe 'with lists' do
+      let(:bullets) { described_class.new('inner.docx') { ul { li 'bullet one'; li 'bullet two' } }.render.string }
+      let(:numbers) { described_class.new('inner.docx') { ol { li 'number one'; li 'number two' } }.render.string }
+
+      # text, numId and number format of each list paragraph of the part
+      def markers(files, part)
+        numbering = strict_xml(files['word/numbering.xml'])
+
+        strict_xml(files["word/#{ part }"]).xpath('//w:p[w:pPr/w:numPr]', W_NS).map do |p|
+          num_id   = p.at_xpath('w:pPr/w:numPr/w:numId/@w:val', W_NS).value
+          ilvl     = p.at_xpath('w:pPr/w:numPr/w:ilvl/@w:val', W_NS).value
+          abstract = numbering.at_xpath("//w:num[@w:numId='#{ num_id }']/w:abstractNumId/@w:val", W_NS)&.value
+          format   = numbering.at_xpath("//w:abstractNum[@w:abstractNumId='#{ abstract }']/w:lvl[@w:ilvl='#{ ilvl }']/w:numFmt/@w:val", W_NS)&.value
+          [p.xpath('.//w:t', W_NS).text, num_id, format]
+        end
+      end
+
+      def expect_unique_ids(files)
+        numbering = strict_xml(files['word/numbering.xml'])
+        %w(//w:abstractNum/@w:abstractNumId //w:num/@w:numId).each do |path|
+          ids = numbering.xpath(path, W_NS).map(&:value)
+          expect(ids).to eq(ids.uniq), path
+        end
+      end
+
+      # an embedded document with the given body and numbering part
+      def embedded(body, numbering = nil)
+        Zip::OutputStream.write_buffer do |zip|
+          zip.put_next_entry('word/_rels/document.xml.rels')
+          zip.write '<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>'
+          zip.put_next_entry('word/document.xml')
+          zip.write %(<?xml version="1.0"?><w:document xmlns:w="#{ W_NS['w'] }"><w:body>#{ body }<w:sectPr/></w:body></w:document>)
+          if numbering
+            zip.put_next_entry('word/numbering.xml')
+            zip.write numbering
+          end
+        end.string
+      end
+
+      def item(text, num_id, ilvl = 0)
+        %(<w:p><w:pPr><w:numPr><w:ilvl w:val="#{ ilvl }"/><w:numId w:val="#{ num_id }"/></w:numPr></w:pPr><w:r><w:t>#{ text }</w:t></w:r></w:p>)
+      end
+
+      it 'keeps the bullets of an embedded list' do
+        data = bullets
+        docx = described_class.new('test.docx') do |d|
+          d.ol { li 'outer numbered' }
+          d.iframe data: data
+        end
+
+        files = parts(docx)
+        expect(markers(files, 'document.xml')).to eq [['outer numbered', '1', 'decimal'], ['bullet one', '2', 'bullet'], ['bullet two', '2', 'bullet']]
+        expect_unique_ids files
+      end
+
+      it 'numbers the lists of two iframes of one snippet apart' do
+        data = numbers
+        docx = described_class.new('test.docx') do |d|
+          d.iframe data: data
+          d.ol { li 'between' }
+          d.iframe data: data
+        end
+
+        files = parts(docx)
+        expect(markers(files, 'document.xml')).to eq [['number one', '1', 'decimal'], ['number two', '1', 'decimal'], ['between', '2', 'decimal'],
+                                                      ['number one', '3', 'decimal'], ['number two', '3', 'decimal']]
+        expect_unique_ids files
+      end
+
+      it 'keeps the numbering of a list in a table cell' do
+        data = bullets
+        cell = Caracal::Core::Models::TableCellModel.new { |c| c.iframe(data: data) }
+        docx = described_class.new('test.docx') do |d|
+          d.ol { li 'outer numbered' }
+          d.table [[cell]]
+        end
+
+        expect(markers(parts(docx), 'document.xml').map(&:last)).to eq %w(decimal bullet bullet)
+      end
+
+      it 'keeps the numbering in every part that shows the iframe, rendering after rendering' do
+        data = bullets
+        docx = described_class.new('test.docx') do |d|
+          d.header do |h|
+            h.ol { li 'header numbered' }
+            h.iframe data: data
+          end
+          d.footer { |f| f.iframe data: data }
+          d.page_numbers true, first_page: false   # copies header and footer to the first page
+          d.ol { li 'outer numbered' }
+          d.iframe data: data
+        end
+
+        first = parts(docx)
+        expect(parts(docx)).to eq first
+
+        expect(markers(first, 'document.xml').map(&:last)).to eq %w(decimal bullet bullet)
+        %w(header1.xml header2.xml footer1.xml footer2.xml).each do |part|
+          expect(markers(first, part).map(&:last).last(2)).to eq(%w(bullet bullet)), part
+        end
+        own = %w(document.xml header1.xml header2.xml footer1.xml footer2.xml).map { |part| markers(first, part).last[1] }
+        expect(own).to eq own.uniq
+        expect_unique_ids first
+      end
+
+      describe 'with numbering definitions of its own' do
+        let(:numbering) do
+          <<~XML
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <w:numbering xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:w="#{ W_NS['w'] }" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" mc:Ignorable="w15"><w:numPicBullet w:numPicBulletId="0"><w:pict/></w:numPicBullet><w:abstractNum w:abstractNumId="0" w15:restartNumberingAfterBreak="0"><w:nsid w:val="1A2B3C4D"/><w:multiLevelType w:val="hybridMultilevel"/><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="upperRoman"/><w:lvlText w:val="%1)"/><w:lvlPicBulletId w:val="0"/><w:lvlJc w:val="left"/></w:lvl></w:abstractNum><w:abstractNum w:abstractNumId="1"><w:lvl w:ilvl="0"><w:numFmt w:val="lowerLetter"/></w:lvl></w:abstractNum><w:num w:numId="3"><w:abstractNumId w:val="0"/><w:lvlOverride w:ilvl="0"><w:startOverride w:val="5"/></w:lvlOverride></w:num><w:num w:numId="4"><w:abstractNumId w:val="0"/></w:num><w:num w:numId="5"><w:abstractNumId w:val="1"/></w:num><w:num w:numId="9"><w:abstractNumId w:val="42"/></w:num></w:numbering>
+          XML
+        end
+        let(:data) { embedded(item('three', 3) + item('four', 4) + item('undefined', 7) + item('none', 0) + item('dangling', 9), numbering) }
+        let(:docx) do
+          data = self.data
+          described_class.new('test.docx') do |d|
+            d.ol { li 'outer numbered' }
+            d.iframe data: data
+          end
+        end
+        let(:files)         { parts(docx) }
+        let(:numbering_xml) { strict_xml(files['word/numbering.xml']) }
+
+        it 'gives the numberings the paragraphs use new ids and leaves the others alone' do
+          expect(markers(files, 'document.xml').map { |text, num_id, _| [text, num_id] }).to eq [
+            ['outer numbered', '1'], ['three', '2'], ['four', '3'], ['undefined', '7'], ['none', '0'], ['dangling', '9']
+          ]
+        end
+
+        it 'links each numbering to its abstract definition and keeps its level overrides' do
+          nums = numbering_xml.xpath('//w:num', W_NS).to_h do |num|
+            [num['w:numId'], [num.at_xpath('w:abstractNumId/@w:val', W_NS).value, num.at_xpath('w:lvlOverride/w:startOverride/@w:val', W_NS)&.value]]
+          end
+
+          expect(nums).to eq '1' => ['1', nil], '2' => ['2', '5'], '3' => ['2', nil]
+          expect(markers(files, 'document.xml')[1..2].map(&:last)).to eq %w(upperRoman upperRoman)
+          expect_unique_ids files
+        end
+
+        it 'copies only the abstract definitions in use, without picture bullets and nsids' do
+          abstract = numbering_xml.at_xpath("//w:abstractNum[@w:abstractNumId='2']", W_NS)
+
+          expect(numbering_xml.xpath('//w:abstractNum/@w:abstractNumId', W_NS).map(&:value)).to eq %w(1 2)
+          expect(numbering_xml.xpath('//w:numPicBullet | //w:nsid | //w:lvlPicBulletId', W_NS)).to be_empty
+          expect(abstract.at_xpath('w:lvl/w:lvlText/@w:val', W_NS).value).to eq '%1)'
+        end
+
+        it 'declares the namespaces and ignorable prefixes of the definitions' do
+          root = numbering_xml.root
+
+          expect(root.namespaces['xmlns:w15']).to eq 'http://schemas.microsoft.com/office/word/2012/wordml'
+          expect(root['mc:Ignorable']).to eq 'w15'
+          expect(numbering_xml.at_xpath("//w:abstractNum[@w:abstractNumId='2']/@w15:restartNumberingAfterBreak",
+                                        W_NS.merge('w15' => 'http://schemas.microsoft.com/office/word/2012/wordml')).value).to eq '0'
+        end
+
+        it 'leaves the iframe model unchanged' do
+          model = docx.contents.last
+
+          expect { docx.render }.not_to change { model.iframe_numbering }
+          expect(parts(docx)).to eq files
+        end
+      end
+
+      it 'leaves the numIds alone without a numbering part' do
+        data = embedded(item('embedded', 1))
+        docx = described_class.new('test.docx') do |d|
+          d.ul { li 'outer bullet' }
+          d.iframe data: data
+        end
+
+        expect(markers(parts(docx), 'document.xml')).to eq [['outer bullet', '1', 'bullet'], ['embedded', '1', 'bullet']]
+      end
+
+      it 'adds nothing to the numbering part for a snippet without lists' do
+        data = snippet
+        docx = described_class.new('test.docx') do |d|
+          d.ol { li 'outer numbered' }
+          d.iframe data: data
+        end
+        plain = described_class.new('test.docx') { |d| d.ol { li 'outer numbered' } }
+
+        expect(parts(docx)['word/numbering.xml']).to eq parts(plain)['word/numbering.xml']
+      end
+    end
   end
 
 

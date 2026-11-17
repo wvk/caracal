@@ -104,6 +104,42 @@ describe Caracal::Core::Models::IFrameModel do
           expect(model.relationships).to eq [{ id: 'rId6', type: 'link', target: 'https://embedded.example/' }]
         end
       end
+      describe 'when the document has lists' do
+        let(:ns) { described_class::WORDML_NS }
+        let(:model) do
+          data = Caracal::Document.new do
+            ol { li 'one' }
+            ul { li 'two' }
+          end.render.string
+          described_class.new data: data, document: document
+        end
+
+        before { model.preprocess! }
+
+        it 'keeps the numbering definitions the paragraphs use' do
+          numbering = Nokogiri::XML(model.iframe_numbering)
+
+          expect(numbering.xpath('//w:abstractNum/@w:abstractNumId', ns).map(&:value)).to eq %w(1 2)
+          expect(numbering.xpath('//w:num/@w:numId', ns).map(&:value)).to eq %w(1 2)
+        end
+
+        it 'renumbers them with the ids it is given' do
+          ids = [7, 8].each
+          num_ids, numbering = model.renumbered_numbering { ids.next }
+
+          expect(num_ids).to eq '1' => '7', '2' => '8'
+          expect(numbering.xpath('//w:abstractNum/@w:abstractNumId', ns).map(&:value)).to eq %w(7 8)
+          expect(numbering.xpath('//w:num/w:abstractNumId/@w:val', ns).map(&:value)).to eq %w(7 8)
+        end
+      end
+      describe 'when the document has no numbering part' do
+        let(:source) { fixture }
+
+        before { model.preprocess! }
+
+        it { expect(model.iframe_numbering).to be_nil }
+        it { expect(model.renumbered_numbering { raise 'no ids needed' }).to eq [{}, nil] }
+      end
     end
 
   end

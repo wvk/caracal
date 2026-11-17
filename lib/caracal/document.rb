@@ -196,9 +196,15 @@ module Caracal
       self.current_numbering_id += 1
     end
 
+    # The numbering definitions of iframes, renumbered as each is rendered.
+    def iframe_numberings
+      @iframe_numberings ||= []
+    end
+
     # numbering ids are handed out during rendering, so each rendering pass starts afresh
     def reset_numbering
       toplevel_lists.clear
+      iframe_numberings.clear
       self.current_numbering_id = 0
       with_heading_numbering {|model| model.id = next_numbering_id }
     end

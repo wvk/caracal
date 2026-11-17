@@ -118,6 +118,16 @@ module Caracal
             r_attr.value = ids[r_attr.value] if ids.key?(r_attr.value)
           end
 
+          # Each rendering gives the embedded lists numbering definitions of
+          # their own, so they keep their markers and are numbered apart from
+          # this document's lists. numbering.xml writes the definitions.
+          num_ids, numbering = model.renumbered_numbering { document.next_numbering_id }
+          document.iframe_numberings << numbering if numbering
+
+          fragment.xpath('.//w:numPr/w:numId/@w:val', w: ns.t('w')).each do |num_attr|
+            num_attr.value = num_ids[num_attr.value] if num_ids.key?(num_attr.value)
+          end
+
           fragment.xpath('.//wp:docPr', wp: ns.t('wp')).each do |doc_pr|
             id = next_drawing_id.to_s
             doc_pr['id'] = id

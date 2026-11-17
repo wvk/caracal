@@ -1,5 +1,6 @@
 require 'nokogiri'
 
+require 'caracal/core/models/iframe_model'
 require 'caracal/core/models/list_style_model'
 require 'caracal/core/models/list_model'
 require 'caracal/renderers/xml_renderer'
@@ -62,6 +63,8 @@ module Caracal
               end
             end
 
+            iframe_definitions('w:abstractNum') {|definition| xml << definition }
+
             # bind concrete numberings to abstract definitions. Both share the same id.
             numbering_ids = list_numberings.keys
             document.with_heading_numbering {|model| numbering_ids.unshift model.id }
@@ -70,6 +73,8 @@ module Caracal
                 w.abstractNumId 'w:val' => i
               end
             end
+
+            iframe_definitions('w:num') {|definition| xml << definition }
           end
         end
 
@@ -78,7 +83,30 @@ module Caracal
 
       private
 
+      # Yields the given numbering definitions of iframes, renumbered when
+      # the iframes were rendered, as xml.
+      def iframe_definitions(name)
+        document.iframe_numberings.each do |numbering|
+          numbering.root.xpath(name, Caracal::Core::Models::IFrameModel::WORDML_NS).each do |node|
+            yield node.to_xml(save_options)
+          end
+        end
+      end
+
+      # The root declares the namespaces and ignorable prefixes of the
+      # iframes' numbering definitions too.
       def root_options
+        options    = default_root_options
+        ignorables = []
+        document.iframe_numberings.each do |numbering|
+          numbering.root.namespaces.each {|prefix, href| options[prefix] ||= href }
+          ignorables |= numbering.root.attributes['Ignorable'].to_s.split
+        end
+        options['mc:Ignorable'] = ignorables.join(' ') unless ignorables.empty?
+        options
+      end
+
+      def default_root_options
         {
           'xmlns:mc'  => 'http://schemas.openxmlformats.org/markup-compatibility/2006',
           'xmlns:o'   => 'urn:schemas-microsoft-com:office:office',

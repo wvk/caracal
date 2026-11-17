@@ -662,7 +662,7 @@ end
 
 ### Tabs
 
-Tab stops are set per paragraph or list item with `tabs`, an Array of stops: a number is a start-aligned stop at that position in twips; a Hash `{ pos:, val:, leader: }` sets the alignment (`val`) and the leader (`leader`, default `none`). `end_tab: true` adds a tab after a text run:
+Tab stops are set per paragraph or list item with `tabs`, an Array of stops: a number is a start-aligned stop at that position in twips; a Hash `{ pos:, val:, leader: }` sets the alignment (`val`, default `start`) and the leader (`leader`, default `none`). `val` accepts `start`, `center`, `end`, `decimal`, `bar`, `num`, `clear`, `left` and `right`; other values raise `Caracal::Errors::InvalidModelError`. `end_tab: true` adds a tab after a text run:
 
 ```ruby
 docx.p do
@@ -960,6 +960,8 @@ end
 *`layout :autofit` without `width`, `column_widths` or cell widths lets Word size the columns to their contents. Given widths stay the preferred widths.*
 
 Any table-level border option draws all table borders. A table without border options shows its style's borders; the default style has none.
+
+`border_line`, and `line` in a position-specific border or `hr`, accept Word's border styles (`ST_Border`), such as `single`, `double`, `dotted`, `dashed`, `dotDash`, `thick`, `wave` and `none`. Other values raise `Caracal::Errors::InvalidModelError`.
 
 Table borders can be further styled with position-specific options. Caracal supports styling the top, bottom, left, right, inside horizontal, and inside vertical borders with the `border_top`, `border_bottom`, `border_left`, `border_right`, `border_horizontal`, and `border_vertical`, respectively. Options have the same meaning as those set at the table level, and options not given fall back to the table-level ones.
 

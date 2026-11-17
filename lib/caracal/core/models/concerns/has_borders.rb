@@ -92,6 +92,16 @@ module Caracal
           end
         end
 
+        # validates the default border and the position-specific ones,
+        # adding their errors to this model's
+        def valid_borders?
+          name    = "#{self.class.attr_prefix}_border"
+          borders = [name, *BorderModel::TYPES.map {|dir| "#{name}_#{dir}" }].filter_map {|n| self.send n }
+          invalid = borders.reject(&:valid?)
+          invalid.each {|border| errors.concat border.errors }
+          invalid.empty?
+        end
+
       end
     end
   end

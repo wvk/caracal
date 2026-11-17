@@ -80,6 +80,8 @@ module Caracal
           model = Caracal::Core::Models::ListItemModel.new options, &block
           if model.valid?
             items << model
+          elsif model.errors.any?
+            raise Caracal::Errors::InvalidModelError, model.errors.inspect
           else
             raise Caracal::Errors::InvalidModelError, 'List item must have at least one run.'
           end

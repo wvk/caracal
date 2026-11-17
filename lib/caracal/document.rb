@@ -2,6 +2,7 @@ require 'zip'
 
 require 'caracal/header'
 require 'caracal/footer'
+require 'caracal/footnotes'
 
 require 'caracal/core/bookmarks'
 require 'caracal/core/core_properties'
@@ -36,6 +37,7 @@ require 'caracal/renderers/fonts_renderer'
 require 'caracal/renderers/font_relationships_renderer'
 require 'caracal/renderers/header_renderer'
 require 'caracal/renderers/footer_renderer'
+require 'caracal/renderers/footnotes_renderer'
 require 'caracal/renderers/numbering_renderer'
 require 'caracal/renderers/package_relationships_renderer'
 require 'caracal/renderers/relationships_renderer'
@@ -128,6 +130,11 @@ module Caracal
       @footers ||= {}
     end
 
+    # The footnotes part, word/footnotes.xml.
+    def footnotes
+      @footnotes ||= Footnotes.new(document: self)
+    end
+
     # Whether the first page has its own header and footer (Word's
     # "Different First Page"): it has when a first-page header or footer is
     # given, or the page number is left off the first page.
@@ -215,9 +222,10 @@ module Caracal
       @drawing_counter = 0
       @bookmark_counter = 0
       prepare_headers_and_footers
+      prepare_footnotes
 
       buffer = ::Zip::OutputStream.write_buffer do |zip|
-        %w(package_relationships content_types app core custom fonts embedded_fonts header footer settings styles document relationships header_relationships media numbering theme).each do |what|
+        %w(package_relationships content_types app core custom fonts embedded_fonts header footer settings styles document footnotes relationships header_relationships media numbering theme).each do |what|
           send "render_#{what}", zip
         end
       end
@@ -296,6 +304,34 @@ module Caracal
         end
       end
       parts.each {|part| relationship part.relationship_params }
+    end
+
+    # Numbers the footnotes in the order of their references. The document
+    # writes a footnotes part only when it has footnotes.
+    def prepare_footnotes
+      footnotes.clear
+      each_footnote(contents) {|model| footnotes.id_for model }
+
+      if footnotes.contents.any?
+        relationship footnotes.relationship_params
+      else
+        relationships_by_type(:footnotes).each {|rel| relationships.delete rel }
+      end
+    end
+
+    # Yields the footnotes of paragraphs, list items and table cells in
+    # document order.
+    def each_footnote(models, &block)
+      models.each do |model|
+        case model
+        when Caracal::Core::Models::ParagraphModel
+          model.runs.grep(Caracal::Core::Models::FootnoteReferenceModel).each {|run| yield run.footnote }
+        when Caracal::Core::Models::ListModel
+          each_footnote model.recursive_items, &block
+        when Caracal::Core::Models::TableModel
+          model.cells.each {|cell| each_footnote cell.contents, &block }
+        end
+      end
     end
 
     # A first-page part showing the given default part's content, or nil
@@ -385,6 +421,17 @@ module Caracal
         content = ::Caracal::Renderers::FooterRenderer.render rel.owner
 
         write_entry zip, "word/#{rel.formatted_target}", content
+      end
+    end
+
+    def render_footnotes(zip)
+      relationships_by_type(:footnotes).each do |rel|
+        part = rel.owner
+
+        write_entry zip, "word/#{rel.formatted_target}", ::Caracal::Renderers::FootnotesRenderer.render(part)
+        if part.relationships.any?
+          write_entry zip, "word/_rels/#{rel.formatted_target}.rels", ::Caracal::Renderers::RelationshipsRenderer.render(part)
+        end
       end
     end
 

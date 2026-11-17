@@ -25,7 +25,7 @@ module Caracal
             xml.Override 'PartName' => '/docProps/core.xml',    'ContentType' => 'application/vnd.openxmlformats-package.core-properties+xml'
             xml.Override 'PartName' => '/docProps/custom.xml',  'ContentType' => 'application/vnd.openxmlformats-officedocument.custom-properties+xml'
             xml.Override 'PartName' => '/word/document.xml',    'ContentType' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml'
-            %i(header footer).each do |type|
+            %i(header footer footnotes).each do |type|
               document.relationships_by_type(type).each do |rel|
                 xml.Override 'PartName' => "/word/#{rel.formatted_target}", 'ContentType' => "application/vnd.openxmlformats-officedocument.wordprocessingml.#{type}+xml"
               end

@@ -138,6 +138,20 @@ describe Caracal::Core::Models::ParagraphModel do
       it { expect(subject.runs.size).to eq length + 1 }
     end
 
+    # .footnote
+    describe '.footnote' do
+      let!(:length) { subject.runs.length }
+      let!(:note)   { subject.footnote 'Source' }
+
+      it { expect(subject.runs.size).to eq length + 1 }
+      it { expect(note).to be_a(Caracal::Core::Models::FootnoteModel) }
+      it { expect(subject.runs.last).to be_a(Caracal::Core::Models::FootnoteReferenceModel) }
+      it { expect(subject.runs.last.footnote).to equal note }
+      it { expect(subject.runs.last.text_style).to eq 'FootnoteReference' }
+      it { expect(subject.runs.last.text_color).to eq '666666' }
+      it { expect(note.paragraph_color).to be_nil }
+    end
+
     # .br
     describe '.br' do
       let!(:length) { subject.runs.length }

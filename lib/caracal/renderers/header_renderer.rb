@@ -36,6 +36,7 @@ module Caracal
 
       def render_pagebreak(xml, model); end
       def render_columnbreak(xml, model); end
+      def render_footnotereference(xml, model, **options); end # Word has no footnotes in headers and footers
 
       #-------------------------------------------------------------
       # Private Methods

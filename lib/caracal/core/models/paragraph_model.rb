@@ -157,6 +157,22 @@ module Caracal
           model
         end
 
+        # .footnote
+        # Its number in the text takes this paragraph's formatting; its
+        # text takes the FootnoteText style.
+        def footnote(*args, &block)
+          options = Caracal::Utilities.extract_options!(args).dup
+          options.merge! content: args.first if args.first
+
+          model = Caracal::Core::Models::FootnoteModel.new options, &block
+          if model.valid?
+            runs << Caracal::Core::Models::FootnoteReferenceModel.new(self.run_attributes.to_h.merge(footnote: model))
+          else
+            raise Caracal::Errors::InvalidModelError, model.errors.inspect
+          end
+          model
+        end
+
         # .link
         def link(*args, &block)
           options = self.run_attributes.to_h

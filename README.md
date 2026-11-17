@@ -378,7 +378,7 @@ The page number appears on the first page too unless you pass `first_page: false
 
 ### Headers and Footers
 
-Headers and footers are repeated on every page. They take the same content as the document body, in the order given, except page breaks and a table of contents.
+Headers and footers are repeated on every page. They take the same content as the document body, in the order given, except page breaks, footnotes and a table of contents.
 
 ```ruby
 docx.header.h1 'Page Header'
@@ -529,7 +529,7 @@ end
 
 In paragraph styles, `left` and `right` are short for `indent_left` and `indent_right`.
 
-Caracal defines these styles for every document: paragraph styles Normal, Title, Subtitle, Heading, Heading1–Heading6, Header, Footer, Caption, TOCHeading and TOC1–TOC6, and the character style Hyperlink. A `style` command with an existing id replaces that style.
+Caracal defines these styles for every document: paragraph styles Normal, Title, Subtitle, Heading, Heading1–Heading6, Header, Footer, Caption, FootnoteText, TOCHeading and TOC1–TOC6, and the character styles Hyperlink and FootnoteReference. A `style` command with an existing id replaces that style.
 
 Styles are declared as `paragraph` by default. If you need to adjust inline text styles repeatedly, you might
 benefit from defining a `character` style.  Paragraph styles affect all text runs within a paragraph; character styles
@@ -657,6 +657,41 @@ docx.p do
   end
 end
 ```
+
+
+### Footnotes
+
+Footnotes can be added inside paragraphs and list items using the `footnote` method. Its number appears where it is called and again before its text at the foot of the page. Footnotes are numbered automatically, in the order they appear in the document.
+
+```ruby
+docx.p 'A claim' do
+  footnote 'A footnote with plain text.'
+end
+
+docx.p do
+  text 'A claim'
+  footnote { text 'Its source, '; link 'with a link', 'https://example.com/' }
+  text ' and another claim'
+  footnote 'Another footnote.'
+end
+
+docx.ol do
+  li 'A list item' do
+    footnote 'Its source, ', italic: true do
+      text 'in bold', bold: true     # the block takes the same runs as a paragraph's.
+      text '.'
+    end
+  end
+end
+```
+
+The footnote's text uses the paragraph style `FootnoteText` and takes the options of `p`; it does not take the formatting of the paragraph it annotates. Both numbers use the character style `FootnoteReference`, which sets them in superscript; the number in the text also takes its paragraph's formatting. Both styles can be redefined with `style`:
+
+```ruby
+docx.style id: 'FootnoteText', name: 'footnote text', font: 'Arial', size: 18, line: 260
+```
+
+Footnotes cannot contain footnotes, and headers and footers leave footnotes out.
 
 
 ### Fields

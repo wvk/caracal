@@ -707,7 +707,7 @@ Images can be added by using the `img` method. The other parameters control the 
 
 ```ruby
 docx.img 'https://www.example.com/logo.png' do
-  data    raw_data  # sets the file data directly instead of opening the url
+  data    File.binread('logo.png')  # the image's raw bytes, used instead of reading the url
   width   396       # sets the image width. units specified in pixels. defaults to the image's own width.
   height  216       # sets the image height. units specified in pixels. defaults to the image's own height.
   ppi     96        # sets the pixels per inch. default is 72.
@@ -721,10 +721,13 @@ end
 
 *Width and height are read from PNG, JPEG and GIF data; give one of them to scale the image keeping its aspect ratio. Other formats need both. Pixel sizes are converted at `ppi`; without `ppi`, the image's own size uses the density stored in PNG and JPEG files (horizontal for width, vertical for height), else 96.*
 
-*Note: If you provide the image data, you should still supply a URL. I know this
-is a bit hacky, but it allows the library to key the image more effectively and
-Caracal needs a file extension to apply to the renamed media file. This seemed
-the simplest solution to both problems.*
+Every setting also works as an option:
+
+```ruby
+docx.img 'logo.png', data: File.binread('logo.png'), width: 396, height: 216
+```
+
+*`data` takes the image's raw bytes, as `File.binread` returns them, and Caracal embeds them unchanged. With `data`, the first argument only names the image.*
 
 #### Anchored Images
 

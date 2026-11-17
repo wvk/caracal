@@ -26,7 +26,10 @@ module Caracal
         has_string_attribute :base, default: 'Normal'
         has_string_attribute :next, default: 'Normal'
 
-        has_integer_attribute :line, default: 360 # 0.25in in twips; 240ths of a line for line_rule :auto
+        # Twips; 240ths of a line for line_rule :auto. A style without it
+        # takes its base style's. The default is the default paragraph
+        # style's when it sets none.
+        has_integer_attribute :line, default: 360
         has_integer_attribute :indent_left  # twips
         has_integer_attribute :indent_right # twips
         has_integer_attribute :indent_first # twips
@@ -41,7 +44,7 @@ module Caracal
         has_boolean_attribute :before_autospacing, default: false
         has_boolean_attribute :after_autospacing, default: false
 
-        has_symbol_attribute :line_rule, default: :at_least
+        has_symbol_attribute :line_rule, default: :at_least # when only line is given
         has_symbol_attribute :type, default: :paragraph
         has_symbol_attribute :align, default: :left
 
@@ -67,9 +70,11 @@ module Caracal
           @style_bottom    ||= DEFAULT_STYLE_BOTTOM
           @style_left      ||= DEFAULT_STYLE_LEFT
           @style_right     ||= DEFAULT_STYLE_RIGHT
-          @style_line      ||= DEFAULT_STYLE_LINE
-          @style_line_rule ||= DEFAULT_STYLE_LINE_RULE
           @style_word_wrap ||= DEFAULT_STYLE_WORD_WRAP
+
+          # docDefaults and image paragraphs read the default paragraph
+          # style's line spacing
+          @style_line ||= DEFAULT_STYLE_LINE if style_default and style_type == :paragraph
 
           # raise options.inspect if self.style_type.to_s == 'table'
         end

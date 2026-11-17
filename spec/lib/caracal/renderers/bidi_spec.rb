@@ -5,7 +5,7 @@ describe 'right-to-left paragraphs' do
 
   let(:docx) do
     Caracal::Document.new do |docx|
-      docx.style id: 'Arabic', name: 'Arabic', bidi: true, word_wrap: true
+      docx.style id: 'Arabic', name: 'Arabic', bidi: true, word_wrap: true, top: 120
       docx.p 'نص', bidi: true, tabs: [720], line: 360
       docx.p 'text'
       docx.ol do

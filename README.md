@@ -573,6 +573,8 @@ end
 
 In paragraph styles, `left` and `right` are short for `indent_left` and `indent_right`.
 
+A style without `line` takes the line spacing of its base style, `Normal` unless `base` names another. `line` without `line_rule` is a minimum (`:at_least`). The built-in `Normal` sets `line 320`; a `Normal` of your own without `line` gets 360 at least.
+
 Caracal defines these styles for every document: paragraph styles Normal, Title, Subtitle, Heading, Heading1–Heading6, Header, Footer, Caption, FootnoteText, TOCHeading and TOC1–TOC6, and the character styles Hyperlink and FootnoteReference. A `style` command with an existing id replaces that style.
 
 Styles are declared as `paragraph` by default. If you need to adjust inline text styles repeatedly, you might

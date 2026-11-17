@@ -23,6 +23,22 @@ describe 'table styles' do
     it { expect(styles.at_xpath("//w:style[@w:styleId='Plain']/w:tblStylePr", ns)).to be_nil }
   end
 
+  describe 'line spacing' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.style id: 'Plain', name: 'plain', type: :table
+        docx.style id: 'Lined', name: 'lined', type: :table, line: 280, line_rule: :exact
+        docx.table [%w(a)], style: 'Plain'
+        docx.table [%w(b)], style: 'Lined'
+      end
+    end
+    let(:spacings) { xml.xpath('//w:tc/w:p', ns).map {|p| p.at_xpath('w:pPr/w:spacing', ns)&.attributes&.transform_values(&:value) } }
+
+    it "leaves the cells' paragraphs to their own style without a line, and writes it with one" do
+      expect(spacings).to eq [nil, { 'line' => '280', 'lineRule' => 'exact' }]
+    end
+  end
+
   describe 'with conditional formats' do
     let(:document) do
       Caracal::Document.new do |docx|

@@ -60,7 +60,7 @@ module Caracal
               render_table_style w, default_table_style
             else
               w.style 'w:styleId' => 'TableNormal', 'w:type' => 'table', 'w:default' => true do
-                w.name 'w:val' => 'Table Normal'
+                w.name 'w:val' => 'Normal Table' # Word's name, so that tools matching by name find its built-in style
                 w.pPr do
                   w.spacing 'w:lineRule' => 'exact', 'w:line' => (s.style_size * 20 * 1.15).to_i, 'w:before' => '0', 'w:after' => '0'
                 end

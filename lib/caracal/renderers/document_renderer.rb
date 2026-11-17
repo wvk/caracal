@@ -167,8 +167,13 @@ module Caracal
         end
       end
 
+      # The extension of a:blip naming an SVG image part ([MS-ODRAWXML]).
+      SVG_BLIP_URI       = '{96DAC541-7B7A-43D3-8B79-37D633B846F1}'
+      SVG_BLIP_NAMESPACE = 'http://schemas.microsoft.com/office/drawing/2016/SVG/main'
+
       def render_image_proper(xml, model, **options)
         rel      = document.relationship type: :image, target: model.image_url, data: model.image_data
+        svg_rel  = document.relationship type: :image, target: model.image_url, data: model.image_svg, extension: 'svg' if model.svg?
         rel_name = rel.formatted_target
         drawing_id = next_drawing_id
 
@@ -192,7 +197,7 @@ module Caracal
                 xml['pic'].cNvPicPr
               end
               xml['pic'].blipFill do
-                xml['a'].blip 'r:embed' => rel.formatted_id
+                render_image_blip xml, rel, svg_rel
                 xml['a'].srcRect
                 xml['a'].stretch do
                   xml['a'].fillRect
@@ -207,6 +212,23 @@ module Caracal
               end
             end
           end
+        end
+      end
+
+      # The blip embeds the raster image. With an SVG image, its extension
+      # names the SVG part, which Word 2016 and later and LibreOffice show
+      # instead; other readers show the raster image.
+      def render_image_blip(xml, rel, svg_rel)
+        if svg_rel
+          xml['a'].blip 'r:embed' => rel.formatted_id do
+            xml['a'].extLst do
+              xml['a'].ext uri: SVG_BLIP_URI do
+                xml['asvg'].svgBlip 'xmlns:asvg' => SVG_BLIP_NAMESPACE, 'r:embed' => svg_rel.formatted_id
+              end
+            end
+          end
+        else
+          xml['a'].blip 'r:embed' => rel.formatted_id
         end
       end
 

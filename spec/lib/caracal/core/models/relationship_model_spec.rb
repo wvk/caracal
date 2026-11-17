@@ -80,6 +80,15 @@ describe Caracal::Core::Models::RelationshipModel do
       it { expect(subject.relationship_data).to eq 'Dummy data' }
     end
 
+    # .extension
+    describe '.extension' do
+      before do
+        subject.extension('svg')
+      end
+
+      it { expect(subject.relationship_extension).to eq 'svg' }
+    end
+
 
     #=================== GETTERS =============================
 
@@ -102,6 +111,11 @@ describe Caracal::Core::Models::RelationshipModel do
         end
 
         it { expect(subject.formatted_target).to match %r{\Amedia/image-\h{16}\.png\z} }
+      end
+      describe 'when image with an extension' do
+        subject { described_class.new id: 2, type: :image, target: 'diagram.png', data: '<svg xmlns="http://www.w3.org/2000/svg"/>', extension: 'svg' }
+
+        it { expect(subject.formatted_target).to match %r{\Amedia/image-\h{16}\.svg\z} }
       end
       describe 'when not image' do
         before do
@@ -184,7 +198,7 @@ describe Caracal::Core::Models::RelationshipModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:id, :type, :owner, :target, :data].sort }
+      let(:expected) { [:id, :type, :owner, :target, :data, :extension].sort }
 
       it { expect(actual).to eq expected }
     end

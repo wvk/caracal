@@ -1,6 +1,7 @@
 require 'caracal/core/models/base_model'
 require 'caracal/core/models/bookmark_model'
 require 'caracal/core/models/column_break_model'
+require 'caracal/core/models/image_model'
 require 'caracal/core/models/link_model'
 require 'caracal/core/models/text_model'
 require 'caracal/core/models/theme_color_model'
@@ -171,6 +172,25 @@ module Caracal
           else
             raise Caracal::Errors::InvalidModelError, model.errors.inspect
           end
+          model
+        end
+
+        # .img
+        # An image within the line of text. It follows the paragraph's
+        # alignment, so align positions anchored images only.
+        def img(*args, &block)
+          options = Caracal::Utilities.extract_options!(args)
+          options.merge! url: args.first if args.first
+
+          model = Caracal::Core::Models::ImageModel.new options, &block
+          unless model.valid?
+            raise Caracal::Errors::InvalidModelError, "Invalid image: #{model.errors.map { |e| e[:message] }.join ', '}"
+          end
+          if model.own_align? and not model.image_anchor
+            raise Caracal::Errors::InvalidModelError, 'An image within a paragraph follows the paragraph\'s alignment; align positions anchored images only.'
+          end
+
+          runs << model
           model
         end
 

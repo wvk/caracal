@@ -159,6 +159,25 @@ describe Caracal::Core::Models::ImageModel do
       it { expect(subject.image_right).to eq 12 }
     end
 
+    # .position
+    describe '.position' do
+      it { expect(subject.image_position).to be_nil }
+      it { expect(subject.formatted_position).to be_nil }
+
+      describe 'in points' do
+        before { subject.position(-2.5) }
+
+        it { expect(subject.image_position).to eq(-2.5) }
+        it { expect(subject.formatted_position).to eq(-5) }
+      end
+    end
+
+    # .own_align?
+    describe '.own_align?' do
+      it { expect(subject.own_align?).to eq true }
+      it { expect(described_class.new(url: 'logo.png', width: 1, height: 1).own_align?).to eq false }
+    end
+
 
     #=============== VALIDATION ===========================
 
@@ -202,7 +221,7 @@ describe Caracal::Core::Models::ImageModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:url, :data, :width, :height, :ppi, :align, :top, :bottom, :left, :right, :anchor, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap].sort }
+      let(:expected) { [:url, :data, :width, :height, :ppi, :align, :top, :bottom, :left, :right, :anchor, :position, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap].sort }
 
       it { expect(actual).to eq expected }
     end

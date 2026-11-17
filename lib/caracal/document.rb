@@ -477,11 +477,10 @@ module Caracal
 
     def render_media(zip)
       images = relationships_by_type(:image) # get images from main doc
-      relationships_by_type(:header).each do |rel| # get image rels from headers
-        images.concat rel.owner.relationships_by_type(:image)
-      end
-      relationships_by_type(:footer).each do |rel| # get image rels from footers
-        images.concat rel.owner.relationships_by_type(:image)
+      %i(header footer footnotes).each do |type| # get image rels from the other parts
+        relationships_by_type(type).each do |rel|
+          images.concat rel.owner.relationships_by_type(:image)
+        end
       end
 
       images.uniq(&:formatted_target).each do |rel|

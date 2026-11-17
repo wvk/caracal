@@ -20,6 +20,7 @@
   * `section` gives the content of its block its own page size, margins, columns, headers and footers, such as a landscape page in a portrait document; a section without its own headers and footers shows the previous section's (#12).
   * `rake ooxml` validates every document the specs render with Microsoft's Open XML SDK, in Docker; CI runs it (#49).
   * `ol start: 3` numbers a list's items from 3; other lists start at their list style's `start` (#43).
+  * `img` inside paragraphs, list items, headings and footnotes places the image within the line of text, between the runs around it. `position` raises or lowers it against the baseline; `anchor: true` anchors it to its paragraph (#35).
 
 * Bug fixes
   * `numbering.xml` defines the numberings of a list shown in several parts, such as a header and its first-page copy; the earlier parts pointed at numberings it left out (#37).

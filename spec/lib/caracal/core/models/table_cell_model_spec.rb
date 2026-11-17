@@ -316,6 +316,33 @@ describe Caracal::Core::Models::TableCellModel do
     end
 
 
+    #=============== STYLES ============================
+
+    describe '.apply_styles' do
+      describe 'with a nested table' do
+        let(:cell) do
+          described_class.new do
+            table [['inner']]
+            p 'text'
+          end
+        end
+        let(:table)     { cell.contents[0] }
+        let(:paragraph) { cell.contents[1] }
+
+        before { cell.apply_styles({ width: 6000, align: :right, layout: :autofit, style: 'Grid', bgcolor: 'cccccc', bold: true }) }
+
+        it { expect(cell.cell_width).to eq 6000 }
+        it { expect(cell.cell_align).to eq :right }
+        it { expect(table.table_width).to eq nil }
+        it { expect(table.table_align).to eq :center }
+        it { expect(table.table_layout).to eq :fixed }
+        it { expect(table.table_style).to eq 'TableNormal' }
+        it { expect(table.table_bgcolor).to eq nil }
+        it { expect(paragraph.runs.first.text_bold).to eq true }
+      end
+    end
+
+
     #=============== VALIDATION ========================
 
     describe '.valid?' do

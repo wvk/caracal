@@ -298,6 +298,59 @@ describe Caracal::Document do
         end
       end
     end
+
+    describe 'with two images' do
+      let(:other_png) { 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z/D/PwAHAwL/qGeMxAAAAABJRU5ErkJggg=='.unpack1('m') }
+      let(:data) do
+        a, b = png, other_png
+        described_class.new('inner.docx') do
+          img 'a.png', data: a, width: 10, height: 10
+          img 'b.png', data: b, width: 10, height: 10
+        end.render.string
+      end
+
+      # the media each blip of the part points at, in document order
+      def images(files, part)
+        blip_ns = { 'a' => 'http://schemas.openxmlformats.org/drawingml/2006/main',
+                    'r' => 'http://schemas.openxmlformats.org/officeDocument/2006/relationships' }
+        rels_ns = { 'r' => 'http://schemas.openxmlformats.org/package/2006/relationships' }
+        rels    = strict_xml(files["word/_rels/#{ part }.rels"])
+
+        strict_xml(files["word/#{ part }"]).xpath('//a:blip/@r:embed', blip_ns).map do |embed|
+          files["word/#{ rels.at_xpath("//r:Relationship[@Id='#{ embed.value }']", rels_ns)['Target'] }"]
+        end
+      end
+
+      it 'keeps them in order when the parent has relationships of its own' do
+        docx = described_class.new('test.docx') do |d|
+          d.p { link 'x', 'https://x.example/' }
+          d.iframe data: data
+        end
+
+        expect(images(parts(docx), 'document.xml')).to eq [png, other_png]
+      end
+
+      it 'keeps them in order in every part that shows the iframe' do
+        docx = described_class.new('test.docx') do |d|
+          d.header do |h|
+            # the links take rId1 to rId6, so image A gets the id image B has in the snippet
+            6.times { |i| h.p { link "x#{ i }", "https://x.example/#{ i }" } }
+            h.iframe data: data
+          end
+          d.footer { |f| f.iframe data: data }
+          d.page_numbers true, first_page: false   # copies header and footer to the first page
+          d.p { link 'x', 'https://x.example/' }
+          d.iframe data: data
+        end
+
+        2.times do
+          files = parts(docx)
+          %w(document.xml header1.xml header2.xml footer1.xml footer2.xml).each do |part|
+            expect(images(files, part)).to eq([png, other_png]), part
+          end
+        end
+      end
+    end
   end
 
 

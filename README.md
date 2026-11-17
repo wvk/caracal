@@ -13,7 +13,7 @@ Caracal is not a magical HTML to Word translator. Instead, it is a markup langua
 
 Or, said differently, if you use [Prawn](https://github.com/prawnpdf/prawn) for PDF generation, you'll probably like Caracal. Only you'll probably like it better. :)
 
-Please see the [caracal-example](https://github.com/trade-informatics/caracal-example) repository for
+Please see the [caracal-example](https://github.com/urvin-compliance/caracal-example) repository for
 a working demonstration of the library's capabilities.
 
 
@@ -72,9 +72,9 @@ What we wanted was a Prawn-style library for the `:docx` format. In the absence 
 
 Caracal is designed to separate the process of parsing and collecting rendering instructions from the process of rendering itself.
 
-First, the library consumes all programmer instructions and organizes several collections of data models that capture those instructions. These collections are ordered and nested exactly as the instructions we given. Each model contains all the data required to render it and is responsible for declaring itself valid or invalid.
+First, the library consumes all programmer instructions and organizes several collections of data models that capture those instructions. These collections are ordered and nested exactly as the instructions were given. Each model contains all the data required to render it and is responsible for declaring itself valid or invalid.
 
-*Note: Some instructions create more than one model. For example, the `img` method both appends an `ImageModel` to the main contents collection and determines whether or not a new `RelationshipModel` should be added to the relationships collection.*
+*Note: Some instructions create more than one model. For example, the `iframe` method appends an `IFrameModel` to the main contents collection and adds the embedded document's namespaces to the namespaces collection. Rendering adds models too: each rendered image adds a `RelationshipModel` to the relationships of its part.*
 
 Only after all the programmer instructions have been parsed does the document attempt to render the data to XML. This strategy gives the rendering process a tremendous amount of flexibility in the rare cases where renderers combine data from more than one collection.
 
@@ -98,7 +98,9 @@ For each Caracal request, the following document structure will be created and z
           |- document.xml.rels
           |- fontTable.xml.rels    *
           |- header1.xml.rels      *
+          |- header2.xml.rels      *
           |- footer1.xml.rels      *
+          |- footer2.xml.rels      *
         |- fonts                   *
           |- font1.odttf
           ...
@@ -110,7 +112,9 @@ For each Caracal request, the following document structure will be created and z
         |- document.xml
         |- fontTable.xml
         |- footer1.xml             *
+        |- footer2.xml             *
         |- header1.xml             *
+        |- header2.xml             *
         |- numbering.xml
         |- settings.xml
         |- styles.xml
@@ -150,19 +154,19 @@ Specifies the fonts used in the document.
 Embedded font files and their links from the font table. Only present when fonts are embedded.
 
 **word/header1.xml** and **word/footer1.xml**
-The page header and footer. Only present when the document has a header or footer. A different first page adds `header2.xml` and `footer2.xml`. Their images and links are listed in `word/_rels/header1.xml.rels` and `footer1.xml.rels`.
+The page header and footer, present when the document has one. `header2.xml` and `footer2.xml` hold the first page's header and footer when the first page differs and shows content there. Each part's images and links are listed in its own `.rels` file, e.g. `word/_rels/header1.xml.rels`.
 
 **word/numbering.xml**
-Defines ordered and unordered list styles.
+Defines the list styles and the heading numbering.
 
 **word/theme/theme1.xml**
 The color and font theme. See [Color Themes](#color-themes).
 
 **word/settings.xml**
-Defines global directives for the document (e.g., whether to show background images, tab widths, etc). Also, establishes compatibility with older versions on Word.
+Defines global directives for the document (e.g., whether to show background images, tab widths, etc). Also, establishes compatibility with older versions of Word.
 
 **word/styles.xml**
-Defines all paragraph and table styles used through the document.  Caracal adds a default set of styles to match its HTML-like content syntax.  These defaults can be overridden.
+Defines the paragraph, character and table styles used throughout the document. Caracal adds a default set of styles to match its HTML-like content syntax; you can override them.
 
 **[Content_Types].xml**
 Pairs extensions and XML files with schema content types so Word can parse them correctly. *This file is generated automatically by the library based on other user directives.*
@@ -176,21 +180,21 @@ OpenXML properties are specified in several different units, depending on which 
 Border and rule spacing is measured in full points.
 
 **Half Points**
-All font sizes are measure in half points.  A font size of 24 is equivalent to 12pt.
+All font sizes are measured in half points.  A font size of 24 is equivalent to 12pt.
 
 **Eighth Points**
 Border and rule sizes are measured in 1/8 points.  A border size of 4 is equivalent to 0.5pt.
 
 **Twips**
-A twip is 1/20 of a point.  Paragraph spacing, indentation, page sizes and page margins are measured in twips.  Word documents are printed at 72dpi.  1in == 72pt == 1440 twips.
+A twip is 1/20 of a point.  Paragraph spacing, indentation, page sizes and page margins are measured in twips.  1in == 72pt == 1440 twips.
 
 **Pixels**
-In Word documents, pixels are equivalent to points.
+Image width and height are measured in pixels, converted at `ppi` (72 by default, where 1px == 1pt). See [Images](#images).
 
 **EMUs (English Metric Unit)**
 EMUs are a virtual unit designed to facilitate the smooth conversion between inches, millimeters, and pixels for images and vector graphics.  1in == 914400 EMUs.  1px at 72dpi == 1pt == 12700 EMUs.
 
-At present, Caracal expects values to be specified in whichever unit OOXML requires. This is admittedly difficult for new Caracal users. Eventually, we'll probably implement a utility object under the hood to convert user-specified units into the format expected by OOXML.
+Caracal takes each value in the unit OOXML uses for it, except for images: width and height in pixels, margins in points and anchor offsets in twips, all converted to EMUs.
 
 
 ## Syntax Flexibility
@@ -218,19 +222,18 @@ Parameter options are always evaluated before block options. This means if the s
 
 ## Validations
 
-All Caracal models perform basic validations on their attributes, but this is, without question, the least sophisticated part of the library at present.
-
-In forthcoming versions of Caracal, we'll be looking to expand the `InvalidModelError` class to provide broader error reporting abilities across the entire library.
+Each command validates its options and raises `Caracal::Errors::InvalidModelError` for invalid values. An unknown option raises a `RuntimeError` naming it.
 
 
 ## Security
 
-Caracal reads whatever path or URL you hand it. Both `img` and `iframe` accept a local filesystem path or an http(s) URL, and Caracal reads or fetches it while building or rendering the document.
+Caracal reads whatever path or URL you hand it. Both `img` and `iframe` accept a local filesystem path or an http(s) URL, and Caracal reads or fetches it while building or rendering the document. `font` reads local font files.
 
 **Treat those values as trusted input.** If a path or URL can be influenced by an end user, validate it before passing it to Caracal:
 
 * **Local paths** are read with the permissions of your application's process. Any file that process can read can be embedded in the generated document, so `docx.img '/etc/passwd', width: 10, height: 10` embeds the contents of that file.
 * **URLs** are fetched from your application's network position, and redirects are followed. A user-supplied URL can therefore reach internal services, `localhost`, or cloud metadata endpoints that are not otherwise reachable from outside.
+* **Font files** given to `font` (`regular`, `bold`, `italic`, `bold_italic`) are read from local paths.
 * **Documents embedded with `iframe`** are parsed, and their markup is copied into your output. Only embed documents you trust. See [IFrames](#iframes).
 
 Caracal reads http(s) URLs with `URI.open` and everything else with `File.binread`, so a path is always read as a file. It leaves restricting paths, hosts and directories to your application, which knows what is legitimate: an allowlist of permitted directories or hosts, or never passing user-supplied values through to Caracal.
@@ -266,7 +269,7 @@ Most code examples show optional values being passed in a block.  As noted above
 
 ### File Name
 
-The final output document's title can be set at initialization or via the `file_name` method.
+The output file name can be set at initialization or via the `file_name` method. A name with directories saves the file there.
 
 ```ruby
 docx = Caracal::Document.new('example_document.docx')
@@ -277,7 +280,7 @@ docx.file_name 'different_name.docx'
 The current document name can be returned by invoking the `name` method:
 
 ```ruby
-docx.name    # => 'example_document.docx'
+docx.name    # => 'different_name.docx'
 ```
 
 *The default file name is caracal.docx.*
@@ -399,14 +402,14 @@ Fonts licensed for Preview & Print embedding only are embedded with a warning: W
 
 ### Styles
 
-Paragraph style classes can be defined using the `style` method.  The method accepts several optional parameters to control the rendering of text using the style.
+Paragraph style classes are defined with the `style` method. `id` and `name` are required; the other options control the rendering of text using the style.
 
 ```ruby
 docx.style do
   id              'Heading1'  # sets the internal identifier for the style.
   name            'heading 1' # sets the friendly name of the style.
   type            'paragraph' # sets the style type. accepts `paragraph`, `character` or `table` (see Table Styles).
-  font            'Palantino' # sets the font family.
+  font            'Palatino'  # sets the font family.
   color           '333333'    # sets the text color. accepts hex RGB.
   size            28          # sets the font size. units in half points.
   bold            false       # sets the font weight.
@@ -419,25 +422,15 @@ docx.style do
   top             100         # sets the spacing above the paragraph. units in twips.
   bottom          0           # sets the spacing below the paragraph. units in twips.
   indent_left     360         # sets the left indent. units in twips.
-  indent_right    360         # sets the rights indent. units in twips.
+  indent_right    360         # sets the right indent. units in twips.
   indent_first    720         # sets the first line indent. units in twips.
 end
 ```
 
-Caracal establishes a standard set of default styles for every document. Default styles can be overridden by issuing a `style` command referencing an existing id. Default style ids are:
-
-* Normal
-* Title
-* Subtitle
-* Heading1
-* Heading2
-* Heading3
-* Heading4
-* Heading5
-* Heading6
+Caracal defines these styles for every document: paragraph styles Normal, Title, Subtitle, Heading, Heading1–Heading6, Header, Footer, Caption, TOCHeading and TOC1–TOC6, and the character style Hyperlink. A `style` command with an existing id replaces that style.
 
 Styles are declared as `paragraph` by default. If you need to adjust inline text styles repeatedly, you might
-benefit from defining a `character` style.  Paragraph styles affects all text runs within a paragraph; character styles
+benefit from defining a `character` style.  Paragraph styles affect all text runs within a paragraph; character styles
 are used to style individual runs within a larger text block.
 Character styles use the text options only (font, color, size, bold, …) and are applied to text runs and links with the
 `style` option, e.g. `text 'x', style: 'MyCharStyle'`.
@@ -460,7 +453,7 @@ docx.custom_property name: 'Due', value: Date.new(2024, 5, 17), type: :date
 docx.custom_property name: 'Amount', value: 12.5, type: :number
 ```
 
-The `name`, `value`, and `type` attributes are required. A `:date` value may be a Date, Time, DateTime or parseable String. A `:number` value is stored as an integer or, if it has a fraction, as a floating point number. Invalid properties raise `Caracal::Errors::InvalidModelError`.
+The `name`, `value`, and `type` attributes are required. A `:date` value may be a Date, Time, DateTime or parseable String. A `:number` value is stored as an integer when it is a whole number within 32 bits, otherwise as a floating point number. A `:boolean` value is `true` or `false`; other values are stored as text. Invalid properties raise `Caracal::Errors::InvalidModelError`.
 
 A document may have zero or many custom properties. Each custom property's `name` should be unique with its `type`.
 
@@ -483,7 +476,7 @@ docx.p 'Sample text.' do
   color           '333333'          # sets the font color.
   size            32                # sets the font size. units in 1/2 points.
   bold            true              # sets whether or not to render the text with a bold weight.
-  italic          false             # sets whether or not render the text in italic style.
+  italic          false             # sets whether or not to render the text in italic style.
   underline       false             # sets whether or not to underline the text.
   bgcolor         'cccccc'          # sets the background color.
   highlight_color 'yellow'          # sets the highlight color. accepts the names listed below.
@@ -498,7 +491,7 @@ end
 
 Paragraphs and paragraph styles accept the table border options (see Tables), e.g. `docx.p 'Boxed', border_color: '666666'` or `border_bottom: { size: 12 }`. `border_horizontal` sets the line between consecutive paragraphs with the same borders.
 
-More complex paragraph runs can be accomplished by using the `text` method instead the paragraph's block.
+More complex paragraph runs can be accomplished by using the `text` method inside the paragraph's block.
 
 ```ruby
 docx.p do
@@ -522,12 +515,12 @@ docx.p do
   link 'Example Text', 'https://www.example.com' do
     internal        false             # links to the bookmark named by the second argument instead of a url. defaults to false.
     style           'Hyperlink'       # sets the character style. defaults to nil.
-    font            'Courier New'     # sets the font name to use. defaults to nil.
-    color           '0000ff'          # sets the color of the text. defaults to 1155cc, or the style's.
-    size            24                # sets the font size. units in half-points. defaults to nil.
-    bold            false             # sets whether or not the text will be bold. defaults to false.
-    italic          false             # sets whether or not the text will be italic. defaults to false.
-    underline       true              # sets whether or not the text will be underlined. defaults to true, or the style's.
+    font            'Courier New'     # sets the font name to use. defaults to the paragraph's.
+    color           '0000ff'          # sets the color of the text. defaults to the paragraph's, else the style's, else 1155cc.
+    size            24                # sets the font size. units in half-points. defaults to the paragraph's.
+    bold            false             # sets whether or not the text will be bold. defaults to the paragraph's.
+    italic          false             # sets whether or not the text will be italic. defaults to the paragraph's.
+    underline       true              # sets whether or not the text will be underlined. defaults to the paragraph's, else the style's, else true.
     bgcolor         'cccccc'          # sets the background color.
     highlight_color 'yellow'          # sets the highlight color. accepts the names listed under Paragraphs.
   end
@@ -600,9 +593,9 @@ Horizontal rules can be added using the `hr` method.  The method accepts several
 ```ruby
 docx.hr do
   color   '333333'   # sets the color of the line. defaults to auto.
-  line    :double    # sets the line style (single or double). defaults to single.
+  line    :double    # sets the line style, a Word border style such as single, double or dotted. defaults to single.
   size    8          # sets the thickness of the line. units in 1/8 points. defaults to 4.
-  spacing 4          # sets the spacing above the line. units in points. defaults to 1.
+  spacing 4          # sets the spacing below the line. units in points. defaults to 1.
 end
 ```
 
@@ -658,7 +651,7 @@ docx.ul do
 end
 ```
 
-Lists can nested as many levels deep as you wish and mixed in any combination. Text added after a nested list renders after it, as an unnumbered paragraph aligned with the item's text, and an item can hold several nested lists.
+Lists nest up to nine levels deep and mix in any combination. Text added after a nested list renders after it, as an unnumbered paragraph aligned with the item's text, and an item can hold several nested lists.
 
 ```ruby
 docx.ul do
@@ -680,7 +673,7 @@ end
 
 ### List Styles
 
-List styles can be defined using the `list_style` command. The method accepts several optional parameters to control the rendering of list items using the style.
+List styles are defined with the `list_style` command. `type`, `level`, `format` and `value` are required; the other options control the rendering of list items.
 
 *Caracal will automatically define 9 levels of default styles for both ordered and unordered lists.*
 
@@ -690,7 +683,7 @@ docx.list_style do
   level   2           # sets the nesting level. 0-based index.
   format  'decimal'   # sets the list style. see OOXML docs for details.
   value   '%3.'       # sets the value of the list item marker. see OOXML docs for details.
-  align   :left       # sets the alignment. accepts :left, :center: and :right. defaults to :left.
+  align   :left       # sets the alignment. accepts :left, :center and :right. defaults to :left.
   indent  400         # sets the indention of the marker from the margin. units in twips.
   left    800         # sets the indention of the text from the margin. units in twips.
   start   2           # sets the number at which item counts begin. defaults to 1.
@@ -712,10 +705,10 @@ docx.img 'https://www.example.com/logo.png' do
   height  216       # sets the image height. units specified in pixels. defaults to the image's own height.
   ppi     96        # sets the pixels per inch. default is 72.
   align   :right    # controls the justification of the image. default is :left.
-  top     10        # sets the top margin. units specified in pixels.
-  bottom  10        # sets the bottom margin. units specified in pixels.
-  left    10        # sets the left margin. units specified in pixels.
-  right   10        # sets the right margin. units specified in pixels.
+  top     10        # sets the top margin. units in points. defaults to 8.
+  bottom  10        # sets the bottom margin. units in points. defaults to 8.
+  left    10        # sets the left margin. units in points. defaults to 8.
+  right   10        # sets the right margin. units in points. defaults to 8.
 end
 ```
 
@@ -746,10 +739,6 @@ end
 
 ### Tables
 
-```
-Release v1.4.0 deprecated the behaviour of automatically adding an empty paragraph tag after every table. If you are upgrading from an older version of the library, you will need to control such spacing in your own code.
-```
-
 Tables can be added using the `table` method.  The method accepts several optional parameters to control the layout and style of the table cells.
 
 The `table` command accepts data in the form of a two-dimensional arrays. This corresponds to rows and column cells within those rows.  Each array item can be a string, a Hash of options, a Proc (which will be passed as a block), or a `TableCellModel`.  The command will normalize all array contents into a two-dimensional array of `TableCellModel` instances.
@@ -760,12 +749,19 @@ docx.table [['Header 1','Header 2'],['Cell 1', 'Cell 2']] do
   border_line    :single    # sets the border style. defaults to :single. see OOXML docs for details.
   border_size    4          # sets the border width. defaults to 4. units in 1/8 points.
   border_spacing 4          # sets the cell spacing (units in twips) and the spacing around the border (units in points). defaults to 0.
-  column_widths  [80, 120]  # sets the column widths and, unless `width` is given, the table width. defaults to auto. units in twips.
+  column_widths  [80, 120]  # sets the column widths. units in twips. defaults to equal shares of the table width.
   repeat_header  1          # sets the number of header rows that is repeated on each page. defaults to 0. header_rows is an alias.
+  width          9360       # sets the table width. units in twips. defaults to the sum of column_widths, else the available width.
+  align          :center    # :left, :center (default), :right, :start or :end.
+  layout         :fixed     # :fixed (default) or :autofit.
+  indent         0          # sets the left indent. units in twips.
+  caption        'Table 1'  # adds a caption paragraph above the table.
 end
 ```
 
-Any table-level border option draws all table borders. A table without border options has no borders.
+*`column_widths` covering every column also sets the table width, unless `width` is given; other columns share the rest of the table width.*
+
+Any table-level border option draws all table borders. A table without border options shows its style's borders; the default style has none.
 
 Table borders can be further styled with position-specific options. Caracal supports styling the top, bottom, left, right, inside horizontal, and inside vertical borders with the `border_top`, `border_bottom`, `border_left`, `border_right`, `border_horizontal`, and `border_vertical`, respectively. Options have the same meaning as those set at the table level, and options not given fall back to the table-level ones.
 
@@ -780,7 +776,7 @@ docx.table data, border_size: 4 do
 end
 ```
 
-Table cells can be styles using the `cell_style` method inside the table's block.  The method will attempt to apply any specified options against the collection of `TableModelCell` instances provided in the first argument.  Any improper options will fail silently.
+Table cells are styled with `cell_style` inside the table's block. It applies the options to the `TableCellModel` instances in its first argument, a cell or an array of cells, and skips options they lack.
 
 *As a convenience, the table provides the methods `rows`, `cols`, and `cells` to facilitate building the first argument.*
 
@@ -833,7 +829,7 @@ Conditional format types are `wholeTable`, `firstRow`, `lastRow`, `firstCol`, `l
 
 ### Table Cells
 
-If your table contains more complex data (multiple paragraphs, images, lists, etc.), you will probably want to instantiate your `TableCellModel` instances directly.  Table cells can contain anything the document can contain, including another table, except page breaks, iframes and a table of contents.
+If your table contains more complex data (multiple paragraphs, images, lists, etc.), you will probably want to instantiate your `TableCellModel` instances directly.  Table cells can contain anything the document can contain, including another table, except page breaks and a table of contents.
 
 ```ruby
 c1 = Caracal::Core::Models::TableCellModel.new do
@@ -927,7 +923,7 @@ end
 
 ### Headers and Footers
 
-Headers and footers are repeated on every page. They take the same content as the document body, in the order given, except page breaks and a table of contents.
+Headers and footers are repeated on every page. They take the same content as the document body, in the order given, except page breaks, a table of contents and iframes.
 
 ```ruby
 docx.header.h1 'Page Header'
@@ -967,16 +963,17 @@ docx.footer.p 'Footers work the same way.', align: :center
 
 #### Different First Page
 
-Pass `first: true` to give the first page its own header or footer, such as a cover page. Without a block, it leaves the first page's header or footer blank. Use `first_page: false` to leave the page number off the first page.
+Pass `first: true` to give the first page its own header or footer, such as a cover page. Without a block, the first page's header or footer stays empty, apart from the page number. Use `first_page: false` to leave the page number off the first page.
 
 ```ruby
 docx.header first: true do       # replaces the header on the first page only
   p 'Annual Report 2026', align: :center, size: 36
 end
+```
 
+```ruby
 docx.header first: true          # no header on the first page
 docx.footer first: true          # no footer content on the first page
-
 docx.page_numbers true, first_page: false   # no page number on the first page
 ```
 
@@ -985,7 +982,7 @@ When the first page has its own header or footer, any part you don't set for it 
 
 ### Table of contents
 
-Caracal lists the document's headings in a table of contents. Word updates it, including page numbers, when it opens the document.
+Caracal lists the document's headings in a table of contents. Word offers to update it, including page numbers, when it opens the document; until then each entry shows the placeholder.
 
 ```ruby
 docx.table_of_contents
@@ -1008,34 +1005,16 @@ To start the table of contents on a new page, add `docx.page` before it.
 
 ### IFrames
 
-You can include an external Word document into your working Caracal document by specifying a URL or by supplying the data directly.
-
-*It should be noted that the metaphor here is imperfect. Caracal fully includes the external file at the time of insertion. Further changes to the external file will not be reflected in your Caracal output.*
+`iframe` copies the body of another Word document into this one when you call it, read from `url` (an http(s) URL or a path) or from `data` (its raw bytes):
 
 ```ruby
-# this example loads the file from the internet
-docx.iframe url: 'http://www.some-website.org/snippet.docx'
-
-# this example loads the data directly
-docx.iframe data: File.read('my/path/to/snippet.docx')
+docx.iframe url: 'https://www.example.com/snippet.docx'
+docx.iframe data: File.binread('my/path/to/snippet.docx')
 ```
 
-Caracal is pretty smart about including the external document, at least as it relates to images. As long as the external
-document only uses the feature set Caracal supports natively, you should be okay.
+Caracal carries over paragraphs, tables and images; they take this document's styles and list numbering. Iframes also work in table cells.
 
-But if the external document uses more advanced Word features, the `iframe` directive may or may not work. Again, a
-Word document is really just a dozen or so XML files zipped up with the extension `.docx`.  Most of the commands you issue in a Word document only add OOXML to one of these internal files. But some commands--like inserting an image--modify several of
-the internal files. So, when you include an external file, what Caracal is doing under the hood is grabbing the contents
-of the main internal XML file and copying that OOXML into the Caracal document's main internal file. Caracal is smart enough
-to look for any images in the external file and make the corresponding entries in its own internal files, but if other
-advanced features of Word require similar adjustments, Caracal won't know to do that.  Probably those advanced features
-will not operate as expected in the parent Caracal document.
-
-Again, this feature is considered experimental.  Use at your own risk/discretion.
-
-Iframes can also be placed in table cells.
-
-**Only embed documents you trust.** Caracal parses the file you supply and copies its markup into your output, so the embedded document controls part of the result. To keep a small crafted file from expanding into a large one in memory, Caracal refuses any entry of the embedded document larger than `Caracal::Core::Models::IFrameModel.max_entry_size` (50MB by default) with an `InvalidModelError`. Set it to another number of bytes, or to `nil` to turn the check off. See [Security](#security).
+**Only embed documents you trust.** Caracal parses the file you supply and copies its markup into your output, so the embedded document controls part of the result. To keep a small crafted file from expanding into a large one in memory, Caracal refuses to read an entry of the embedded document declared larger than `Caracal::Core::Models::IFrameModel.max_entry_size` (50MB by default) with an `InvalidModelError`. Set it to another number of bytes, or to `nil` to turn the check off. See [Security](#security).
 
 ### Using Fields
 
@@ -1056,7 +1035,7 @@ end
 
 ### Using Tabs
 
-Tab stops are defined per paragraph as an Array of positions in twips. `end_tab: true` adds a tab after a text run:
+Tab stops are set per paragraph or list item with `tabs`, an Array of stops: a number is a start-aligned stop at that position in twips; a Hash `{ pos:, val:, leader: }` sets the alignment (`val`) and the leader (`leader`, default `none`). `end_tab: true` adds a tab after a text run:
 
 ```ruby
 docx.p do
@@ -1069,6 +1048,11 @@ docx.p tabs: [2880, 5760] do
   text 'column at 0', end_tab: true
   text 'column at 2in', end_tab: true
   text 'column at 4in'
+end
+
+docx.p tabs: [{ pos: 9000, val: :right, leader: :dot }] do
+  text 'Chapter 1', end_tab: true
+  text '7'
 end
 ```
 
@@ -1097,20 +1081,27 @@ EOXML
 
 ## Template Rendering
 
-Caracal includes [Tilt](https://github.com/rtomayko/tilt) integration to facilitate its inclusion in other frameworks. Templates ending in `.caracal` contain Caracal commands on the `docx` variable and render to a docx string:
+Caracal includes [Tilt](https://github.com/jeremyevans/tilt) integration to facilitate its inclusion in other frameworks. Templates ending in `.caracal` contain Caracal commands on the `docx` variable and render to a docx string:
 
 ```ruby
 Tilt.new('report.docx.caracal').render
 ```
 
-Rails integration can be added via the [Caracal-Rails](https://github.com/trade-informatics/caracal-rails) gem.
+Rails integration can be added via the [Caracal-Rails](https://github.com/urvin-compliance/caracal-rails) gem.
 
 
 ## Using Variables
 
-Lexical scope is a pretty big challenge for Caracal and it often confuses new users. This [closed issue](https://github.com/trade-informatics/caracal/issues/71) covers the discussion both from the user and library perspective.
+Blocks without an argument run on the Caracal object: they see local variables, but not the caller's instance variables or methods. Blocks with an argument keep the caller's scope:
 
-Alternatively, you may use the `Caracal::View` mixin to create documents, just like [Prawn](http://prawnpdf.org/api-docs/2.0/Prawn/View.html). Here is a basic example using this mixin:
+```ruby
+Caracal::Document.save 'report.docx' do |docx|
+  docx.p @title
+  docx.p { |p| p.text helper }
+end
+```
+
+Alternatively, you may use the `Caracal::View` mixin to create documents, just like [Prawn](https://prawnpdf.org/docs/prawn/2.5.0/Prawn/View.html). Here is a basic example using this mixin:
 
 ```ruby
 class Export
@@ -1132,7 +1123,7 @@ end
 # Usage:
 Export.new(some_data).save_as("export #{Date.today}.docx")
 
-# Or send from a controller, using Rails:
+# Or send from a Rails controller, with the docx MIME type registered (e.g. by Caracal-Rails):
 respond_to do |format|
   format.html
   format.docx do
@@ -1159,9 +1150,8 @@ happy to answer questions and provide what guidance we can. We just won't write 
 
 For those using reasonably current versions of Word, please consider the following:
 
-- Before you file an issue, please run the example Caracal project [caracal-example](https://github.com/trade-informatics/caracal-example) in your development environment and
-check the output.  This project implements nearly every feature Caracal supports and renders the expected output
-correctly.  It can be thought of as a canonical implementation of the library.
+- Before you file an issue, please run the example Caracal project [caracal-example](https://github.com/urvin-compliance/caracal-example) in your development environment and
+check the output. It covers the core features.
 
 - If you don't see your issue in the example project's implementation of the same feature, chances are you
 made a mistake in your document's syntax or have an environment-specific, non-caracal problem.
@@ -1181,9 +1171,6 @@ It's a tedious process, but it's not nearly as tedious as learning the entire OO
 
 The downside is Word changes its expectations about OOXML format with each version, so it can be a bit
 of a balancing act to get the OOXML structured for acceptance by all supported versions.
-
-Ultimately, we'll probably need to implement version-specific renderers (i.e., a set of renderers
-for 2010/2013, a set for 2016, etc.).
 
 
 ## Contributing
@@ -1209,4 +1196,4 @@ A tip of the hat to the wonderful PDF generation library [Prawn](https://github.
 
 Copyright (c) 2014 Trade Informatics, Inc
 
-[MIT License](https://github.com/trade-informatics/caracal/blob/master/LICENSE.txt)
+[MIT License](LICENSE.txt)

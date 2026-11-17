@@ -170,6 +170,17 @@ module Caracal
       @contents ||= []
     end
 
+    # In justified paragraphs, Word spreads the words of a line that ends
+    # in a line break across the line. false leaves such a line at its
+    # natural width, as browsers do.
+    def justify_lines_before_breaks(value)
+      @justify_lines_before_breaks = value
+    end
+
+    def justify_lines_before_breaks?
+      @justify_lines_before_breaks != false
+    end
+
     def next_numbering_id
       self.current_numbering_id += 1
     end

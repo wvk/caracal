@@ -25,6 +25,7 @@ module Caracal
             w.consecutiveHyphenLimit 'w:val' => 2 #    Maximum Number of Consecutively Hyphenated Lines
             w.updateFields 'w:val' => 'true' if toc? # Word fills in the TOC on open
             w.compat do # see http://www.datypic.com/sc/ooxml/e-w_compat-1.html for options
+              w.doNotExpandShiftReturn unless document.justify_lines_before_breaks?
               w.compatSetting 'w:val' => '14', 'w:name' => 'compatibilityMode', 'w:uri' => 'http://schemas.microsoft.com/office/word'
             end
             w.clrSchemeMapping 'w:bg1' => 'light1', 'w:t1' => 'dark1', 'w:bg2' => 'light2', 'w:t2' => 'dark2', 'w:accent1' => 'accent1', 'w:accent2' => 'accent2', 'w:accent3' => 'accent3', 'w:accent4' => 'accent4', 'w:accent5' => 'accent5', 'w:accent6' => 'accent6', 'w:hyperlink' => 'hyperlink', 'w:followedHyperlink' => 'followedHyperlink'

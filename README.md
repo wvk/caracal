@@ -741,6 +741,12 @@ Line breaks only work inside paragraph-like commands. If you want to create an e
 docx.p
 ```
 
+In justified paragraphs (`align :both`), Word spreads the words of a line that ends in a line break across the whole line. `justify_lines_before_breaks false` leaves such lines at their natural width, as browsers do.
+
+```ruby
+docx.justify_lines_before_breaks false
+```
+
 
 ### Lists
 

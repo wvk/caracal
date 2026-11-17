@@ -8,6 +8,7 @@
   * `row_height` sets the height of every row or of given rows, at least or exactly (upstream #119).
   * `bidi true` sets right-to-left direction on paragraphs, list items and styles; list numbers move to the right (upstream #117).
   * `layout :autofit` without widths sizes table columns to their contents (upstream #63).
+  * `justify_lines_before_breaks false` leaves justified lines that end in a line break at their natural width (upstream #42).
 
 #### v2.0.0
 

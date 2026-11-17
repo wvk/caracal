@@ -351,6 +351,100 @@ describe Caracal::Document do
         end
       end
     end
+
+    describe 'with hyperlinks' do
+      let(:data) do
+        described_class.new('inner.docx') { p { link 'embedded link', 'https://embedded.example/' } }.render.string
+      end
+
+      # the relationships the hyperlinks of the part point at, in document order
+      def link_rels(files, part)
+        link_ns = W_NS.merge('r' => 'http://schemas.openxmlformats.org/officeDocument/2006/relationships')
+        rels_ns = { 'r' => 'http://schemas.openxmlformats.org/package/2006/relationships' }
+        rels    = strict_xml(files["word/_rels/#{ part }.rels"])
+
+        strict_xml(files["word/#{ part }"]).xpath('//w:hyperlink/@r:id', link_ns).map do |id|
+          rels.at_xpath("//r:Relationship[@Id='#{ id.value }']", rels_ns)
+        end
+      end
+
+      def link_targets(files, part)
+        link_rels(files, part).map { |rel| rel['Target'] }
+      end
+
+      it 'points the link at its target when the parent has relationships of its own' do
+        png, data = self.png, self.data
+        docx = described_class.new('test.docx') do |d|
+          d.img 'parent.png', data: png, width: 10, height: 10
+          d.iframe data: data
+        end
+
+        rels = link_rels(parts(docx), 'document.xml')
+        expect(rels.map { |rel| [rel['Target'], rel['TargetMode']] }).to eq [['https://embedded.example/', 'External']]
+      end
+
+      it 'points a link in a header at its target in the header relationships' do
+        data = self.data
+        docx = described_class.new('test.docx') { |d| d.header { |h| h.iframe data: data } }
+
+        rels = link_rels(parts(docx), 'header1.xml')
+        expect(rels.map { |rel| [rel['Target'], rel['TargetMode']] }).to eq [['https://embedded.example/', 'External']]
+      end
+
+      it 'keeps the links in order in every part that shows the iframe' do
+        png  = self.png
+        data = described_class.new('inner.docx') do
+          img 'a.png', data: png, width: 10, height: 10
+          p { link 'a', 'https://a.example/' }
+          p { link 'b', 'https://b.example/' }
+        end.render.string
+
+        docx = described_class.new('test.docx') do |d|
+          d.header do |h|
+            # the links take rId1 to rId6, so the image gets the id link A has
+            # in the snippet, and link A the id link B has
+            6.times { |i| h.p { link "x#{ i }", "https://x.example/#{ i }" } }
+            h.iframe data: data
+          end
+          d.footer { |f| f.iframe data: data }
+          d.page_numbers true, first_page: false   # copies header and footer to the first page
+          d.p { link 'x', 'https://x.example/' }
+          d.iframe data: data
+        end
+
+        header_links = Array.new(6) { |i| "https://x.example/#{ i }" }
+        expected     = { 'document.xml' => ['https://x.example/'], 'header1.xml' => header_links, 'header2.xml' => header_links,
+                         'footer1.xml' => [], 'footer2.xml' => [] }
+        2.times do
+          files = parts(docx)
+          expected.each do |part, own|
+            expect(link_targets(files, part)).to eq(own + ['https://a.example/', 'https://b.example/']), part
+          end
+        end
+      end
+
+      it 'leaves a link to a bookmark as it is' do
+        data = described_class.new('inner.docx') do
+          bookmark_start id: 'b', name: 'target'
+          p 'target'
+          bookmark_end id: 'b'
+          p { link 'to target', 'target', internal: true }
+        end.render.string
+        docx = described_class.new('test.docx') { |d| d.iframe data: data }
+
+        link = strict_xml(parts(docx)['word/document.xml']).at_xpath('//w:hyperlink', W_NS)
+        expect(link.attributes.keys).to eq ['anchor']
+        expect(link['w:anchor']).to eq 'target'
+      end
+
+      it 'leaves the iframe model unchanged' do
+        data  = self.data
+        docx  = described_class.new('test.docx') { |d| d.iframe data: data }
+        model = docx.contents.last
+
+        expect { docx.render }.not_to change { model.relationships }
+      end
+    end
   end
 
 

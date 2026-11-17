@@ -108,6 +108,21 @@ module Caracal
               array << { id: r_id, type: 'image', target: p_name, data: p_data }
               array
             end
+
+            # hyperlinks to external targets; a link to a bookmark has no
+            # relationship and keeps its w:anchor
+            link_map = rel_nodes.each_with_object({}) do |node, hash|
+              if node['Type'].to_s.end_with?('/hyperlink') and node['TargetMode'] == 'External'
+                hash[node['Id']] = node['Target']
+              end
+            end
+
+            link_ns  = { w: 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+                         r: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships' }
+            link_ids = doc_xml.xpath('//w:hyperlink/@r:id', link_ns).map(&:value).uniq
+            link_ids.each do |r_id|
+              @iframe_relationships << { id: r_id, type: 'link', target: link_map[r_id] } if link_map.key?(r_id)
+            end
           end
         end
 

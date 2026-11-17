@@ -182,6 +182,22 @@ describe Caracal::Core::Models::ListItemModel do
 
         it { expect { subject.ol { li 'Nested item text.' } }.to raise_error(Caracal::Errors::InvalidModelError, /nine levels deep \(levels 0 to 8\)/) }
       end
+      describe 'when content is given with runs and a nested list in the block' do
+        subject do
+          described_class.new content: 'Content.', type: :ordered, level: 0 do
+            text ' Run.'
+            ol do
+              li 'Nested.'
+            end
+            text ' After.'
+          end
+        end
+        let(:texts) { subject.recursive_items.map { |i| i.runs.map(&:text_content).join } }
+
+        it { expect(subject.runs.map(&:text_content)).to eq ['Content.', ' Run.', ' After.'] }
+        it { expect(subject.nested_lists.map(&:first)).to eq [2] }
+        it { expect(texts).to eq ['Content. Run.', 'Nested.', ' After.'] }
+      end
     end
 
     # .ul

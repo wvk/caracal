@@ -24,6 +24,7 @@
   * Headers and footers declare the namespaces and `mc:Ignorable` prefixes of their iframes, such as Word's `w14` (#5).
   * `iframe` stops reading an entry of the embedded document at `IFrameModel.max_entry_size` bytes, whatever size the entry declares; it trusted the declared size (#11).
   * Border styles outside `ST_Border` and tab alignments outside `ST_TabJc` raise `Caracal::Errors::InvalidModelError`; a tab stop without `val` is start-aligned (#8).
+  * Text given to `p` and `h1`–`h6` leads the paragraph, ahead of runs added in its block, as with `li` (#10).
 
 #### v2.0.0
 

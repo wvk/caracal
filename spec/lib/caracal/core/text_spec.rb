@@ -19,6 +19,12 @@ describe Caracal::Core::Text do
 
         it { expect(subject.contents.size).to eq size + 1 }
         it { expect(subject.contents.last).to be_a(Caracal::Core::Models::ParagraphModel) }
+
+        describe 'with runs added in its block' do
+          before { subject.send(cmd, 'content') { text ' run' } }
+
+          it { expect(subject.contents.last.runs.map(&:text_content)).to eq ['content', ' run'] }
+        end
       end
     end
 

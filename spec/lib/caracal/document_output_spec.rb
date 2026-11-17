@@ -508,6 +508,25 @@ describe Caracal::Document do
 
 
   #-------------------------------------------------------------
+  # Paragraph content order
+  #-------------------------------------------------------------
+
+  # #10
+  describe 'the content of p and li' do
+    it 'leads the runs added in their blocks' do
+      docx = described_class.new('test.docx') do |docx|
+        docx.p('content') { text ' run' }
+        docx.ul { li('content') { text ' run' } }
+        docx.table [[Caracal::Core::Models::TableCellModel.new { p('content') { text ' run' } }]]
+      end
+      xml = strict_xml(parts(docx)['word/document.xml'])
+
+      expect(xml.xpath('//w:p', W_NS).map { |p| p.xpath('.//w:t', W_NS).map(&:text).join }.reject(&:empty?)).to eq ['content run'] * 3
+    end
+  end
+
+
+  #-------------------------------------------------------------
   # Page number start
   #-------------------------------------------------------------
 

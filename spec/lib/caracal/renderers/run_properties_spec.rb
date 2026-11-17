@@ -27,6 +27,21 @@ describe 'run properties rendering' do
     it { expect(run_values xml, 'w:sz/@w:val').to eq %w(24 24) }
   end
 
+  describe 'rtl' do
+    let(:xml) do
+      document_xml do |docx|
+        docx.p 'paragraph', rtl: true
+        docx.p { text 'run', rtl: true }
+        docx.p { link 'link', 'https://example.com', rtl: true }
+        docx.p(rtl: true) { text 'own', rtl: false }
+      end
+    end
+    let(:runs) { xml.xpath('//w:body/w:p//w:r', ns) }
+
+    it { expect(runs.map {|r| r.at_xpath('w:rPr/w:rtl/@w:val', ns)&.value }).to eq %w(true true true false) }
+    it { expect(xml.xpath('//w:body/w:p/w:pPr/w:rPr/w:rtl/@w:val', ns).map(&:value)).to eq %w(true true) }
+  end
+
   describe 'run theme colors and paragraph theme colors' do
     let(:xml) do
       document_xml do |docx|

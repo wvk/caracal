@@ -1395,6 +1395,8 @@ of a balancing act to get the OOXML structured for acceptance by all supported v
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
 
+`bundle exec rake` runs the specs. `bundle exec rake ooxml` runs them too and validates every document they render with Microsoft's [Open XML SDK](https://github.com/dotnet/Open-XML-SDK), in Docker. CI runs both.
+
 
 ## Why is It Called Caracal?
 

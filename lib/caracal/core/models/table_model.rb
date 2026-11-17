@@ -4,6 +4,7 @@ require 'caracal/core/models/table_cell_model'
 require 'caracal/core/models/table_look_model'
 require 'caracal/core/models/concerns/has_background'
 require 'caracal/core/models/concerns/has_borders'
+require 'caracal/errors'
 
 module Caracal
   module Core
@@ -19,6 +20,7 @@ module Caracal
 
         TABLE_LAYOUTS = %i(fixed autofit)
         TABLE_ALIGNS  = %i(left center right start end)
+        ROW_HEIGHT_RULES = { at_least: 'atLeast', exact: 'exact' }
 
         has_string_attribute :caption
         has_string_attribute :style, default: 'TableNormal'
@@ -194,6 +196,30 @@ module Caracal
           cant_split_rows.include? row_index
         end
 
+        # Sets the height of every row, or of one row or several rows, in
+        # twips: `row_height 400` or `row_height rows[0], 600, rule: :exact`.
+        # Rows are at least this high unless the rule is :exact.
+        def row_height(*args, rule: :at_least)
+          height = args.pop
+          unless height.is_a? Integer and height > 0 and ROW_HEIGHT_RULES.key? rule and args.size <= 1
+            raise Caracal::Errors::InvalidModelError, 'row_height takes optional rows, a positive height in twips and rule: :at_least or :exact.'
+          end
+
+          if args.empty?
+            @default_row_height = [height, rule]
+          else
+            models = args.first
+            models = [models] if rows.include? models
+            models.each {|row| row_heights[rows.index(row)] = [height, rule] }
+          end
+        end
+
+        # The [height, OOXML height rule] of the row at the given index, if set.
+        def row_height_for(row_index)
+          height, rule = row_heights.fetch(row_index) { @default_row_height }
+          [height, ROW_HEIGHT_RULES[rule]] if height
+        end
+
         # column widths
         def column_widths(value)
           @table_column_widths = value.map &:to_i if value.is_a? Array
@@ -275,12 +301,16 @@ module Caracal
           @cant_split_rows ||= []
         end
 
+        def row_heights
+          @row_heights ||= {}
+        end
+
         def option_keys
           k = []
           k << [:data, :align, :width, :style, :layout, :caption, :indent]
           k << HasBackground::ATTRS
           k << HasBorders::ATTRS
-          k << [:column_widths]
+          k << [:column_widths, :row_height]
           k << [:repeat_header, :header_rows, :row_band_size, :col_band_size]
           k.flatten
         end

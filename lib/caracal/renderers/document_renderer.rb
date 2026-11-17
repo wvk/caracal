@@ -549,7 +549,12 @@ module Caracal
                 if model.table_repeat_header > 0 and index < model.table_repeat_header
                   w.tblHeader
                 end
-                w.trHeight 'w:hRule' => 'auto'
+                height, rule = model.row_height_for index
+                if height
+                  w.trHeight 'w:val' => height, 'w:hRule' => rule
+                else
+                  w.trHeight 'w:hRule' => 'auto'
+                end
                 # w.tblCellSpacing 'w:w' => 0, 'w:type' => 'dxa'
               end
 

@@ -257,4 +257,38 @@ describe Caracal::Renderers::DocumentRenderer do
       it { expect(xml.xpath('//w:tcMar', ns)).to be_empty }
     end
   end
+
+  describe 'row heights' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.table [['a'], ['b'], ['c'], ['d']] do
+          row_height 400
+          row_height rows[1], 600, rule: :exact
+          row_height rows[2..3], 800
+        end
+        docx.table [['e']]
+      end
+    end
+    let(:heights) do
+      xml.xpath('//w:tbl', ns).map do |tbl|
+        tbl.xpath('w:tr/w:trPr/w:trHeight', ns).map {|h| [h['w:val'], h['w:hRule']] }
+      end
+    end
+
+    it { expect(heights[0]).to eq [%w(400 atLeast), %w(600 exact), %w(800 atLeast), %w(800 atLeast)] }
+    it { expect(heights[1]).to eq [[nil, 'auto']] }
+
+    it 'rejects a height that is not a positive integer' do
+      expect { Caracal::Document.new {|docx| docx.table([['x']]) { row_height 0 } } }.to raise_error Caracal::Errors::InvalidModelError
+    end
+
+    it 'rejects an unknown rule' do
+      expect { Caracal::Document.new {|docx| docx.table([['x']]) { row_height 400, rule: :auto } } }.to raise_error Caracal::Errors::InvalidModelError
+    end
+
+    it 'takes the height as an option' do
+      doc = Caracal::Document.new {|docx| docx.table [['x']], row_height: 300 }
+      expect(Nokogiri::XML(described_class.render(doc)).at_xpath('//w:trHeight/@w:val', ns).value).to eq '300'
+    end
+  end
 end

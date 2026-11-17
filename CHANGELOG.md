@@ -4,6 +4,7 @@
   * List levels restart after any higher level, Word's default; `numbering.xml` writes `lvlRestart` only for list styles that set `restart` (upstream #85).
 
 * Enhancements
+  * `row_height` sets the height of every row or of given rows, at least or exactly (upstream #119).
   * `bidi true` sets right-to-left direction on paragraphs, list items and styles; list numbers move to the right (upstream #117).
 
 #### v2.0.0

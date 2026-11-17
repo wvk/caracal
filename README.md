@@ -879,6 +879,7 @@ docx.table [['Header 1','Header 2'],['Cell 1', 'Cell 2']] do
   width          9360       # sets the table width. units in twips. defaults to the sum of column_widths, else the available width.
   align          :center    # :left, :center (default), :right, :start or :end.
   layout         :fixed     # :fixed (default) or :autofit.
+  row_height     400        # sets the minimum height of every row. units in twips.
   indent         0          # sets the left indent. units in twips.
   caption        'Table 1'  # adds a caption paragraph above the table.
 end
@@ -932,6 +933,15 @@ Rows marked with `cant_split` move to the next page as a whole instead of breaki
 docx.table [['11', '22'], ['14', '25'], ['64', '23']] do
   cant_split rows[1]       # one row
   cant_split rows[1...-1]  # or several
+end
+```
+
+`row_height` sets the height of a row or an array of rows, at least that high by default or exactly with `rule: :exact`. Without rows, it applies to every row. Units in twips.
+
+```ruby
+docx.table [['11', '22'], ['14', '25'], ['64', '23']] do
+  row_height 400                         # every row at least 400 twips
+  row_height rows[0], 600, rule: :exact  # the first row exactly 600 twips
 end
 ```
 

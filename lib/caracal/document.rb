@@ -4,6 +4,7 @@ require 'caracal/header'
 require 'caracal/footer'
 
 require 'caracal/core/bookmarks'
+require 'caracal/core/core_properties'
 require 'caracal/core/custom_properties'
 require 'caracal/core/file_name'
 require 'caracal/core/fonts'
@@ -51,6 +52,7 @@ module Caracal
     #------------------------------------------------------
 
     # mixins (order is important)
+    include Caracal::Core::CoreProperties
     include Caracal::Core::CustomProperties
     include Caracal::Core::FileName
     include Caracal::Core::Ignorables

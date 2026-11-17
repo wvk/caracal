@@ -107,15 +107,15 @@ module Caracal
 
           fragment.pop
 
-          model.relationships.each do |r_hash|
-            id    = r_hash[:id]                               # we can't update the fragment until
-            model = document.relationship(r_hash.except(:id)) # the parent document assigns the embedded
-            index = model.relationship_id                     # relationship an id.
+          # The parent part assigns each embedded relationship a new id. Map
+          # every old id first, then rewrite each reference once: rewriting
+          # one id at a time can hit a reference already rewritten to it.
+          ids = model.relationships.to_h do |r_hash|
+            [r_hash[:id], document.relationship(r_hash.except(:id)).formatted_id]
+          end
 
-            r_node  = fragment.at_xpath("//a:blip[@r:embed='#{id}']", { a: ns.t('a'), r: ns.t('r') })
-            if (r_attr = r_node.attributes['embed'])
-              r_attr.value = "rId#{ index }"
-            end
+          fragment.xpath('.//a:blip/@r:embed', a: ns.t('a'), r: ns.t('r')).each do |r_attr|
+            r_attr.value = ids[r_attr.value] if ids.key?(r_attr.value)
           end
 
           fragment.xpath('.//wp:docPr', wp: ns.t('wp')).each do |doc_pr|

@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.email = ["jpdugan@gmail.com".freeze, "willem.van-kerkhof@innoq.com".freeze]
 
   s.files = Dir["{lib,spec}/**/*", "Rakefile", "README.md", "CHANGELOG.md", "Gemfile", "LICENSE.txt", "caracal.gemspec"]
-  s.homepage = "https://github.com/sprengnetter/caracal".freeze
+  s.homepage = "https://github.com/wvk/caracal".freeze
   s.licenses = ["MIT".freeze]
   s.rubygems_version = "3.3.3".freeze
   s.summary = "Fast, professional Microsoft Word (docx) writer for Ruby.".freeze

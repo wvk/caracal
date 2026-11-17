@@ -248,8 +248,11 @@ module Caracal
 
         private
 
-        # Called once the content run is appended, after the block's runs.
+        # The content run is appended after the block's runs, so the block's
+        # run options apply to it, but it is the paragraph's own text, so it
+        # leads the paragraph.
         def content_added
+          runs.unshift runs.pop
         end
 
         def option_keys

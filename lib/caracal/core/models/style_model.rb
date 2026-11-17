@@ -24,7 +24,7 @@ module Caracal
         has_string_attribute :name
         has_string_attribute :aliases
         has_string_attribute :base, default: 'Normal'
-        has_string_attribute :next, default: 'Normal'
+        has_string_attribute :next, default: 'Normal' # the style of the paragraph after one in this style
 
         # Twips; 240ths of a line for line_rule :auto. A style without it
         # takes its base style's. The default is the default paragraph
@@ -65,7 +65,7 @@ module Caracal
           end
 
           @style_type      ||= DEFAULT_STYLE_TYPE
-          @style_next      = self.class::DEFAULT_STYLE_NEXT
+          @style_next      ||= self.class::DEFAULT_STYLE_NEXT
           @style_top       ||= DEFAULT_STYLE_TOP
           @style_bottom    ||= DEFAULT_STYLE_BOTTOM
           @style_left      ||= DEFAULT_STYLE_LEFT
@@ -154,7 +154,7 @@ module Caracal
         private
 
         def option_keys
-          [:aliases, :type, :base, :line, :line_rule, :id, :name, :align, :widow_control, :word_wrap, :bidi, :keep_lines, :keep_next, :locked] +
+          [:aliases, :type, :base, :next, :line, :line_rule, :id, :name, :align, :widow_control, :word_wrap, :bidi, :keep_lines, :keep_next, :locked] +
               HasMargins::ATTRS +
               HasRunAttributes::ATTRS +
               %w(left right first).map{|b| :"indent_#{b}" }

@@ -137,6 +137,21 @@ describe Caracal::Core::Models::StyleModel do
 
       it { expect(subject.style_name).to eq 'Heading 1' }
     end
+    describe '.next' do
+      before { subject.next('Body') }
+
+      it { expect(subject.style_next).to eq 'Body' }
+    end
+    describe 'next given as an option' do
+      let(:model) { described_class.new id: 'Lead', name: 'lead', next: 'Body' }
+
+      it { expect(model.style_next).to eq 'Body' }
+    end
+    describe 'next not given' do
+      let(:model) { described_class.new id: 'Lead', name: 'lead' }
+
+      it { expect(model.style_next).to eq 'Normal' }
+    end
     describe '.color' do
       before { subject.color('444444') }
 
@@ -217,7 +232,7 @@ describe Caracal::Core::Models::StyleModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:aliases, :type, :bold, :italic, :underline, :caps, :top, :bottom, :size, :line, :id, :name, :color, :font, :align, :indent_left, :indent_right, :indent_first, :base, :bgcolor, :bgstyle, :keep_lines, :keep_next, :left, :right, :theme_bgcolor, :theme_color, :widow_control, :word_wrap, :border, :line_rule, :locked, :border_color, :border_line, :border_size, :border_spacing, :border_theme_color, :border_top, :border_bottom, :border_horizontal, :border_vertical, :border_left, :border_right, :vertical_align, :whitespace, :strike, :small_caps, :highlight_color, :rtl, :bidi, :lang].sort }
+      let(:expected) { [:aliases, :type, :next, :bold, :italic, :underline, :caps, :top, :bottom, :size, :line, :id, :name, :color, :font, :align, :indent_left, :indent_right, :indent_first, :base, :bgcolor, :bgstyle, :keep_lines, :keep_next, :left, :right, :theme_bgcolor, :theme_color, :widow_control, :word_wrap, :border, :line_rule, :locked, :border_color, :border_line, :border_size, :border_spacing, :border_theme_color, :border_top, :border_bottom, :border_horizontal, :border_vertical, :border_left, :border_right, :vertical_align, :whitespace, :strike, :small_caps, :highlight_color, :rtl, :bidi, :lang].sort }
 
       it { expect(actual).to eq expected }
     end

@@ -428,6 +428,15 @@ describe Caracal::Document do
       expect(paragraphs(docx)).to eq [['Item', 0], ['A', 1], ['between', nil], ['B', 1], ['Next', 0]]
     end
 
+    # #7
+    it 'renders lists nested nine levels deep' do
+      deep = ->(ctx, n) { n.zero? ? ctx.li('8') : ctx.li((8 - n).to_s) { ol { deep.(self, n - 1) } } }
+      docx = described_class.new('test.docx')
+      docx.ol { deep.(self, 8) }
+
+      expect(paragraphs(docx)).to eq (0..8).map { |level| [level.to_s, level] }
+    end
+
     it 'renders a nested list that ends the item as before' do
       docx = described_class.new('test.docx') do
         ol do

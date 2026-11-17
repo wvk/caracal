@@ -814,7 +814,7 @@ end
 
 A list item with `bidi true` runs right to left, with its number on the right. `left` moves an item further in, number included; `right` indents its end.
 
-Lists nest up to nine levels deep and mix in any combination. Text added after a nested list renders after it, as an unnumbered paragraph aligned with the item's text, and an item can hold several nested lists.
+Lists nest up to nine levels deep and mix in any combination; a tenth level raises `Caracal::Errors::InvalidModelError` when it is added. Text added after a nested list renders after it, as an unnumbered paragraph aligned with the item's text, and an item can hold several nested lists.
 
 ```ruby
 docx.ul do

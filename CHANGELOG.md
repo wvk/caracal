@@ -19,6 +19,7 @@
   * A document with an iframe holding images renders more than once, for example `render` and then `save`; the second render raised `NoMethodError` (#4).
   * A list nested ten levels deep raises `Caracal::Errors::InvalidModelError` when it is built, naming the nine-level limit; it raised `NoMethodError` while rendering (#7).
   * `cell_style` options such as `width`, `align` and `layout` stay on the cell; a nested table fits the cell's width minus its left and right margins (#6).
+  * Headers and footers declare the namespaces and `mc:Ignorable` prefixes of their iframes, such as Word's `w14` (#5).
 
 #### v2.0.0
 

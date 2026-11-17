@@ -178,6 +178,14 @@ describe Caracal::Core::Models::ImageModel do
       it { expect(described_class.new(url: 'logo.png', width: 1, height: 1).own_align?).to eq false }
     end
 
+    # .svg?
+    describe '.svg?' do
+      it { expect(subject.svg?).to eq false }
+      it { expect(described_class.new(url: 'logo.png', svg: '', width: 1, height: 1).svg?).to eq false }
+      it { expect(described_class.new(url: 'logo.png', svg: '<svg/>', width: 1, height: 1).svg?).to eq true }
+      it { expect(described_class.new(url: 'logo.png', svg: '<svg/>', width: 1, height: 1).image_svg).to eq '<svg/>' }
+    end
+
 
     #=============== VALIDATION ===========================
 
@@ -221,7 +229,7 @@ describe Caracal::Core::Models::ImageModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:url, :data, :width, :height, :ppi, :align, :top, :bottom, :left, :right, :anchor, :position, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap].sort }
+      let(:expected) { [:url, :data, :svg, :width, :height, :ppi, :align, :top, :bottom, :left, :right, :anchor, :position, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap].sort }
 
       it { expect(actual).to eq expected }
     end

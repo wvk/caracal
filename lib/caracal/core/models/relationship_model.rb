@@ -43,6 +43,7 @@ module Caracal
 
         has_string_attribute :target
         has_string_attribute :data
+        has_string_attribute :extension # an image's file extension, for data without a signature, such as SVG
 
         has_symbol_attribute :type, downcase: true
 
@@ -78,10 +79,13 @@ module Caracal
           end
         end
 
-        # Prefers the type detected from the image bytes, then the extension
-        # of the target's path (ignoring any query string or fragment), and
-        # falls back to png so the part name is always valid.
+        # Prefers the given extension, then the type detected from the image
+        # bytes, then the extension of the target's path (ignoring any query
+        # string or fragment), and falls back to png so the part name is
+        # always valid.
         def image_extension
+          return relationship_extension unless relationship_extension.to_s.empty?
+
           data = relationship_data.to_s.b
           if (match = IMAGE_SIGNATURES.find {|signature, _| data.start_with? signature })
             return match.last
@@ -133,7 +137,7 @@ module Caracal
         private
 
         def option_keys
-          [:id, :type, :target, :data, :owner]
+          [:id, :type, :target, :data, :extension, :owner]
         end
       end
 

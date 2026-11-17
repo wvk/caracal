@@ -37,6 +37,7 @@ module Caracal
 
         has_string_attribute :url
         has_string_attribute :data
+        has_string_attribute :svg     # SVG markup shown instead of the raster image by readers that support it.
 
         # initialization
         def initialize(options={}, &block)
@@ -97,6 +98,11 @@ module Caracal
         # Whether the image was given an alignment, rather than the default.
         def own_align?
           not @image_align.nil?
+        end
+
+        # Whether the image has SVG markup next to its raster image.
+        def svg?
+          not image_svg.to_s.empty?
         end
 
         #=============== SETTERS ==============================
@@ -168,7 +174,7 @@ module Caracal
         end
 
         def option_keys
-          [:url, :width, :height, :ppi, :align, :top, :bottom, :left, :right, :data, :anchor, :position, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap]
+          [:url, :width, :height, :ppi, :align, :top, :bottom, :left, :right, :data, :svg, :anchor, :position, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap]
         end
 
         def pixels_to_emus(value, ppi)

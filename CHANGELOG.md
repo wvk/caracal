@@ -21,6 +21,7 @@
   * `rake ooxml` validates every document the specs render with Microsoft's Open XML SDK, in Docker; CI runs it (#49).
   * `ol start: 3` numbers a list's items from 3; other lists start at their list style's `start` (#43).
   * `img` inside paragraphs, list items, headings and footnotes places the image within the line of text, between the runs around it. `position` raises or lowers it against the baseline; `anchor: true` anchors it to its paragraph (#35).
+  * `img` takes `svg`, SVG markup that Word 2016 and later and LibreOffice show instead of the raster image; other readers show the raster image (#58).
 
 * Bug fixes
   * `numbering.xml` defines the numberings of a list shown in several parts, such as a header and its first-page copy; the earlier parts pointed at numberings it left out (#37).

@@ -391,6 +391,119 @@ describe Caracal::Core::Images do
 
 
   #-------------------------------------------------------------
+  # SVG images
+  #-------------------------------------------------------------
+
+  describe 'with svg' do
+    let(:svg) { %(<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><rect width="20" height="10" fill="blue"/></svg>) }
+    let(:ns) do
+      {
+        'w'    => 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+        'wp'   => 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
+        'a'    => 'http://schemas.openxmlformats.org/drawingml/2006/main',
+        'asvg' => 'http://schemas.microsoft.com/office/drawing/2016/SVG/main'
+      }
+    end
+    let(:entries) do
+      zip = Zip::File.open_buffer StringIO.new(subject.render.string)
+      zip.entries.to_h { |e| [e.name, e.get_input_stream.read] }
+    end
+    let(:media) { entries.keys.grep(%r{\Aword/media/}) }
+
+    def part(name)
+      Nokogiri::XML entries.fetch(name)
+    end
+
+    # the target of the part's image relationship with the given id
+    def image_target(rels_name, id)
+      Nokogiri::XML(entries.fetch(rels_name)).remove_namespaces!.at_xpath("//Relationship[@Id='#{id}']")['Target']
+    end
+
+    # the raster and the SVG part of the first image in the given part
+    def image_parts(name, rels_name)
+      blip = part(name).at_xpath('//a:blip', ns)
+      [blip['r:embed'], blip.at_xpath('a:extLst/a:ext/asvg:svgBlip', ns)['r:embed']].map { |id| image_target rels_name, id }
+    end
+
+    context 'as a block' do
+      before { subject.img 'diagram.png', data: png(255, 0, 0), svg: svg, width: 20, height: 10 }
+
+      let(:blip)    { part('word/document.xml').at_xpath('//a:blip', ns) }
+      let(:ext)     { blip.at_xpath('a:extLst/a:ext', ns) }
+      let(:targets) { image_parts 'word/document.xml', 'word/_rels/document.xml.rels' }
+
+      it { expect(blip.element_children.map(&:name)).to eq %w(extLst) }
+      it { expect(ext['uri']).to eq '{96DAC541-7B7A-43D3-8B79-37D633B846F1}' }
+      it { expect(ext.element_children.map(&:name)).to eq %w(svgBlip) }
+      it { expect(targets.first).to match %r{\Amedia/image-\h{16}\.png\z} }
+      it { expect(targets.last).to match %r{\Amedia/image-\h{16}\.svg\z} }
+      it { expect(targets.map { |t| entries.fetch "word/#{t}" }).to eq [png(255, 0, 0), svg] }
+      it { expect(media.size).to eq 2 }
+      it { expect(part('[Content_Types].xml').remove_namespaces!.at_xpath("//Default[@Extension='svg']")['ContentType']).to eq 'image/svg+xml' }
+      it { expect(part('word/document.xml').at_xpath('//wp:extent', ns)['cx']).to eq '254000' }
+    end
+
+    context 'without width and height' do
+      before { subject.img 'diagram.png', data: png(255, 0, 0), svg: svg }
+
+      it { expect(part('word/document.xml').at_xpath('//wp:extent', ns)['cx']).to eq '9525' } # the raster image's size
+    end
+
+    context 'within a paragraph' do
+      before do
+        red, markup = png(255, 0, 0), svg
+        subject.p do
+          text 'Press '
+          img 'save.png', data: red, svg: markup, width: 12, height: 12
+        end
+      end
+
+      let(:targets) { image_parts 'word/document.xml', 'word/_rels/document.xml.rels' }
+
+      it { expect(part('word/document.xml').xpath('//w:p/w:r/w:drawing/wp:inline', ns).size).to eq 1 }
+      it { expect(targets.map { |t| entries.fetch "word/#{t}" }).to eq [png(255, 0, 0), svg] }
+    end
+
+    context 'in a header' do
+      before do
+        blue, markup = png(0, 0, 255), svg
+        subject.header do
+          img 'logo.png', data: blue, svg: markup, width: 20, height: 10
+        end
+      end
+
+      let(:targets) { image_parts 'word/header1.xml', 'word/_rels/header1.xml.rels' }
+
+      it { expect(targets.map { |t| entries.fetch "word/#{t}" }).to eq [png(0, 0, 255), svg] }
+      it { expect(part('word/document.xml').at_xpath('//a:blip', ns)).to be_nil }
+      it { expect(media.size).to eq 2 }
+    end
+
+    context 'used twice' do
+      before { 2.times { subject.img 'diagram.png', data: png(255, 0, 0), svg: svg, width: 20, height: 10 } }
+
+      let(:svg_ids) { part('word/document.xml').xpath('//asvg:svgBlip', ns).map { |n| n['r:embed'] } }
+
+      it { expect(svg_ids.size).to eq 2 }
+      it { expect(svg_ids.uniq.size).to eq 1 }
+      it { expect(media.size).to eq 2 }
+    end
+
+    context 'next to an image without svg' do
+      before do
+        subject.img 'diagram.png', data: png(255, 0, 0), svg: svg, width: 20, height: 10
+        subject.img 'photo.png', data: png(0, 255, 0), width: 20, height: 10
+      end
+
+      let(:blips) { part('word/document.xml').xpath('//a:blip', ns) }
+
+      it { expect(blips.last.element_children).to be_empty }
+      it { expect(media.size).to eq 3 }
+    end
+  end
+
+
+  #-------------------------------------------------------------
   # Rendering
   #-------------------------------------------------------------
 

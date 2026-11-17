@@ -1006,6 +1006,7 @@ Images can be added by using the `img` method. The other parameters control the 
 ```ruby
 docx.img 'https://www.example.com/logo.png' do
   data    File.binread('logo.png')  # the image's raw bytes, used instead of reading the url
+  svg     File.read('logo.svg')     # SVG markup, shown instead of the raster image by readers that support it
   width   396       # sets the image width. units specified in pixels. defaults to the image's own width.
   height  216       # sets the image height. units specified in pixels. defaults to the image's own height.
   ppi     96        # sets the pixels per inch. default is 72.
@@ -1026,6 +1027,16 @@ docx.img 'logo.png', data: File.binread('logo.png'), width: 396, height: 216
 ```
 
 *`data` takes the image's raw bytes, as `File.binread` returns them, and Caracal embeds them unchanged. With `data`, the first argument only names the image.*
+
+#### SVG Images
+
+`svg` adds SVG markup to an image. Word 2016 and later and LibreOffice show the SVG, which stays sharp when zoomed or printed; other readers show the raster image from `data` or the url. The SVG fills the raster image's size, or `width` and `height`.
+
+```ruby
+docx.img 'diagram.png', data: File.binread('diagram.png'), svg: File.read('diagram.svg'), width: 400, height: 200
+```
+
+*Caracal embeds the SVG as given; remove scripts and external references from SVG of untrusted sources before passing it.*
 
 #### Anchored Images
 

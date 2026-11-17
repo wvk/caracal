@@ -49,6 +49,18 @@ describe Caracal::Core::Models::ParagraphModel do
     # .runs
     describe '.runs' do
       it { expect(subject.runs).to be_a(Array) }
+
+      describe 'when the block adds runs' do
+        subject do
+          described_class.new content: 'content' do
+            text ' run'
+            bold true
+          end
+        end
+
+        it { expect(subject.runs.map(&:text_content)).to eq ['content', ' run'] }
+        it { expect(subject.runs.map(&:text_bold)).to eq [true, nil] }
+      end
     end
 
     # .run_attributes

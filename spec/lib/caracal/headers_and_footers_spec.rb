@@ -49,6 +49,18 @@ describe 'headers and footers' do
       expect(header.xpath('//w:p/w:pPr/w:jc/@w:val', ns).map(&:value)).to eq %w(right center)
     end
 
+    it 'puts the text of p and h1 before the runs added in their blocks' do
+      docx = Caracal::Document.new do
+        header do
+          p('content') { text ' run' }
+          h1('heading') { text ' run' }
+        end
+        footer { p('content') { text ' run' } }
+      end
+      expect(texts xml(docx, 'word/header1.xml')).to eq ['content', ' run', 'heading', ' run']
+      expect(texts xml(docx, 'word/footer1.xml')).to eq ['content', ' run']
+    end
+
     it 'ends with a paragraph after a table' do
       docx = Caracal::Document.new { header.table [['a', 'b']] }
       header = xml docx, 'word/header1.xml'

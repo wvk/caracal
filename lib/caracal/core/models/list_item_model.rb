@@ -122,10 +122,9 @@ module Caracal
 
         private
 
-        # The content run is appended after the block's runs, but it is the
-        # item's own text, so it leads the item, before any nested list.
+        # The content run leads the item, before any nested list.
         def content_added
-          runs.unshift runs.pop
+          super
           nested_lists.each {|pair| pair[0] += 1 }
         end
 

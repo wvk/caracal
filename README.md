@@ -133,7 +133,7 @@ Defines an internal identifier and type for global content items. *This file is 
 Specifies the name of the application that generated the document. *This file is generated automatically by the library based on other user directives.*
 
 **docProps/core.xml**
-Specifies the title of the document. *This file is generated automatically by the library based on other user directives.*
+Specifies the title, subject, creator and other [document properties](#document-properties). *This file is generated automatically by the library based on other user directives.*
 
 **docProps/custom.xml**
 Specifies the custom document properties. *This file is generated automatically by the library based on other user directives.*
@@ -512,6 +512,24 @@ Character styles use the text options only (font, color, size, bold, …) and ar
 `style` option, e.g. `text 'x', style: 'MyCharStyle'`.
 
 One-off inline text styling can also be accomplished by passing the `text` command override arguments (see below).
+
+
+### Document Properties
+
+The title, subject, author and other core properties of the document are set with these methods and written to `docProps/core.xml`.
+
+```ruby
+docx.title            'Quarterly report'
+docx.subject          'Sales figures'
+docx.creator          'ACME Reporting'      # the author
+docx.keywords         'sales, quarterly'    # or an array: %w(sales quarterly)
+docx.description      'Figures for the third quarter.'
+docx.last_modified_by 'Jane Doe'
+docx.created          Date.new(2024, 5, 17)
+docx.modified         Time.now
+```
+
+Called without a value, each method returns the property's value. `created` and `modified` accept a Date, Time, DateTime or parseable String such as `'2024-05-17T14:30:00+02:00'` and are written in UTC; other values raise `Caracal::Errors::InvalidModelError`. Keywords given as an array are joined with commas. Properties not set are not written, except the title, which defaults to the file name.
 
 
 ### Custom Properties

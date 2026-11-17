@@ -11,6 +11,7 @@
   * `hr` takes `width`, `align`, `top`, `bottom` and `height` (upstream #128, #138).
   * `page_columns` sets the text in columns; `column_break` continues in the next column (upstream #140).
   * `justify_lines_before_breaks false` leaves justified lines that end in a line break at their natural width (upstream #42).
+  * `title`, `subject`, `creator`, `keywords`, `description`, `last_modified_by`, `created` and `modified` set the document properties in `docProps/core.xml`; the title still defaults to the file name (#16).
 
 * Bug fixes
   * Tables in headers and footers take the document's page width; they used US Letter's.

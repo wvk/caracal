@@ -19,8 +19,6 @@ module Caracal
           attr_reader :name
           attr_reader :path
 
-          attr_accessor :language
-
           #-------------------------------------------------------------
           # Public Methods
           #-------------------------------------------------------------

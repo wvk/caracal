@@ -38,6 +38,7 @@ module Caracal
             theme_bgcolor:    self.text_theme_bgcolor,
             highlight_color:  self.text_highlight_color,
             vertical_align:   self.text_vertical_align,
+            lang:             self.text_lang,
             end_tab:          self.text_end_tab
           }.compact
           OpenStruct.new attrs

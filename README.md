@@ -487,6 +487,17 @@ Caracal checks every font file when it is added and raises `Caracal::Errors::Inv
 Fonts licensed for Preview & Print embedding only are embedded with a warning: Word opens documents containing them read-only.
 
 
+### Language
+
+The document's language is set with the `language` method. It takes a language tag such as `en-GB` or `de-DE` and is written into the document defaults, so spell-checking and hyphenation follow it wherever no style or text sets a language of its own.
+
+```ruby
+docx.language 'en-GB'
+```
+
+Paragraphs, text runs, links and styles set the language of their text with the `lang` option (see Paragraphs).
+
+
 ### Styles
 
 Paragraph style classes are defined with the `style` method. `id` and `name` are required; the other options control the rendering of text using the style.
@@ -503,6 +514,7 @@ docx.style do
   italic          false       # sets the font style.
   underline       false       # sets whether or not to underline the text.
   caps            false       # sets whether or not text should be rendered in all capital letters.
+  lang            'de-DE'     # sets the language for spell-checking and hyphenation.
   align           :left       # sets the alignment. accepts :left, :center, :right, and :both.
   line            360         # sets the minimum line height. units in twips.
   line_rule       :at_least   # accepts :at_least, :exact and :auto (line in 240ths of a line).
@@ -588,6 +600,7 @@ docx.p 'Sample text.' do
   underline       false             # sets whether or not to underline the text.
   bgcolor         'cccccc'          # sets the background color.
   highlight_color 'yellow'          # sets the highlight color. accepts the names listed below.
+  lang            'de-DE'           # sets the language for spell-checking and hyphenation, as a language tag.
   vertical_align  'superscript'     # sets the vertical alignment.
   keep_next       false             # sets whether or not to keep this paragraph with the next paragraph when separated by page break.
   keep_lines      true              # keeps all lines of the paragraph on the same page.
@@ -603,6 +616,8 @@ end
 ```
 
 `highlight_color` accepts `black`, `blue`, `cyan`, `green`, `magenta`, `red`, `yellow`, `white`, `darkBlue`, `darkCyan`, `darkGreen`, `darkMagenta`, `darkRed`, `darkYellow`, `darkGray`, `lightGray` and `none` for paragraphs, text runs, links and styles. Other values raise `Caracal::Errors::InvalidModelError`.
+
+`lang` accepts a language tag such as `en-GB`, `de-DE` or `sr-Latn-RS` for paragraphs, text runs, links and styles. Other values, such as `en_GB`, raise `Caracal::Errors::InvalidModelError`.
 
 Paragraphs and paragraph styles accept the table border options (see Tables), e.g. `docx.p 'Boxed', border_color: '666666'` or `border_bottom: { size: 12 }`. `border_horizontal` sets the line between consecutive paragraphs with the same borders.
 
@@ -638,6 +653,7 @@ docx.p do
     underline       true              # sets whether or not the text will be underlined. defaults to the paragraph's, else the style's, else true.
     bgcolor         'cccccc'          # sets the background color.
     highlight_color 'yellow'          # sets the highlight color. accepts the names listed under Paragraphs.
+    lang            'fr-FR'           # sets the language. defaults to the paragraph's.
   end
 end
 ```

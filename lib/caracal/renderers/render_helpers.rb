@@ -115,9 +115,11 @@ module Caracal
         end
       end
 
-      def render_run_attributes(w, model, skip_empty: true)
+      # lang, if given, replaces the model's language
+      def render_run_attributes(w, model, skip_empty: true, lang: nil)
         if model.respond_to? :run_attributes
           attrs = model.run_attributes # only contains non-nil values
+          attrs.lang = lang unless lang.nil?
           unless attrs.empty? and not skip_empty
             w.rPr do
               w.rStyle     'w:val' => attrs.style                           unless attrs.style.nil?
@@ -142,6 +144,7 @@ module Caracal
               render_background w, attrs
               w.vertAlign  'w:val' => attrs.vertical_align                  unless attrs.vertical_align.nil?
               w.rtl        'w:val' => attrs.rtl                             unless attrs.rtl.nil?
+              w.lang       'w:val' => attrs.lang                            unless attrs.lang.nil?
               w.specVanish 'w:val' => attrs.hide_mark                       unless attrs.hide_mark.nil?
             end
           end

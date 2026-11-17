@@ -762,7 +762,7 @@ module Caracal
             when Numeric
               w.tab 'w:val' => 'start', 'w:pos' => t.to_i, 'w:leader' => 'none'
             else
-              w.tab 'w:val' => t[:val], 'w:pos' => t[:pos].to_i, 'w:leader' => (t[:leader] || 'none')
+              w.tab 'w:val' => (t[:val] || 'start'), 'w:pos' => t[:pos].to_i, 'w:leader' => (t[:leader] || 'none')
             end
           end
         end

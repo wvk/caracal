@@ -179,6 +179,16 @@ describe Caracal::Core::Models::ParagraphModel do
 
         it { expect(subject.valid?).to eq false }
       end
+      describe 'when a tab stop has no alignment' do
+        before { subject.tabs [720, { pos: 1440 }] }
+
+        it { expect(subject.valid?).to eq true }
+      end
+      describe 'when a tab alignment is not an ST_TabJc value' do
+        before { subject.tabs [{ pos: 1440, val: :middle }] }
+
+        it { expect(subject.valid?).to eq false }
+      end
     end
 
   end

@@ -36,4 +36,38 @@ describe 'tab rendering' do
   it { expect(paragraphs[0].xpath('w:pPr/w:tabs/w:tab/@w:val', ns).map(&:value)).to eq %w(start) }
   it { expect(paragraphs[1].xpath('w:r', ns).map { |r| r.xpath('*', ns).map(&:name) }).to eq [%w(rPr t tab), %w(rPr t tab), %w(rPr t)] }
   it { expect(paragraphs[0].xpath('w:pPr/*', ns).map(&:name)).to eq %w(pStyle tabs contextualSpacing rPr) }
+
+  describe 'tab stops given as hashes' do
+    let(:xml) do
+      Nokogiri::XML(Caracal::Renderers::DocumentRenderer.render(Caracal::Document.new do |docx|
+        docx.p tabs: [{ pos: 2000 }, { pos: 4000, val: :right, leader: :dot }, { pos: 6000, val: 'center' }] do
+          text 'a', end_tab: true
+          text 'b'
+        end
+      end))
+    end
+
+    def tab_attrs(name)
+      paragraphs[0].xpath("w:pPr/w:tabs/w:tab/@w:#{name}", ns).map(&:value)
+    end
+
+    it { expect(tab_attrs 'val').to eq %w(start right center) }
+    it { expect(tab_attrs 'pos').to eq %w(2000 4000 6000) }
+    it { expect(tab_attrs 'leader').to eq %w(none dot none) }
+  end
+
+  describe 'tab alignments' do
+    it 'accepts every ST_TabJc value' do
+      vals = %i(clear start center end decimal bar num left right)
+      expect { Caracal::Document.new { |docx| docx.p 'x', tabs: vals.map.with_index(1) { |val, i| { pos: i * 720, val: val } } } }.not_to raise_error
+    end
+
+    it 'raises for a paragraph tab alignment outside ST_TabJc' do
+      expect { Caracal::Document.new { |docx| docx.p 'x', tabs: [720, { pos: 2000, val: :bogus }] } }.to raise_error Caracal::Errors::InvalidModelError, /:bogus/
+    end
+
+    it 'raises for a list item tab alignment outside ST_TabJc' do
+      expect { Caracal::Document.new { |docx| docx.ul { li 'x', tabs: [{ pos: 2000, val: :bogus }] } } }.to raise_error Caracal::Errors::InvalidModelError, /:bogus/
+    end
+  end
 end

@@ -22,6 +22,9 @@ module Caracal
         include HasRunAttributes
         extend HasMargins
 
+        # ST_TabJc, including the transitional left and right
+        TAB_ALIGNS = %i(clear start center end decimal bar num left right)
+
         has_margins
 
         has_string_attribute :style
@@ -224,8 +227,17 @@ module Caracal
         def valid?
           runs.any? and
               validate_inclusion :line_rule, within: StyleModel::LINE_RULES.keys and
+              self.valid_tabs? and
               self.valid_bgstyle? and
               self.valid_run_attributes?
+        end
+
+        # a tab stop's val is an ST_TabJc value; without one it is start
+        def valid_tabs?
+          vals    = Array(paragraph_tabs).grep(Hash).filter_map {|t| t[:val] }
+          invalid = vals.reject {|v| TAB_ALIGNS.include? v.to_s.to_sym }
+          invalid.each {|v| errors << {message: "#{v.inspect} is not in #{TAB_ALIGNS.inspect}", model: self, attribute: :tabs, value: v} }
+          invalid.empty?
         end
 
         def self.option_keys

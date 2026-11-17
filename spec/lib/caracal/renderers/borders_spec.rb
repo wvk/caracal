@@ -138,4 +138,27 @@ describe 'border rendering' do
 
     it { expect(xml.xpath('//w:tcBorders/w:top', ns).map { |n| attrs n }).to eq [{ 'val' => 'single', 'sz' => '4', 'space' => '0', 'color' => 'ff0000' }] }
   end
+
+  describe 'line styles' do
+    it 'renders any ST_Border value' do
+      xml = document_xml { |docx| docx.hr line: :dotDash; docx.p 'x', border_line: :thinThickSmallGap }
+      expect(xml.xpath('//w:pBdr/w:top/@w:val', ns).map(&:value)).to eq %w(dotDash thinThickSmallGap)
+    end
+
+    {
+      'hr'              => ->(docx) { docx.hr line: :bogus },
+      'hr block'        => ->(docx) { docx.hr { line :bogus } },
+      'paragraph'       => ->(docx) { docx.p 'x', border_line: :bogus },
+      'paragraph edge'  => ->(docx) { docx.p 'x', border_top: { line: :bogus } },
+      'list item'       => ->(docx) { docx.ul { li 'x', border: { line: :bogus } } },
+      'paragraph style' => ->(docx) { docx.style id: 'Boxed', name: 'Boxed', border_line: :bogus },
+      'table'           => ->(docx) { docx.table [['x']], border_line: :bogus },
+      'table edge'      => ->(docx) { docx.table([['x']]) { border_top { line :bogus } } },
+      'cell'            => ->(docx) { docx.table([['x']]) { cell_style cells, border_bottom: { line: :bogus } } }
+    }.each do |name, build|
+      it "raises for a #{name} line outside ST_Border" do
+        expect { Caracal::Document.new(&build) }.to raise_error Caracal::Errors::InvalidModelError, /:bogus/
+      end
+    end
+  end
 end

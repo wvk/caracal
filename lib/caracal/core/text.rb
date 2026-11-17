@@ -27,6 +27,8 @@ module Caracal
             model = Caracal::Core::Models::ParagraphModel.new options, &block
             if model.valid?
               contents << model
+            elsif model.errors.any?
+              raise Caracal::Errors::InvalidModelError, model.errors.inspect
             else
               raise Caracal::Errors::InvalidModelError, 'Paragraphs and headings, which delegate to the :p command, require at least one text string.'
             end

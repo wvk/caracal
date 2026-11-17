@@ -110,6 +110,90 @@ describe 'font embedding' do
     it { expect(package['[Content_Types].xml']).to include 'Extension="ttf" ContentType="application/x-font-ttf"' }
   end
 
+  describe 'obfuscated .odttf files' do
+    # keys as LibreOffice writes them; Word uses a random GUID for every file
+    let(:key)        { '{01014A78-CABC-4EF0-12AC-5CD89AEFDE01}' }
+    let(:bold_key)   { '{02014A78-CABC-4EF0-12AC-5CD89AEFDE02}' }
+    let(:odttf)      { Caracal::FontFile.obfuscate regular, key }
+    let(:bold_odttf) { Caracal::FontFile.obfuscate bold, bold_key }
+
+    def font_model(options={}, &block)
+      Caracal::Core::Models::FontModel.new({ name: 'X' }.merge(options), &block)
+    end
+
+    def data(model)
+      model.embedded_fonts.to_h {|embedded| [embedded.style, embedded.font_file.data] }
+    end
+
+    let(:document) do
+      io = StringIO.new odttf
+      Caracal::Document.new {|docx| docx.font name: 'Embedded Serif', regular: io, key: key }
+    end
+
+    it { expect(odttf).not_to eq regular }
+    it { expect(document.find_font('Embedded Serif').embedded_fonts.first.font_file.data).to eq regular }
+
+    it 'embeds the de-obfuscated font like the original TTF' do
+      font_key = font.at_xpath('w:embedRegular/@w:fontKey', ns).value
+      expect(font_key).not_to eq key
+      expect(Caracal::FontFile.deobfuscate package['word/fonts/font1.odttf'], font_key).to eq regular
+    end
+
+    it 'reads an .odttf file from a path' do
+      Dir.mktmpdir do |dir|
+        path = File.join dir, 'font1.odttf'
+        File.binwrite path, odttf
+        expect(data(font_model(key: key, regular: path))).to eq(regular: regular)
+      end
+    end
+
+    it 'accepts the key without braces and in lowercase' do
+      expect(data(font_model(regular: StringIO.new(odttf), key: key.delete('{}')))).to eq(regular: regular)
+      expect(data(font_model(regular: StringIO.new(odttf), key: key.downcase))).to eq(regular: regular)
+    end
+
+    it 'takes a key per style' do
+      model = font_model regular: StringIO.new(odttf), bold: StringIO.new(bold_odttf), key: { regular: key, 'bold' => bold_key }
+      expect(data(model)).to eq(regular: regular, bold: bold)
+    end
+
+    it 'reads styles without a key as plain font files' do
+      model = font_model regular: StringIO.new(odttf), bold: StringIO.new(bold), key: { regular: key }
+      expect(data(model)).to eq(regular: regular, bold: bold)
+    end
+
+    it 'supports the block syntax with the key after the files' do
+      regular_io, bold_io = StringIO.new(odttf), StringIO.new(bold_odttf)
+      model = Caracal::Core::Models::FontModel.new do
+        name    'X'
+        regular regular_io
+        bold    bold_io
+        key     regular: '{01014A78-CABC-4EF0-12AC-5CD89AEFDE01}', bold: '{02014A78-CABC-4EF0-12AC-5CD89AEFDE02}'
+      end
+      expect(data(model)).to eq(regular: regular, bold: bold)
+    end
+
+    it 'embeds the plain font with obfuscate false' do
+      io  = StringIO.new odttf
+      doc = Caracal::Document.new {|docx| docx.font name: 'Embedded Serif', regular: io, key: key, obfuscate: false }
+      expect(parts(doc)['word/fonts/font1.ttf']).to eq regular
+    end
+
+    describe 'with a wrong key' do
+      it { expect { font_model regular: StringIO.new(odttf), key: '{001B70DC-AA60-4AD5-90EC-18A0948E1EAE}' }.to raise_error(Caracal::Errors::InvalidFontError, /regular font file does not de-obfuscate with key \{001B70DC-AA60-4AD5-90EC-18A0948E1EAE\}: not a TrueType\/OpenType font/) }
+      it { expect { font_model regular: StringIO.new(odttf), bold: StringIO.new(bold_odttf), key: { regular: bold_key, bold: key } }.to raise_error(Caracal::Errors::InvalidFontError) }
+      it { expect { font_model regular: StringIO.new(odttf), bold: StringIO.new(bold_odttf), key: key }.to raise_error(Caracal::Errors::InvalidFontError, /bold font file/) }
+      it { expect { font_model regular: StringIO.new(odttf) }.to raise_error(Caracal::Errors::InvalidFontError, /not a TrueType\/OpenType font/) }
+      it { expect { font_model regular: StringIO.new(odttf), key: '01014A78-CABC' }.to raise_error(Caracal::Errors::InvalidFontError, /invalid font obfuscation key/) }
+      it { expect { font_model regular: StringIO.new(odttf), key: { bolditalic: key } }.to raise_error(Caracal::Errors::InvalidModelError, /unknown style bolditalic/) }
+    end
+
+    it 'checks the license of the de-obfuscated font' do
+      restricted = Caracal::FontFile.obfuscate sfnt(fs_type: 2), key
+      expect { font_model regular: StringIO.new(restricted), key: key }.to raise_error(Caracal::Errors::InvalidFontError, /license/)
+    end
+  end
+
   describe 'several embedded fonts' do
     let(:document) do
       a, b = StringIO.new(regular), StringIO.new(bold)

@@ -339,4 +339,21 @@ describe 'headers and footers' do
       expect(docx.header(first: true)).to equal docx.header(first: true)
     end
   end
+
+  describe 'widths' do
+    let(:docx) do
+      Caracal::Document.new do |d|
+        d.page_size width: 11906, height: 16838 # A4
+        d.page_columns 2
+        d.header do
+          table [['wide']]
+          hr width: 1026
+        end
+      end
+    end
+    let(:header) { xml(docx, 'word/header1.xml') }
+
+    it { expect(header.at_xpath('//w:tblW/@w:w', ns).value).to eq '9026' }
+    it { expect(header.xpath('//w:p[w:pPr/w:pBdr]/w:pPr/w:ind/@*', ns).map(&:value)).to eq %w(4000 4000) }
+  end
 end

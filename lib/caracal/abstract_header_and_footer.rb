@@ -97,6 +97,13 @@ module Caracal
     def document_theme
       document.document_theme
     end
+
+    # Headers and footers span the document's page between its margins.
+    def page_content_width
+      return super unless document
+
+      document.page_width - document.page_margin_left - document.page_margin_right
+    end
   end
 end
 

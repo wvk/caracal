@@ -12,6 +12,9 @@
   * `page_columns` sets the text in columns; `column_break` continues in the next column (upstream #140).
   * `justify_lines_before_breaks false` leaves justified lines that end in a line break at their natural width (upstream #42).
 
+* Bug fixes
+  * Tables in headers and footers take the document's page width; they used US Letter's.
+
 #### v2.0.0
 
 * Breaking changes

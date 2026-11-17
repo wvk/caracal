@@ -162,6 +162,56 @@ describe 'headers and footers' do
     end
   end
 
+  describe 'iframes' do
+    let(:w14) { 'http://schemas.microsoft.com/office/word/2010/wordml' }
+
+    # a Caracal document made to look like Word output: w14 namespace and w14:paraId
+    let(:snippet) do
+      files = parts Caracal::Document.new { p 'from word' }
+      files['word/document.xml'] = files['word/document.xml']
+        .sub('<w:document ', %(<w:document xmlns:w14="#{ w14 }" mc:Ignorable="w14" ))
+        .sub('<w:p>', '<w:p w14:paraId="1A2B3C4D">')
+      Zip::OutputStream.write_buffer {|zip| files.each {|name, content| zip.put_next_entry name; zip.write content } }.string
+    end
+
+    def expect_declared(part)
+      expect(part.errors).to be_empty
+      expect(part.root.namespaces).to include 'xmlns:w14' => w14
+      expect(part.root['mc:Ignorable']).to eq 'w14'
+      expect(part.at_xpath('//w:p[@w14:paraId="1A2B3C4D"]', ns.merge('w14' => w14))).not_to be_nil
+      expect(texts part).to eq ['from word']
+    end
+
+    %i(header footer).each do |kind|
+      describe "in a #{ kind }" do
+        it 'declares the namespaces and ignorables of the embedded document' do
+          data = snippet
+          docx = Caracal::Document.new {|d| d.send(kind).iframe data: data }
+          expect_declared xml(docx, "word/#{ kind }1.xml")
+        end
+
+        it 'declares them for an iframe in a table cell' do
+          data = snippet
+          cell = Caracal::Core::Models::TableCellModel.new {|c| c.iframe data: data }
+          docx = Caracal::Document.new {|d| d.send(kind).table [[cell]] }
+          expect_declared xml(docx, "word/#{ kind }1.xml")
+        end
+
+        it 'declares them on a first page showing the default content' do
+          data = snippet
+          docx = Caracal::Document.new {|d| d.send(kind).iframe data: data; d.page_numbers true, first_page: false }
+          expect_declared xml(docx, "word/#{ kind }2.xml")
+        end
+      end
+    end
+
+    it 'leaves the default namespaces of a part without iframes' do
+      part = xml Caracal::Document.new { header.p 'h' }, 'word/header1.xml'
+      expect(part.root.namespaces.keys).to eq Caracal::Header.default_namespaces.map {|namespace| namespace[:prefix] }
+      expect(part.root['mc:Ignorable']).to be_nil
+    end
+  end
+
   describe 'page numbers' do
     def footer_rels(docx)
       rels = Nokogiri::XML(parts(docx).fetch 'word/_rels/document.xml.rels').remove_namespaces!

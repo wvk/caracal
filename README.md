@@ -378,7 +378,7 @@ The page number appears on the first page too unless you pass `first_page: false
 
 ### Headers and Footers
 
-Headers and footers are repeated on every page. They take the same content as the document body, in the order given, except page breaks, a table of contents and iframes.
+Headers and footers are repeated on every page. They take the same content as the document body, in the order given, except page breaks and a table of contents.
 
 ```ruby
 docx.header.h1 'Page Header'

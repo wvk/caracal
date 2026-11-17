@@ -66,9 +66,10 @@ module Caracal
             self.p content, self.paragraph_attributes.merge(self.run_attributes.to_h)
           else
             # the final tag in a table cell *must* be a paragraph for OOXML to not throw an error.
+            # This one is 1pt high, adding as little space as possible below the content.
             p_klass = Caracal::Core::Models::ParagraphModel
             unless contents.last.is_a? p_klass
-              self.contents << p_klass.new(self.paragraph_attributes.merge(self.run_attributes.to_h).merge content: '')
+              self.contents << p_klass.new(content: '', size: 2, top: 0, bottom: 0, line: 20, line_rule: :exact)
             end
           end
         end

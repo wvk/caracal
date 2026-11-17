@@ -2,6 +2,7 @@
 
 * Changes
   * List levels restart after any higher level, Word's default; `numbering.xml` writes `lvlRestart` only for list styles that set `restart` (upstream #85).
+  * The empty paragraph closing a table cell after non-paragraph content, such as a nested table, is 1pt high (upstream #122).
 
 * Enhancements
   * `row_height` sets the height of every row or of given rows, at least or exactly (upstream #119).

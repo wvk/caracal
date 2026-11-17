@@ -986,6 +986,8 @@ end
 
 *Background and margins are unset by default, so the table style applies. `margins` also accepts a hash (`margins top: 0, left: 100`), as does `cell_style`; sides not given stay unchanged.*
 
+Word ends every table cell with a paragraph. When a cell's content ends in something else, such as a nested table, Caracal adds an empty paragraph 1pt high.
+
 To display images side-by-side, they need to be laid out horizontally in a table.
 
 ```ruby

@@ -330,4 +330,17 @@ describe Caracal::Renderers::DocumentRenderer do
       it { expect(tbl_w).to eq [%w(9360 dxa)] }
     end
   end
+
+  describe 'paragraph closing a table cell' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.table [[Caracal::Core::Models::TableCellModel.new { table [['inner']] }]]
+      end
+    end
+    let(:closing) { xml.at_xpath('/w:document/w:body/w:tbl/w:tr/w:tc/w:p[last()]', ns) }
+
+    it { expect(closing.at_xpath('preceding-sibling::*[1]', ns).name).to eq 'tbl' }
+    it { expect(closing.at_xpath('w:pPr/w:spacing', ns).attributes.transform_values(&:value)).to eq('before' => '0', 'after' => '0', 'line' => '20', 'lineRule' => 'exact') }
+    it { expect(closing.at_xpath('w:pPr/w:rPr/w:sz/@w:val', ns).value).to eq '2' }
+  end
 end

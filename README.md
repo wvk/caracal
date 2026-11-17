@@ -808,7 +808,7 @@ docx.list_style do
   indent  400         # sets the indention of the marker from the margin. units in twips.
   left    800         # sets the indention of the text from the margin. units in twips.
   start   2           # sets the number at which item counts begin. defaults to 1.
-  restart 1           # sets the level that triggers a reset of numbers at this level. 1-based index. 0 means numbers never reset. defaults to 1.
+  restart 1           # restarts the numbers after an item of this 1-based level or a higher one; 0 never restarts them. defaults to restarting after any higher level.
 end
 ```
 

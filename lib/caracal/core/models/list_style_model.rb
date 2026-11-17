@@ -11,7 +11,7 @@ module Caracal
         has_integer_attribute :left,    default: 720 # in twips
         has_integer_attribute :indent,  default: 360 # in twips
         has_integer_attribute :start,   default: 1
-        has_integer_attribute :restart, default: 1
+        has_integer_attribute :restart # nil: restarts after any higher level
         has_integer_attribute :level
 
         has_symbol_attribute :align, default: :left
@@ -32,7 +32,6 @@ module Caracal
           @style_left    = DEFAULT_STYLE_LEFT
           @style_indent  = DEFAULT_STYLE_INDENT
           @style_start   = DEFAULT_STYLE_START
-          @style_restart = DEFAULT_STYLE_RESTART
 
           super options, &block
         end

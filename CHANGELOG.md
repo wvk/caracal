@@ -1,3 +1,8 @@
+#### Unreleased
+
+* Changes
+  * List levels restart after any higher level, Word's default; `numbering.xml` writes `lvlRestart` only for list styles that set `restart` (upstream #85).
+
 #### v2.0.0
 
 * Breaking changes

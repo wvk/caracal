@@ -27,7 +27,7 @@ describe Caracal::Core::Models::ListStyleModel do
       it { expect(described_class::DEFAULT_STYLE_LEFT).to    eq 720    }
       it { expect(described_class::DEFAULT_STYLE_INDENT).to  eq 360    }
       it { expect(described_class::DEFAULT_STYLE_START).to   eq 1      }
-      it { expect(described_class::DEFAULT_STYLE_RESTART).to eq 1 }
+      it { expect(described_class::DEFAULT_STYLE_RESTART).to be_nil }
     end
     
     # accessors

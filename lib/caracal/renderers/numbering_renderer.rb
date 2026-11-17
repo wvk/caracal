@@ -46,7 +46,8 @@ module Caracal
                     w.lvl          'w:ilvl' => s.style_level do
                       w.start      'w:val' => s.style_start
                       w.numFmt     'w:val' => s.style_format
-                      w.lvlRestart 'w:val' => s.style_restart
+                      # without lvlRestart, a level restarts whenever a higher level is used
+                      w.lvlRestart 'w:val' => s.style_restart unless s.style_restart.nil?
                       w.lvlText    'w:val' => s.style_value
                       w.lvlJc      'w:val' => s.style_align
                       w.pPr do

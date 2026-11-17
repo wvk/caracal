@@ -73,6 +73,22 @@ describe Caracal::Renderers::NumberingRenderer do
     it_behaves_like 'consistent numbering ids'
   end
 
+  describe 'level restarts' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.list_style type: :ordered, level: 2, format: 'decimal', value: '%3.', restart: 1
+        docx.ol do
+          li('A') { ol { li('a') { ol { li 'i' } } } }
+        end
+      end
+    end
+    let(:levels) { xml[:numbering].xpath('//w:abstractNum[not(w:name)]/w:lvl', ns) }
+
+    # Word's default: a level restarts whenever a higher level is used
+    it { expect(levels[0..1].map {|lvl| lvl.at_xpath('w:lvlRestart', ns) }).to eq [nil, nil] }
+    it { expect(levels[2].at_xpath('w:lvlRestart/@w:val', ns).value).to eq '1' }
+  end
+
   describe 'mixed list types at the same level' do
     let(:document) do
       Caracal::Document.new do |docx|

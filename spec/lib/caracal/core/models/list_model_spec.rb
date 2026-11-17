@@ -118,6 +118,17 @@ describe Caracal::Core::Models::ListModel do
       
       it { expect(subject.list_level).to eq 2 }
     end
+
+    # .start
+    describe '.start' do
+      it { expect(subject.list_start).to be_nil }
+
+      describe 'when given' do
+        before { subject.start(3) }
+
+        it { expect(subject.list_start).to eq 3 }
+      end
+    end
     
     
     #=============== SUB-METHODS ==========================
@@ -154,6 +165,21 @@ describe Caracal::Core::Models::ListModel do
       
         it { expect(subject.valid?).to eq false }
       end
+      describe 'when a top-level list starts at 0' do
+        before { subject.level 0; subject.start 0 }
+
+        it { expect(subject.valid?).to eq true }
+      end
+      describe 'when a top-level list has a negative start' do
+        before { subject.level 0; subject.start(-1) }
+
+        it { expect(subject.valid?).to eq false }
+      end
+      describe 'when a nested list has a start' do
+        before { subject.start 3 }
+
+        it { expect(subject.valid?).to eq false }
+      end
     end
   
   end
@@ -168,7 +194,7 @@ describe Caracal::Core::Models::ListModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:type, :level].sort }
+      let(:expected) { [:type, :level, :start].sort }
       
       it { expect(actual).to eq expected }
     end

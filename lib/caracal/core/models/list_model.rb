@@ -19,6 +19,7 @@ module Caracal
 
         has_symbol_attribute :type, default: :unordered
         has_integer_attribute :level, default: 0
+        has_integer_attribute :start # the number of a top-level list's first item; the list style's start unless given
 
         # initialization
         def initialize(options={}, &block)
@@ -98,13 +99,20 @@ module Caracal
         #=============== VALIDATION ===========================
 
         def valid?
-          [:type, :level].all? {|a| validate_presence a } and not items.empty?
+          [:type, :level].all? {|a| validate_presence a } and valid_start? and not items.empty?
+        end
+
+        def valid_start?
+          return true if list_start.nil?
+
+          validate('start must be 0 or more') { list_start >= 0 } and
+              validate('start applies to top-level lists') { list_level == 0 }
         end
 
         private
 
         def option_keys
-          [:type, :level]
+          [:type, :level, :start]
         end
 
       end

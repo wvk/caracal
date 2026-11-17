@@ -540,6 +540,7 @@ module Caracal
       def render_list(xml, model, **options)
         if model.list_level == 0
           document.list_numberings.merge! model.assign_numbering { document.next_numbering_id }
+          document.list_starts[model.numbering_id] = model.list_start unless model.list_start.nil?
         end
 
         model.items.flat_map(&:parts).each do |part|

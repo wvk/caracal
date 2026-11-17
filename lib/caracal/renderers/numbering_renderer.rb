@@ -66,11 +66,17 @@ module Caracal
             iframe_definitions('w:abstractNum') {|definition| xml << definition }
 
             # bind concrete numberings to abstract definitions. Both share the same id.
+            # A list's own start overrides its list style's at level 0.
             numbering_ids = list_numberings.keys
             document.with_heading_numbering {|model| numbering_ids.unshift model.id }
             numbering_ids.each do |i|
               w.num 'w:numId' => i do
                 w.abstractNumId 'w:val' => i
+                if start = document.list_starts[i]
+                  w.lvlOverride 'w:ilvl' => 0 do
+                    w.startOverride 'w:val' => start
+                  end
+                end
               end
             end
 

@@ -146,6 +146,52 @@ describe Caracal::Renderers::NumberingRenderer do
     end
   end
 
+  describe 'list start' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.ol(start: 3) do
+          li 'C'
+          li 'D' do
+            ol { li 'd1' }
+          end
+        end
+        docx.ol { li 'A' }
+        docx.ol(start: 0) { li 'Zero' }
+      end
+    end
+
+    let(:num_ids) do
+      xml[:document].xpath('//w:p[w:pPr/w:numPr]', ns).to_h do |p|
+        [p.xpath('.//w:t', ns).text, p.at_xpath('.//w:numId/@w:val', ns).value]
+      end
+    end
+
+    def num(text)
+      xml[:numbering].at_xpath("//w:num[@w:numId='#{num_ids[text]}']", ns)
+    end
+
+    def start_override(text)
+      num(text).xpath('w:lvlOverride', ns).map {|o| [o['w:ilvl'], o.at_xpath('w:startOverride/@w:val', ns)&.value] }
+    end
+
+    def abstract_starts(text)
+      xml[:numbering].xpath("//w:abstractNum[@w:abstractNumId='#{num_ids[text]}']/w:lvl/w:start/@w:val", ns).map(&:value)
+    end
+
+    it { expect(start_override 'C').to eq [['0', '3']] }
+    it { expect(start_override 'A').to eq [] }
+    it { expect(start_override 'Zero').to eq [['0', '0']] }
+    it { expect(num_ids['d1']).to eq num_ids['C'] }
+    it { expect(abstract_starts 'C').to eq %w(1 1) }
+
+    describe 'when rendered a second time' do
+      before { render document }
+
+      it { expect(start_override 'C').to eq [['0', '3']] }
+      it { expect(xml[:numbering].xpath('//w:lvlOverride', ns).size).to eq 2 }
+    end
+  end
+
   describe 'without heading numbering' do
     let(:document) { Caracal::Document.new {|docx| docx.h1 'Introduction' } }
 

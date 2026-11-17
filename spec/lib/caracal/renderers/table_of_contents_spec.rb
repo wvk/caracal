@@ -29,6 +29,24 @@ describe 'table of contents rendering' do
     end
   end
 
+  describe 'entry text' do
+    # the text shown before each entry's PAGEREF field
+    def entries(xml)
+      xml.xpath('//w:hyperlink[w:r/w:instrText]', ns).map {|link| link.at_xpath('w:r/w:t', ns).text }
+    end
+
+    it "is the heading's text, its runs following each other as in the heading" do
+      xml = document_xml do |docx|
+        docx.toc
+        docx.h1 { text 'Hello '; text '“'; text 'World'; text '”' }
+        docx.h1 { text 'A '; text 'bold', bold: true; text ' move' }
+        docx.h1 { text 'See '; link 'the docs', 'https://example.com' }
+        docx.h1 { text 'Two  spaces' }
+      end
+      expect(entries(xml)).to eq ['Hello “World”', 'A bold move', 'See the docs', 'Two  spaces']
+    end
+  end
+
   describe 'heading' do
     def headings(xml)
       xml.xpath("//w:p[w:pPr/w:pStyle/@w:val='TOCHeading']", ns)

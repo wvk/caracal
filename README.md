@@ -195,6 +195,7 @@ Image width and height are measured in pixels, converted at `ppi` (72 by default
 EMUs are a virtual unit designed to facilitate the smooth conversion between inches, millimeters, and pixels for images and vector graphics.  1in == 914400 EMUs.  1px at 72dpi == 1pt == 12700 EMUs.
 
 Caracal takes each value in the unit OOXML uses for it, except for images: width and height in pixels, margins in points and anchor offsets in twips, all converted to EMUs.
+[Frames](#frames) take their size and offsets in twips, also converted to EMUs.
 
 
 ## Syntax Flexibility
@@ -982,6 +983,35 @@ end
 ```
 
 `relative_to_x` and `relative_to_y` set the reference per axis. Vertically, `:column` measures from the margin; horizontally, `:paragraph` measures from the column.
+
+### Frames
+
+`frame` places paragraphs at a fixed position on the page, e.g. a sidebar box, an address block or a label on a cover page. It takes the options of [anchored images](#anchored-images); `width` and `height` are required.
+
+```ruby
+docx.frame width: 3600, height: 4320 do
+  x           7920      # horizontal offset in twips. default aligns the frame by its align value.
+  y           2880      # vertical offset in twips. default is the top.
+  align       :right    # :left (default), :center or :right, without x.
+  relative_to :page     # :page (default), :margin, :column or :paragraph.
+  wrap        :square   # :top_and_bottom (default), :square, :none (in front of text) or :behind (behind text).
+
+  h3 'Sidebar'
+  p do
+    text 'Read more at '
+    link 'example.com', 'https://example.com/'
+  end
+  ul do
+    li 'a list item'
+  end
+end
+```
+
+`width` and `height` set the frame's size in twips. With `wrap :square` the body text flows around the frame; with `:none` the frame floats over it. The body text keeps 8pt away from the frame. `relative_to_x` and `relative_to_y` set the reference per axis, as for images.
+
+A frame holds paragraphs, headings, lists and tables; tables span the frame's width. It has no border or background and its text starts at its edges; its paragraphs take `bgcolor` and borders as usual. Like an anchored image, a frame sits in an empty paragraph of its own where it is added. Frames also work in headers and footers. They leave footnotes out.
+
+Caracal writes a frame as a DrawingML text box (`wps:txbx`) with a VML text box as fallback for programs that do not read DrawingML shapes.
 
 ### Tables
 

@@ -177,7 +177,7 @@ module Caracal
       end
 
       def render_image_wrap(xml, model)
-        case model.image_wrap
+        case anchor_option(model, :wrap)
         when :square         then xml['wp'].wrapSquare wrapText: 'bothSides'
         when :top_and_bottom then xml['wp'].wrapTopAndBottom
         else                      xml['wp'].wrapNone
@@ -193,17 +193,29 @@ module Caracal
       }
 
       def render_image_position(xml, model, axis)
-        relative_to = model.send("image_relative_to_#{axis}") || model.image_relative_to || :page
         horizontal  = axis == :x
         offset      = model.send "formatted_#{axis}"
 
-        xml['wp'].send horizontal ? 'positionH' : 'positionV', relativeFrom: IMAGE_RELATIVE_FROM[relative_to][horizontal ? 0 : 1] do
+        xml['wp'].send horizontal ? 'positionH' : 'positionV', relativeFrom: anchor_relative_from(model, axis) do
           if offset
             xml['wp'].posOffset offset
           else
-            xml['wp'].align horizontal ? model.image_align : 'top'
+            xml['wp'].align horizontal ? anchor_option(model, :align) : 'top'
           end
         end
+      end
+
+      # The reference an anchored image or a frame is positioned from on
+      # the given axis, as ST_RelFromH or ST_RelFromV.
+      def anchor_relative_from(model, axis)
+        relative_to = anchor_option(model, "relative_to_#{axis}") || anchor_option(model, :relative_to) || :page
+        IMAGE_RELATIVE_FROM[relative_to][axis == :x ? 0 : 1]
+      end
+
+      # Anchored images and frames share their anchor options, e.g.
+      # image_wrap and frame_wrap.
+      def anchor_option(model, name)
+        model.send "#{model.class.attr_prefix}_#{name}"
       end
 
       def next_drawing_id
@@ -250,6 +262,133 @@ module Caracal
             end
           end
         end
+      end
+
+      # A frame is a text box anchored like an image: a DrawingML shape
+      # (wps) for consumers that know it, with a VML shape as the fallback.
+      # The content is rendered once and copied into the fallback, so its
+      # links, lists and bookmarks are registered once.
+      def render_frame(xml, model, **options)
+        w          = xml['w']
+        drawing_id = next_drawing_id
+        z_index    = (@relative_height = @relative_height.to_i + 1)
+        dist       = FRAME_DISTANCE * 12700 # points to EMUs
+        content    = nil
+
+        w.p paragraph_options do
+          w.r run_options do
+            xml['mc'].AlternateContent do
+              xml['mc'].Choice 'Requires' => 'wps' do
+                xml['w'].drawing do
+                  xml['wp'].anchor distT: dist, distB: dist, distL: dist, distR: dist, relativeHeight: z_index, simplePos: false, locked: true, layoutInCell: false, allowOverlap: false, behindDoc: model.frame_wrap == :behind do
+                    xml['wp'].simplePos x: 0, y: 0
+                    render_image_position xml, model, :x
+                    render_image_position xml, model, :y
+                    xml['wp'].extent cx: model.formatted_width, cy: model.formatted_height
+                    xml['wp'].effectExtent l: 0, t: 0, r: 0, b: 0
+                    render_image_wrap xml, model
+                    xml['wp'].docPr id: drawing_id, name: "Text Box #{drawing_id}"
+                    xml['wp'].cNvGraphicFramePr
+
+                    xml['a'].graphic do
+                      xml['a'].graphicData uri: document.namespaces.t('wps') do
+                        xml['wps'].wsp do
+                          xml['wps'].cNvSpPr txBox: 1
+                          xml['wps'].spPr do
+                            xml['a'].xfrm do
+                              xml['a'].off x: 0, y: 0
+                              xml['a'].ext cx: model.formatted_width, cy: model.formatted_height
+                            end
+                            xml['a'].prstGeom prst: 'rect' do
+                              xml['a'].avLst
+                            end
+                            xml['a'].noFill
+                            xml['a'].ln do
+                              xml['a'].noFill
+                            end
+                          end
+                          xml['wps'].txbx do
+                            content = render_frame_content xml, model
+                          end
+                          xml['wps'].bodyPr rot: 0, vert: 'horz', wrap: 'square', lIns: 0, tIns: 0, rIns: 0, bIns: 0, anchor: 't', anchorCtr: 0 do
+                            xml['a'].noAutofit
+                          end
+                        end
+                      end
+                    end
+                  end
+                end
+              end
+
+              xml['mc'].Fallback do
+                xml['w'].pict do
+                  render_frame_fallback xml, model, drawing_id, z_index, content
+                end
+              end
+            end
+          end
+        end
+      end
+
+      # distance between a frame and the text around it, in points
+      FRAME_DISTANCE = 8
+
+      # Renders the frame's w:txbxContent and returns it. Frames leave
+      # footnotes out.
+      def render_frame_content(xml, model)
+        content = nil
+        xml['w'].txbxContent do
+          content   = xml.parent
+          @in_frame = true
+          model.contents.each do |m|
+            send render_method_for_model(m), xml, m
+          end
+          @in_frame = false
+        end
+        content
+      end
+
+      # ST_RelFromH and ST_RelFromV values => VML's mso-position-*-relative
+      VML_RELATIVE_FROM = { 'page' => 'page', 'margin' => 'margin', 'column' => 'text', 'paragraph' => 'text' }
+
+      # wrap => VML wrap type
+      VML_WRAPS = { square: 'square', top_and_bottom: 'topAndBottom', none: 'none', behind: 'none' }
+
+      # The frame as a VML text box holding a copy of its content. The
+      # first one in a part defines the text box shape type.
+      def render_frame_fallback(xml, model, drawing_id, z_index, content)
+        unless @text_box_shapetype
+          @text_box_shapetype = true
+          xml['v'].shapetype id: '_x0000_t202', coordsize: '21600,21600', 'o:spt' => 202, path: 'm,l,21600r21600,l21600,xe' do
+            xml['v'].stroke joinstyle: 'miter'
+            xml['v'].path gradientshapeok: 't', 'o:connecttype' => 'rect'
+          end
+        end
+
+        style = { 'position' => 'absolute' }
+        style['margin-left'] = vml_points model.frame_x unless model.frame_x.nil?
+        style['margin-top']  = vml_points model.frame_y unless model.frame_y.nil?
+        style['width']       = vml_points model.frame_width
+        style['height']      = vml_points model.frame_height
+        style['z-index']     = model.frame_wrap == :behind ? -z_index : z_index
+        %w(left top right bottom).each {|side| style["mso-wrap-distance-#{side}"] = "#{FRAME_DISTANCE}pt" }
+        style['mso-position-horizontal']          = model.frame_x.nil? ? model.frame_align : 'absolute'
+        style['mso-position-horizontal-relative'] = VML_RELATIVE_FROM[anchor_relative_from(model, :x)]
+        style['mso-position-vertical']            = model.frame_y.nil? ? 'top' : 'absolute'
+        style['mso-position-vertical-relative']   = VML_RELATIVE_FROM[anchor_relative_from(model, :y)]
+        style['v-text-anchor'] = 'top'
+
+        xml['v'].shape id: "Text Box #{drawing_id}", 'o:spid' => "_x0000_s#{1024 + drawing_id}", type: '#_x0000_t202', style: style.map {|k, v| "#{k}:#{v}" }.join(';'), filled: 'f', stroked: 'f' do
+          xml['v'].textbox inset: '0,0,0,0' do
+            xml.parent << content.dup
+          end
+          xml['w10'].wrap type: VML_WRAPS[model.frame_wrap]
+        end
+      end
+
+      # twips as VML points
+      def vml_points(twips)
+        format '%gpt', twips / 20.0
       end
 
       def render_linebreak(xml, model, **options)
@@ -521,6 +660,7 @@ module Caracal
       # A footnote's number: in the text, the reference to the footnote;
       # at the start of the footnote, its mark.
       def render_footnotereference(xml, model, **options)
+        return if @in_frame # frames leave footnotes out
         w = xml['w']
         w.r run_options do
           render_run_attributes(xml, model, skip_empty: true)

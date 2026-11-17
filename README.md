@@ -482,6 +482,7 @@ docx.style do
   indent_left     360         # sets the left indent. units in twips.
   indent_right    360         # sets the right indent. units in twips.
   indent_first    720         # sets the first line indent. units in twips.
+  bidi            true        # sets right-to-left paragraph direction.
 end
 ```
 
@@ -542,6 +543,7 @@ docx.p 'Sample text.' do
   keep_next       false             # sets whether or not to keep this paragraph with the next paragraph when separated by page break.
   line            360               # sets the minimum line height. units in twips.
   line_rule       :at_least         # accepts :at_least, :exact and :auto (line in 240ths of a line).
+  bidi            true              # sets right-to-left paragraph direction, for Arabic or Hebrew text.
 end
 ```
 
@@ -771,6 +773,8 @@ docx.ul do
   end
 end
 ```
+
+A list item with `bidi true` runs right to left, with its number on the right.
 
 Lists nest up to nine levels deep and mix in any combination. Text added after a nested list renders after it, as an unnumbered paragraph aligned with the item's text, and an item can hold several nested lists.
 

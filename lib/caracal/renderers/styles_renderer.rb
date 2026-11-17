@@ -169,6 +169,7 @@ module Caracal
             # w.tabs # TODO List of tabs
             # w.suppressAutoHyphens 'w:val' => false # TODO: Suppress Hyphenation for Paragraph
             w.wordWrap     'w:val' => model.style_word_wrap unless model.style_word_wrap.nil?
+            w.bidi         'w:val' => model.style_bidi      unless model.style_bidi.nil?
             # w.autoSpaceDE  'w:val' => 'true'
             w.spacing spacing unless spacing.nil?
             w.ind indentation unless indentation.nil?

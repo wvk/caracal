@@ -36,6 +36,7 @@ module Caracal
         has_boolean_attribute :keep_lines
         has_boolean_attribute :widow_control
         has_boolean_attribute :word_wrap
+        has_boolean_attribute :bidi # right-to-left paragraph
         has_boolean_attribute :locked
         has_boolean_attribute :before_autospacing, default: false
         has_boolean_attribute :after_autospacing, default: false
@@ -147,7 +148,7 @@ module Caracal
         private
 
         def option_keys
-          [:aliases, :type, :base, :line, :line_rule, :id, :name, :align, :widow_control, :word_wrap, :keep_lines, :keep_next, :locked] +
+          [:aliases, :type, :base, :line, :line_rule, :id, :name, :align, :widow_control, :word_wrap, :bidi, :keep_lines, :keep_next, :locked] +
               HasMargins::ATTRS +
               HasRunAttributes::ATTRS +
               %w(left right first).map{|b| :"indent_#{b}" }

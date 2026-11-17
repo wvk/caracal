@@ -34,6 +34,7 @@ module Caracal
         has_boolean_attribute :keep_lines
         has_boolean_attribute :widow_control
         has_boolean_attribute :hide_mark
+        has_boolean_attribute :bidi # right-to-left paragraph
 
         attr_reader :paragraph_tabs
 
@@ -82,7 +83,8 @@ module Caracal
             align:         self.paragraph_align,
             keep_next:     self.paragraph_keep_next,
             keep_lines:    self.paragraph_keep_lines,
-            widow_control: self.paragraph_widow_control
+            widow_control: self.paragraph_widow_control,
+            bidi:          self.paragraph_bidi
           }.compact
         end
 
@@ -222,7 +224,7 @@ module Caracal
         end
 
         def self.option_keys
-          %i[content style align tabs top bottom line line_rule keep_next keep_lines widow_control hide_mark] +
+          %i[content style align tabs top bottom line line_rule keep_next keep_lines widow_control hide_mark bidi] +
               HasMargins::ATTRS +
               HasRunAttributes::ATTRS
         end

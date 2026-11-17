@@ -394,6 +394,7 @@ module Caracal
             render_borders    w, model, 'pBdr', :paragraph
             render_background w, model, :paragraph
             render_tabs       w, model, model.paragraph_tabs if model.paragraph_tabs&.any?
+            w.bidi 'w:val' => model.paragraph_bidi unless model.paragraph_bidi.nil?
             spacing = spacing_options model
             w.spacing spacing unless spacing.nil?
             if model.continuation?
@@ -437,6 +438,7 @@ module Caracal
             render_borders    w, model, 'pBdr', :paragraph
             render_background w, model, :paragraph
             render_tabs       w, model, model.paragraph_tabs if model.paragraph_tabs&.any?
+            w.bidi 'w:val' => model.paragraph_bidi unless model.paragraph_bidi.nil?
             spacing = spacing_options model
             w.spacing spacing unless spacing.nil?
             w.ind               "w:#{model.indent[:side]}" => model.indent[:value] unless model.indent.nil?

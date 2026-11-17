@@ -3,6 +3,9 @@
 * Changes
   * List levels restart after any higher level, Word's default; `numbering.xml` writes `lvlRestart` only for list styles that set `restart` (upstream #85).
 
+* Enhancements
+  * `bidi true` sets right-to-left direction on paragraphs, list items and styles; list numbers move to the right (upstream #117).
+
 #### v2.0.0
 
 * Breaking changes

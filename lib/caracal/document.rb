@@ -244,16 +244,17 @@ module Caracal
       part.configure(&block)
     end
 
-    # Iframes inside table cells can't register their namespaces on the
-    # document when they're created, so collect them here.
-    def register_nested_iframes(models)
+    # Iframes inside table cells can't register their namespaces on their
+    # part when they're created, and a first-page copy shows another part's
+    # iframes, so collect them here.
+    def register_nested_iframes(models, part = self)
       models.each do |model|
         case model
         when Caracal::Core::Models::IFrameModel
-          model.namespaces.each {|prefix, href| namespace prefix: prefix, href: href }
-          model.ignorables.each {|prefix| ignorable prefix }
+          model.namespaces.each {|prefix, href| part.namespace prefix: prefix, href: href }
+          model.ignorables.each {|prefix| part.ignorable prefix }
         when Caracal::Core::Models::TableModel
-          model.cells.each {|cell| register_nested_iframes cell.contents }
+          model.cells.each {|cell| register_nested_iframes cell.contents, part }
         end
       end
     end
@@ -282,6 +283,8 @@ module Caracal
       parts.reject! do |part|
         part.type == :first and part.contents.empty? and not (part.is_a? Footer and part.page_number_paragraph)
       end
+
+      parts.each {|part| register_nested_iframes part.contents, part }
 
       # keep the relationships of parts still written, so renderings agree
       wanted = parts.to_h {|part| [part.relationship_params[:target], part] }

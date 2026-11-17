@@ -38,7 +38,7 @@ module Caracal
             end
 
             # add abstract numbering definitions
-            list_numberings = document.toplevel_lists.map(&:numberings).reduce({}, :merge)
+            list_numberings = document.list_numberings
             list_numberings.each do |id, level_map|
               w.abstractNum 'w:abstractNumId' => id do
                 w.multiLevelType 'w:val' => 'hybridMultilevel'

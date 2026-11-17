@@ -81,8 +81,8 @@ module Caracal
     end
 
     # Lists are numbered by the document, which owns numbering.xml.
-    def toplevel_lists
-      document.toplevel_lists
+    def list_numberings
+      document.list_numberings
     end
 
     def iframe_numberings

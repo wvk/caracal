@@ -205,7 +205,7 @@ module Caracal
 
     # numbering ids are handed out during rendering, so each rendering pass starts afresh
     def reset_numbering
-      toplevel_lists.clear
+      list_numberings.clear
       iframe_numberings.clear
       self.current_numbering_id = 0
       with_heading_numbering {|model| model.id = next_numbering_id }

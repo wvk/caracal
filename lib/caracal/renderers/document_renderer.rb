@@ -270,29 +270,42 @@ module Caracal
             w.rPr
           end
 
-          w.r run_options do
-            w.drawing do
-              dist = {distR: model.formatted_right, distT: model.formatted_top, distB: model.formatted_bottom, distL: model.formatted_left}
-
-              if model.image_anchor
-                xml['wp'].anchor dist.merge(relativeHeight: (@relative_height = @relative_height.to_i + 1), simplePos: false, locked: true, layoutInCell: false, allowOverlap: false, behindDoc: model.image_wrap == :behind) do
-                  xml['wp'].simplePos x: 0, y: 0
-                  render_image_position xml, model, :x
-                  render_image_position xml, model, :y
-
-                  render_image_proper xml, model
-                end
-              else
-                xml['wp'].inline dist do
-                  render_image_proper xml, model
-                end
-              end
-            end
-          end
+          render_image_run xml, model
 
           w.r run_options do
             w.rPr do
               # w.rtl 'w:val' => false
+            end
+          end
+        end
+      end
+
+      # A run holding the image: inline, within its line of text, or
+      # anchored to the paragraph holding the run.
+      def render_image_run(xml, model)
+        w = xml['w']
+        w.r run_options do
+          unless model.image_position.nil?
+            w.rPr do
+              w.position 'w:val' => model.formatted_position
+            end
+          end
+
+          w.drawing do
+            dist = {distR: model.formatted_right, distT: model.formatted_top, distB: model.formatted_bottom, distL: model.formatted_left}
+
+            if model.image_anchor
+              xml['wp'].anchor dist.merge(relativeHeight: (@relative_height = @relative_height.to_i + 1), simplePos: false, locked: true, layoutInCell: false, allowOverlap: false, behindDoc: model.image_wrap == :behind) do
+                xml['wp'].simplePos x: 0, y: 0
+                render_image_position xml, model, :x
+                render_image_position xml, model, :y
+
+                render_image_proper xml, model
+              end
+            else
+              xml['wp'].inline dist do
+                render_image_proper xml, model
+              end
             end
           end
         end
@@ -583,10 +596,7 @@ module Caracal
             render_run_attributes w, model, skip_empty: true
           end
 
-          model.runs.each do |run|
-            method = render_method_for_model(run)
-            send(method, xml, run)
-          end
+          render_runs xml, model
         end
       end
 
@@ -631,9 +641,18 @@ module Caracal
             render_section_properties xml, section if section
           end
 
-          model.runs.each do |run|
-            method = render_method_for_model(run)
-            send(method, xml, run)
+          render_runs xml, model
+        end
+      end
+
+      # The runs of a paragraph or list item. An image among them is a run
+      # of its own, in place of the paragraph that holds a block-level image.
+      def render_runs(xml, model)
+        model.runs.each do |run|
+          if run.is_a? Caracal::Core::Models::ImageModel
+            render_image_run xml, run
+          else
+            send render_method_for_model(run), xml, run
           end
         end
       end

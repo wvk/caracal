@@ -221,6 +221,176 @@ describe Caracal::Core::Images do
 
 
   #-------------------------------------------------------------
+  # Within paragraphs
+  #-------------------------------------------------------------
+
+  describe 'within paragraphs' do
+    let(:ns) do
+      {
+        'w'  => 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+        'wp' => 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing',
+        'a'  => 'http://schemas.openxmlformats.org/drawingml/2006/main',
+        'r'  => 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+      }
+    end
+    let(:entries) do
+      zip = Zip::File.open_buffer StringIO.new(subject.render.string)
+      zip.entries.to_h { |e| [e.name, e.get_input_stream.read] }
+    end
+    let(:media) { entries.keys.grep(%r{\Aword/media/}) }
+
+    def part(name)
+      Nokogiri::XML entries.fetch(name)
+    end
+
+    def body
+      part('word/document.xml').at_xpath('//w:body', ns)
+    end
+
+    # the paragraph's runs: the text of a text run, :drawing for an image
+    def runs_of(paragraph)
+      paragraph.xpath('w:r', ns).map { |r| r.at_xpath('w:drawing', ns) ? :drawing : r.xpath('w:t', ns).map(&:text).join }
+    end
+
+    # the target of the part's image relationship with the given id
+    def image_target(rels_name, id)
+      Nokogiri::XML(entries.fetch(rels_name)).remove_namespaces!.at_xpath("//Relationship[@Id='#{id}']")['Target']
+    end
+
+    context 'in a paragraph' do
+      before do
+        red = png(255, 0, 0)
+        subject.p do
+          text 'Press '
+          img 'save.png', data: red, width: 12, height: 12
+          text ' to save.'
+        end
+      end
+
+      let(:paragraph) { body.at_xpath('w:p', ns) }
+      let(:run)       { paragraph.at_xpath('w:r[w:drawing]', ns) }
+
+      it { expect(body.xpath('w:p', ns).size).to eq 1 }
+      it { expect(runs_of paragraph).to eq ['Press ', :drawing, ' to save.'] }
+      it { expect(run.at_xpath('w:drawing/wp:inline/wp:extent', ns)['cx']).to eq '152400' }
+      it { expect(run.at_xpath('w:rPr', ns)).to be_nil }
+      it { expect(entries.fetch "word/#{image_target 'word/_rels/document.xml.rels', run.at_xpath('.//a:blip', ns)['r:embed']}").to eq png(255, 0, 0) }
+    end
+
+    context 'raised or lowered' do
+      before do
+        red = png(255, 0, 0)
+        subject.p do
+          text 'Press '
+          img 'save.png', data: red, width: 12, height: 12, position: -1.5
+        end
+      end
+
+      let(:run) { body.at_xpath('w:p/w:r[w:drawing]', ns) }
+
+      it { expect(run.at_xpath('w:rPr/w:position', ns)['w:val']).to eq '-3' }
+      it { expect(run.element_children.map(&:name)).to eq %w(rPr drawing) }
+    end
+
+    context 'anchored' do
+      before do
+        red = png(255, 0, 0)
+        subject.p do
+          text 'Text around the image.'
+          img 'logo.png', data: red, width: 40, height: 40, anchor: true, align: :right, relative_to: :paragraph, wrap: :square
+        end
+      end
+
+      let(:paragraph) { body.at_xpath('w:p', ns) }
+      let(:anchor)    { paragraph.at_xpath('w:r/w:drawing/wp:anchor', ns) }
+
+      it { expect(body.xpath('w:p', ns).size).to eq 1 }
+      it { expect(runs_of paragraph).to eq ['Text around the image.', :drawing] }
+      it { expect(anchor.at_xpath('wp:positionH/wp:align', ns).text).to eq 'right' }
+      it { expect(anchor.at_xpath('wp:positionV', ns)['relativeFrom']).to eq 'paragraph' }
+      it { expect(anchor.at_xpath('wp:wrapSquare', ns)).to be_truthy }
+    end
+
+    context 'in a list item' do
+      before do
+        red = png(255, 0, 0)
+        subject.ul do
+          li do
+            text 'Click '
+            img 'save.png', data: red, width: 12, height: 12
+            text ' to save.'
+          end
+        end
+      end
+
+      let(:paragraph) { body.at_xpath('w:p', ns) }
+
+      it { expect(body.xpath('w:p', ns).size).to eq 1 }
+      it { expect(paragraph.at_xpath('w:pPr/w:numPr', ns)).to be_truthy }
+      it { expect(runs_of paragraph).to eq ['Click ', :drawing, ' to save.'] }
+    end
+
+    context 'next to a block-level image' do
+      before do
+        red = png(255, 0, 0)
+        subject.img 'logo.png', data: red, width: 10, height: 10, align: :center
+        subject.p do
+          text 'The logo '
+          img 'logo.png', data: red, width: 10, height: 10
+        end
+      end
+
+      let(:paragraphs) { body.xpath('w:p', ns) }
+
+      it { expect(paragraphs.size).to eq 2 }
+      it { expect(paragraphs.first.at_xpath('w:pPr/w:jc', ns)['w:val']).to eq 'center' }
+      it { expect(runs_of paragraphs.last).to eq ['The logo ', :drawing] }
+      it { expect(body.xpath('.//wp:docPr', ns).map { |n| n['id'] }).to eq %w(1 2) }
+      it { expect(body.xpath('.//a:blip', ns).map { |n| n['r:embed'] }.uniq.size).to eq 1 }
+      it { expect(media.size).to eq 1 }
+    end
+
+    context 'in a footnote' do
+      before do
+        green = png(0, 255, 0)
+        subject.p do
+          text 'A claim'
+          footnote do
+            text 'See '
+            img 'icon.png', data: green, width: 10, height: 10
+          end
+        end
+      end
+
+      let(:note) { part('word/footnotes.xml').at_xpath('//w:footnote[not(@w:type)]/w:p', ns) }
+      let(:id)   { note.at_xpath('.//a:blip', ns)['r:embed'] }
+
+      it { expect(runs_of(note).last(2)).to eq ['See ', :drawing] }
+      it { expect(entries.fetch "word/#{image_target 'word/_rels/footnotes.xml.rels', id}").to eq png(0, 255, 0) }
+      it { expect(media.size).to eq 1 }
+    end
+
+    context 'in a header' do
+      before do
+        blue = png(0, 0, 255)
+        subject.header do
+          p do
+            text 'Header '
+            img 'icon.png', data: blue, width: 10, height: 10
+          end
+        end
+      end
+
+      let(:paragraph) { part('word/header1.xml').at_xpath('//w:p', ns) }
+      let(:id)        { paragraph.at_xpath('.//a:blip', ns)['r:embed'] }
+
+      it { expect(runs_of paragraph).to eq ['Header ', :drawing] }
+      it { expect(entries.fetch "word/#{image_target 'word/_rels/header1.xml.rels', id}").to eq png(0, 0, 255) }
+    end
+  end
+
+
+  #-------------------------------------------------------------
   # Rendering
   #-------------------------------------------------------------
 

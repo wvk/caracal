@@ -683,6 +683,8 @@ docx.p do
 end
 ```
 
+`img` adds an image within the line of text (see [Images Within Text](#images-within-text)).
+
 
 ### Links
 
@@ -1040,6 +1042,26 @@ end
 
 `relative_to_x` and `relative_to_y` set the reference per axis. Vertically, `:column` measures from the margin; horizontally, `:paragraph` measures from the column.
 
+#### Images Within Text
+
+`img` inside a paragraph or list item places the image within the line of text, between the runs around it, as Word does for a picture "In Line with Text": an icon in an instruction, a small formula or a logo in running text.
+
+```ruby
+docx.p do
+  text 'Press '
+  img 'save.png', data: File.binread('save.png'), width: 12, height: 12, position: -2
+  text ' to save.'
+end
+```
+
+It takes the options of `img` and follows the paragraph's alignment, so `align` is for anchored images only and raises `Caracal::Errors::InvalidModelError` on others. The image sits right next to the text; `top`, `bottom`, `left` and `right` set the distance to the text of anchored images.
+
+`position` raises the image against the baseline by the given points, or lowers it with a negative value, e.g. to centre an icon on the text. Word applies it in half points; LibreOffice keeps the image on the baseline.
+
+`anchor: true` anchors the image to the paragraph holding it and positions it like the [anchored images](#anchored-images) above.
+
+The line grows to fit the image with `line_rule` `:auto` and `:at_least`. With `:exact`, the line keeps its height and cuts a taller image off.
+
 ### Frames
 
 `frame` places paragraphs at a fixed position on the page, e.g. a sidebar box, an address block or a label on a cover page. It takes the options of [anchored images](#anchored-images); `width` and `height` are required.
@@ -1197,7 +1219,7 @@ end
 
 Word ends every table cell with a paragraph. When a cell's content ends in something else, such as a nested table, Caracal adds an empty paragraph 1pt high.
 
-To display images side-by-side, they need to be laid out horizontally in a table.
+Images side by side share a line of text (see [Images Within Text](#images-within-text)) or the cells of a table row.
 
 ```ruby
 image_1_cell = Caracal::Core::Models::TableCellModel.new do

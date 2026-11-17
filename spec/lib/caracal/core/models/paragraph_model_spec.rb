@@ -138,6 +138,37 @@ describe Caracal::Core::Models::ParagraphModel do
       it { expect(subject.runs.size).to eq length + 1 }
     end
 
+    # .img
+    describe '.img' do
+      let!(:length) { subject.runs.length }
+      let!(:image)  { subject.img 'icon.png', width: 12, height: 12, position: -3 }
+
+      it { expect(subject.runs.size).to eq length + 1 }
+      it { expect(subject.runs.last).to equal image }
+      it { expect(image).to be_a(Caracal::Core::Models::ImageModel) }
+      it { expect(image.image_url).to eq 'icon.png' }
+      it { expect(image.image_position).to eq(-3) }
+
+      describe 'with a block' do
+        let!(:image) { subject.img('icon.png') { width 12; height 24 } }
+
+        it { expect([image.image_width, image.image_height]).to eq [12, 24] }
+      end
+
+      describe 'with align' do
+        it { expect { subject.img 'icon.png', width: 12, height: 12, align: :center }.to raise_error(Caracal::Errors::InvalidModelError, /follows the paragraph's alignment/) }
+        it { expect { subject.img('icon.png', width: 12, height: 12) { align :center } }.to raise_error(Caracal::Errors::InvalidModelError, /follows the paragraph's alignment/) }
+        it { expect(subject.img('icon.png', width: 12, height: 12, align: :center, anchor: true).image_align).to eq :center }
+      end
+
+      describe 'when invalid' do
+        let(:invalid) { -> { subject.img 'icon.png', width: 12, height: 12, wrap: :tight } }
+
+        it { expect(&invalid).to raise_error(Caracal::Errors::InvalidModelError, /Invalid image: :tight/) }
+        it { expect { invalid.call rescue nil }.not_to change { subject.runs.size } }
+      end
+    end
+
     # .footnote
     describe '.footnote' do
       let!(:length) { subject.runs.length }

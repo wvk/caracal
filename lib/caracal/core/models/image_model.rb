@@ -25,6 +25,8 @@ module Caracal
         has_symbol_attribute :align, default: :left
         has_symbol_attribute :anchor
 
+        define_reader_and_default :position         # units in points. raises (+) or lowers (-) the image against the baseline.
+
         # anchored images only
         has_integer_attribute :x                              # units in twips.
         has_integer_attribute :y                              # units in twips.
@@ -87,6 +89,16 @@ module Caracal
           end
         end
 
+        # points to half-points
+        def formatted_position
+          (image_position * 2).round unless image_position.nil?
+        end
+
+        # Whether the image was given an alignment, rather than the default.
+        def own_align?
+          not @image_align.nil?
+        end
+
         #=============== SETTERS ==============================
 
         def anchor(value)
@@ -95,6 +107,11 @@ module Caracal
           else
             @image_anchor = nil
           end
+        end
+
+        # in points; half points are kept
+        def position(value)
+          @image_position = value.nil? ? nil : value.to_f
         end
 
         #=============== STYLES ==============================
@@ -151,7 +168,7 @@ module Caracal
         end
 
         def option_keys
-          [:url, :width, :height, :ppi, :align, :top, :bottom, :left, :right, :data, :anchor, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap]
+          [:url, :width, :height, :ppi, :align, :top, :bottom, :left, :right, :data, :anchor, :position, :x, :y, :relative_to, :relative_to_x, :relative_to_y, :wrap]
         end
 
         def pixels_to_emus(value, ppi)

@@ -19,6 +19,12 @@ module Caracal
       instance_eval &block
     end
 
+    # Kernel defines #p on every object, so method_missing cannot delegate the
+    # document's paragraph command. Keep the view DSL's #p pointed at Caracal.
+    def p(*arguments, &block)
+      docx.p(*arguments, &block)
+    end
+
     def method_missing(method_name, *arguments, &block)
       return super unless docx.respond_to? method_name
 

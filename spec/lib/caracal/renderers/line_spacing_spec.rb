@@ -7,6 +7,8 @@ describe 'line spacing' do
     Caracal::Document.new do |docx|
       docx.style id: 'Exact', name: 'exact', line: 300, line_rule: :exact
       docx.style id: 'Auto',  name: 'auto',  line: 360, line_rule: 'auto'
+      docx.style id: 'Line',  name: 'line',  line: 300
+      docx.style id: 'Quote', name: 'quote', italic: true, top: 120
       docx.p 'default', line: 400
       docx.p 'exact',   line: 400, line_rule: :exact
       docx.p 'auto',    line: 480, line_rule: :auto
@@ -27,13 +29,33 @@ describe 'line spacing' do
   end
 
   describe 'styles.xml' do
-    it { expect(style_spacing('Title')['w:lineRule']).to eq 'atLeast' }
-    it { expect(style_spacing('Heading1')['w:lineRule']).to eq 'atLeast' }
-    it { expect(style_spacing('Heading1')['w:line']).to eq '360' }
     it { expect(style_spacing('Exact')['w:lineRule']).to eq 'exact' }
     it { expect(style_spacing('Auto')['w:lineRule']).to eq 'auto' }
+    it { expect(style_spacing('Line')['w:lineRule']).to eq 'atLeast' }
+    it { expect(style_spacing('Line')['w:line']).to eq '300' }
+    it { expect(style_spacing('Normal')['w:lineRule']).to eq 'atLeast' }
+    it { expect(style_spacing('Normal')['w:line']).to eq '320' }
     it { expect(styles.at_xpath('//w:pPrDefault//w:spacing/@w:lineRule', ns).value).to eq 'atLeast' }
     it { expect(styles.at_xpath('//w:pPrDefault//w:spacing/@w:line', ns).value).to eq '320' }
+
+    # a style without line takes its base style's
+    it { expect(style_spacing('Quote').attributes.keys).to eq %w(before) }
+    it { expect(style_spacing('Heading1').attributes.keys).to eq %w(after) }
+    it { expect(style_spacing('Title')).to be_nil }
+
+    describe 'with a default paragraph style without line' do
+      let(:docx) do
+        Caracal::Document.new do |docx|
+          docx.style id: 'Normal', name: 'Normal', size: 22
+          docx.img 'https://example.com/a.png', data: 'png', width: 10, height: 10
+        end
+      end
+
+      it { expect(style_spacing('Normal')['w:lineRule']).to eq 'atLeast' }
+      it { expect(style_spacing('Normal')['w:line']).to eq '360' }
+      it { expect(styles.at_xpath('//w:pPrDefault//w:spacing/@w:line', ns).value).to eq '360' }
+      it { expect(document.at_xpath('//w:p[w:r/w:drawing]/w:pPr/w:spacing/@w:line', ns).value).to eq '360' }
+    end
   end
 
   describe 'document.xml' do

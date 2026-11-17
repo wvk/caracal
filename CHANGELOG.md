@@ -1,6 +1,7 @@
 #### Unreleased
 
 * Changes
+  * Paragraph and table styles without `line` take their base style's line spacing; they wrote 360 at least. The built-in styles without their own `line`, such as Heading1–Heading6, Title and Caption, now follow `Normal`, and table styles without `line` leave their cells' paragraphs to their paragraph styles. A default paragraph style without `line` still gets 360 at least (#44).
   * List levels restart after any higher level, Word's default; `numbering.xml` writes `lvlRestart` only for list styles that set `restart` (upstream #85).
   * The empty paragraph closing a table cell after non-paragraph content, such as a nested table, is 1pt high (upstream #122).
 

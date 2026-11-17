@@ -19,6 +19,15 @@ describe Caracal::View do
     expect(docx).to have_received(:some_delegated_method)
   end
 
+  it 'delegates p to the document paragraph command instead of Kernel#p' do
+    docx = instance_double('Document')
+    allow(view_object).to receive(:docx).and_return(docx)
+    allow(docx).to receive(:p).and_return(:paragraph)
+
+    expect(view_object.p('text')).to eq :paragraph
+    expect(docx).to have_received(:p).with('text')
+  end
+
   it 'allows a block-like DSL via the update method' do
     docx = instance_double('Document')
     allow(view_object).to receive(:docx).and_return(docx)

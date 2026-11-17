@@ -14,6 +14,7 @@
 
 * Bug fixes
   * Tables in headers and footers take the document's page width; they used US Letter's.
+  * `p` and `li` write `keep_lines` and `widow_control`; `left` and `right` indent `p`, `li` and paragraph styles (#18).
 
 #### v2.0.0
 

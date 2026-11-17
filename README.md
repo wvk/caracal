@@ -501,6 +501,8 @@ docx.style do
 end
 ```
 
+In paragraph styles, `left` and `right` are short for `indent_left` and `indent_right`.
+
 Caracal defines these styles for every document: paragraph styles Normal, Title, Subtitle, Heading, Heading1–Heading6, Header, Footer, Caption, TOCHeading and TOC1–TOC6, and the character style Hyperlink. A `style` command with an existing id replaces that style.
 
 Styles are declared as `paragraph` by default. If you need to adjust inline text styles repeatedly, you might
@@ -556,8 +558,14 @@ docx.p 'Sample text.' do
   highlight_color 'yellow'          # sets the highlight color. accepts the names listed below.
   vertical_align  'superscript'     # sets the vertical alignment.
   keep_next       false             # sets whether or not to keep this paragraph with the next paragraph when separated by page break.
+  keep_lines      true              # keeps all lines of the paragraph on the same page.
+  widow_control   true              # keeps a paragraph's first or last line from standing alone on a page.
   line            360               # sets the minimum line height. units in twips.
   line_rule       :at_least         # accepts :at_least, :exact and :auto (line in 240ths of a line).
+  top             100               # sets the spacing above the paragraph. units in twips.
+  bottom          100               # sets the spacing below the paragraph. units in twips.
+  left            720               # sets the left indent of every line. units in twips.
+  right           720               # sets the right indent of every line. units in twips.
   bidi            true              # sets right-to-left paragraph direction, for Arabic or Hebrew text.
 end
 ```
@@ -802,7 +810,7 @@ docx.ul do
 end
 ```
 
-A list item with `bidi true` runs right to left, with its number on the right.
+A list item with `bidi true` runs right to left, with its number on the right. `left` moves an item further in, number included; `right` indents its end.
 
 Lists nest up to nine levels deep and mix in any combination. Text added after a nested list renders after it, as an unnumbered paragraph aligned with the item's text, and an item can hold several nested lists.
 

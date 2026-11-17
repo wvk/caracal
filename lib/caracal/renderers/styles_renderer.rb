@@ -257,9 +257,11 @@ module Caracal
         end
       end
 
+      # left and right are short for indent_left and indent_right
       def indentation_options(model, default = false)
-        left    = default ? model.style_indent_left.to_i  : model.style_indent_left
-        right   = default ? model.style_indent_right.to_i : model.style_indent_right
+        left    = model.style_indent_left.nil?  ? model.style_left  : model.style_indent_left
+        right   = model.style_indent_right.nil? ? model.style_right : model.style_indent_right
+        left, right = left.to_i, right.to_i if default
         first   = default ? model.style_indent_first.to_i : model.style_indent_first
         options = nil
         if [left, right, first].compact.size > 0

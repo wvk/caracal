@@ -386,6 +386,7 @@ module Caracal
           w.pPr do
             w.pStyle 'w:val' => model.paragraph_style || 'Normal'
             w.keepNext if model.paragraph_keep_next == true
+            render_keep_options w, model
             unless model.continuation?
               w.numPr do
                 w.ilvl 'w:val' => model.list_item_level
@@ -398,11 +399,10 @@ module Caracal
             w.bidi 'w:val' => model.paragraph_bidi unless model.paragraph_bidi.nil?
             spacing = spacing_options model
             w.spacing spacing unless spacing.nil?
-            if model.continuation?
-              w.ind 'w:start' => ls.style_left  # aligned with the item's text
-            else
-              w.ind 'w:start' => ls.style_left, 'w:hanging' => hanging
-            end
+            # left moves the item, number included; a continuation aligns with the item's text
+            ind = { 'w:start' => ls.style_left.to_i + model.paragraph_left.to_i, 'w:end' => model.paragraph_right }
+            ind['w:hanging'] = hanging unless model.continuation?
+            w.ind ind.compact
             w.contextualSpacing 'w:val' => true
             w.jc 'w:val' => model.paragraph_align unless model.paragraph_align.nil?
             render_run_attributes w, model, skip_empty: true
@@ -440,13 +440,15 @@ module Caracal
           w.pPr do
             w.pStyle 'w:val' => model.paragraph_style || 'Normal'
             w.keepNext if model.paragraph_keep_next == true
+            render_keep_options w, model
             render_borders    w, model, 'pBdr', :paragraph
             render_background w, model, :paragraph
             render_tabs       w, model, model.paragraph_tabs if model.paragraph_tabs&.any?
             w.bidi 'w:val' => model.paragraph_bidi unless model.paragraph_bidi.nil?
             spacing = spacing_options model
             w.spacing spacing unless spacing.nil?
-            w.ind               "w:#{model.indent[:side]}" => model.indent[:value] unless model.indent.nil?
+            indent = { 'w:start' => model.paragraph_left, 'w:end' => model.paragraph_right }.compact
+            w.ind indent if indent.any?
             w.contextualSpacing 'w:val' => false
             w.jc                'w:val' => model.paragraph_align unless model.paragraph_align.nil?
             render_run_attributes xml, model, skip_empty: false
@@ -457,6 +459,12 @@ module Caracal
             send(method, xml, run)
           end
         end
+      end
+
+      # keepLines and widowControl, between keepNext and numPr in pPr
+      def render_keep_options(w, model)
+        w.keepLines    'w:val' => model.paragraph_keep_lines    unless model.paragraph_keep_lines.nil?
+        w.widowControl 'w:val' => model.paragraph_widow_control unless model.paragraph_widow_control.nil?
       end
 
       def render_rule(xml, model, **options)

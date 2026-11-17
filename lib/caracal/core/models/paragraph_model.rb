@@ -40,7 +40,6 @@ module Caracal
         attr_reader :paragraph_tabs
 
         def initialize(options={}, &block)
-          @indent = nil
           o = options.dup
           content = o.delete(:content) { '' }
           super o, &block
@@ -91,15 +90,14 @@ module Caracal
 
         #========== SETTERS ===============================
 
-        # Getter/setter
-        def indent(hash = nil)
-          return @indent if hash.nil?
-
-          unless [:left, :right].include?(hash.keys.first) && hash.values.first.is_a?(Integer)
+        # Sets the indent of one or both sides, like `left` and `right`:
+        # `indent left: 720`.
+        def indent(hash)
+          unless hash.is_a? Hash and hash.any? and hash.all? {|side, value| %i(left right).include? side and value.is_a? Integer }
             raise Caracal::Errors::InvalidModelError, 'the indent setter requires a hash like left: X or right: Y.'
           end
 
-          @indent = { side: hash.keys.first, value: hash.values.first }
+          hash.each {|side, value| send side, value }
         end
 
         def tabs(values)

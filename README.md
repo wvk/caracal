@@ -1,4 +1,4 @@
-[![Test](https://github.com/Sprengnetter/caracal/actions/workflows/ci.yml/badge.svg)](https://github.com/Sprengnetter/caracal/actions/workflows/ci.yml)
+[![Test](https://github.com/wvk/caracal/actions/workflows/ci.yml/badge.svg)](https://github.com/wvk/caracal/actions/workflows/ci.yml)
 
 # Caracal
 
@@ -361,6 +361,64 @@ docx.page_numbers start: 12        # number from 12 without the built-in page nu
 The page number appears on the first page too unless you pass `first_page: false`; see [Different First Page](#different-first-page).
 
 
+### Headers and Footers
+
+Headers and footers are repeated on every page. They take the same content as the document body, in the order given, except page breaks, a table of contents and iframes.
+
+```ruby
+docx.header.h1 'Page Header'
+
+docx.header do
+  p 'Headers can contain headings, paragraphs, images, lists and tables.'
+  p 'This paragraph is right-aligned.', align: :right
+end
+
+docx.header.img 'http://example.com/image.png' do
+  width  60
+  height 60
+  align :right
+end
+
+docx.header.ol do
+  li 'First item'
+  li do
+    text 'Second item with a '
+    link 'link', "http://example.com/image.png"
+    text '.'
+    br
+    text 'This sentence follows a line break.'
+  end
+end
+
+docx.header.table [['11', '1213', '14'], ['21', '22', '23', '24']] do
+  cell_style rows[0][0], rowspan: 2
+  cell_style rows[0][1], colspan: 2
+  cell_style rows[0][2], rowspan: 2
+end
+
+docx.header.hr
+
+docx.footer.p 'Footers work the same way.', align: :center
+```
+
+#### Different First Page
+
+Pass `first: true` to give the first page its own header or footer, such as a cover page. Without a block, the first page's header or footer stays empty, apart from the page number. Use `first_page: false` to leave the page number off the first page.
+
+```ruby
+docx.header first: true do       # replaces the header on the first page only
+  p 'Annual Report 2026', align: :center, size: 36
+end
+```
+
+```ruby
+docx.header first: true          # no header on the first page
+docx.footer first: true          # no footer content on the first page
+docx.page_numbers true, first_page: false   # no page number on the first page
+```
+
+When the first page has its own header or footer, any part you don't set for it shows the default one. So `first_page: false` on its own hides only the page number, and the default header and footer content still appear.
+
 ### Fonts
 
 Fonts are added to the font table file by calling the `font` method and passing the name of the font.
@@ -528,6 +586,46 @@ end
 ```
 
 
+### Fields
+
+You can use fields like page numbers and current dates. A symbol names the field, e.g. `:page` or `:numpages`; a string is written as the field instruction as given, so it can carry switches.
+
+```ruby
+docx.p do
+  text 'current page is '
+  field :page
+  text ' / '
+  field :numpages
+end
+
+docx.p do
+  field 'DATE \\@ "yyyy-MM-dd"'
+end
+```
+
+### Tabs
+
+Tab stops are set per paragraph or list item with `tabs`, an Array of stops: a number is a start-aligned stop at that position in twips; a Hash `{ pos:, val:, leader: }` sets the alignment (`val`) and the leader (`leader`, default `none`). `end_tab: true` adds a tab after a text run:
+
+```ruby
+docx.p do
+  tabs [2880]
+  text 'column at 0', end_tab: true
+  text 'column at 2880 twips (2in)'
+end
+
+docx.p tabs: [2880, 5760] do
+  text 'column at 0', end_tab: true
+  text 'column at 2in', end_tab: true
+  text 'column at 4in'
+end
+
+docx.p tabs: [{ pos: 9000, val: :right, leader: :dot }] do
+  text 'Chapter 1', end_tab: true
+  text '7'
+end
+```
+
 ### Bookmarks
 
 Bookmarks can be added directly to the document or inside paragraph blocks using the `bookmark_start` and `bookmark_end`
@@ -585,6 +683,29 @@ docx.heading_numbering h1: { text: '%1.' }, h2: { fmt: 'lowerLetter', text: '%1.
 
 `fmt` is one of `decimal` (default), `decimalZero`, `lowerLetter`, `upperLetter`, `lowerRoman`, `upperRoman`, `ordinal` and `none`. `suff` follows the number: `space` (default), `tab` or `nothing`. Levels not given stay unnumbered.
 
+
+### Table of Contents
+
+Caracal lists the document's headings in a table of contents. Word offers to update it, including page numbers, when it opens the document; until then each entry shows the placeholder.
+
+```ruby
+docx.table_of_contents
+# Or, for brevity:
+docx.toc
+
+# Both methods accept the same options: legend, start_level, end_level, and placeholder
+
+docx.toc legend: 'Table of contents', start_level: 1, end_level: 3
+# or using block form:
+docx.toc do
+  legend      'Table of contents' # Default is nil
+  start_level 1                   # Default is 1 (headings level 1, aka docx.h1 or p style: 'Heading1')
+  end_level   3                   # Default is 3 (headings level 3, aka docx.h3 or p style: 'Heading3')
+  placeholder '#'                 # Default is '#', shown as page number until the TOC is updated
+end
+```
+
+To start the table of contents on a new page, add `docx.page` before it.
 
 ### Rules
 
@@ -891,6 +1012,29 @@ docx.table [[c1,c2]] do
 end
 ```
 
+### Raw OOXML
+
+`raw_xml` inserts OOXML as given, in the body, a header or footer, or a table cell:
+
+```ruby
+# this inserts a paragraph styled as Heading3
+docx.raw_xml <<-EOXML
+<w:p>
+  <w:pPr>
+    <w:pStyle w:val="Heading3"/>
+    <w:spacing w:before="0" w:after="0"/>
+    <w:contextualSpacing/>
+    <w:rPr/>
+  </w:pPr>
+  <w:r>
+    <w:rPr/>
+    <w:t>My heading</w:t>
+  </w:r>
+</w:p>
+EOXML
+```
+
+
 ## Color Themes
 
 Instead of specifying a `color` or `bgcolor` value in your styles or other models, you may use their theme counterparts `theme_color` or `theme_bgcolor`, respectively. This combined with a custom color theme allows the consumers of your DOCX file to switch to their own color theme and have all your styles magically honor them.
@@ -921,88 +1065,6 @@ end
 
 ## Experimental Features
 
-### Headers and Footers
-
-Headers and footers are repeated on every page. They take the same content as the document body, in the order given, except page breaks, a table of contents and iframes.
-
-```ruby
-docx.header.h1 'Page Header'
-
-docx.header do
-  p 'Headers can contain headings, paragraphs, images, lists and tables.'
-  p 'This paragraph is right-aligned.', align: :right
-end
-
-docx.header.img 'http://example.com/image.png' do
-  width  60
-  height 60
-  align :right
-end
-
-docx.header.ol do
-  li 'First item'
-  li do
-    text 'Second item with a '
-    link 'link', "http://example.com/image.png"
-    text '.'
-    br
-    text 'This sentence follows a line break.'
-  end
-end
-
-docx.header.table [['11', '1213', '14'], ['21', '22', '23', '24']] do
-  cell_style rows[0][0], rowspan: 2
-  cell_style rows[0][1], colspan: 2
-  cell_style rows[0][2], rowspan: 2
-end
-
-docx.header.hr
-
-docx.footer.p 'Footers work the same way.', align: :center
-```
-
-#### Different First Page
-
-Pass `first: true` to give the first page its own header or footer, such as a cover page. Without a block, the first page's header or footer stays empty, apart from the page number. Use `first_page: false` to leave the page number off the first page.
-
-```ruby
-docx.header first: true do       # replaces the header on the first page only
-  p 'Annual Report 2026', align: :center, size: 36
-end
-```
-
-```ruby
-docx.header first: true          # no header on the first page
-docx.footer first: true          # no footer content on the first page
-docx.page_numbers true, first_page: false   # no page number on the first page
-```
-
-When the first page has its own header or footer, any part you don't set for it shows the default one. So `first_page: false` on its own hides only the page number, and the default header and footer content still appear.
-
-
-### Table of contents
-
-Caracal lists the document's headings in a table of contents. Word offers to update it, including page numbers, when it opens the document; until then each entry shows the placeholder.
-
-```ruby
-docx.table_of_contents
-# Or, for brevity:
-docx.toc
-
-# Both methods accept the same options: legend, start_level, end_level, and placeholder
-
-docx.toc legend: 'Table of contents', start_level: 1, end_level: 3
-# or using block form:
-docx.toc do
-  legend      'Table of contents' # Default is nil
-  start_level 1                   # Default is 1 (headings level 1, aka docx.h1 or p style: 'Heading1')
-  end_level   3                   # Default is 3 (headings level 3, aka docx.h3 or p style: 'Heading3')
-  placeholder '#'                 # Default is '#', shown as page number until the TOC is updated
-end
-```
-
-To start the table of contents on a new page, add `docx.page` before it.
-
 ### IFrames
 
 `iframe` copies the body of another Word document into this one when you call it, read from `url` (an http(s) URL or a path) or from `data` (its raw bytes):
@@ -1015,68 +1077,6 @@ docx.iframe data: File.binread('my/path/to/snippet.docx')
 Caracal carries over paragraphs, tables and images; they take this document's styles and list numbering. Iframes also work in table cells.
 
 **Only embed documents you trust.** Caracal parses the file you supply and copies its markup into your output, so the embedded document controls part of the result. To keep a small crafted file from expanding into a large one in memory, Caracal refuses to read an entry of the embedded document declared larger than `Caracal::Core::Models::IFrameModel.max_entry_size` (50MB by default) with an `InvalidModelError`. Set it to another number of bytes, or to `nil` to turn the check off. See [Security](#security).
-
-### Using Fields
-
-You can use fields like page numbers and current dates. A symbol names the field, e.g. `:page` or `:numpages`; a string is written as the field instruction as given, so it can carry switches.
-
-```ruby
-docx.p do
-  text 'current page is '
-  field :page
-  text ' / '
-  field :numpages
-end
-
-docx.p do
-  field 'DATE \\@ "yyyy-MM-dd"'
-end
-```
-
-### Using Tabs
-
-Tab stops are set per paragraph or list item with `tabs`, an Array of stops: a number is a start-aligned stop at that position in twips; a Hash `{ pos:, val:, leader: }` sets the alignment (`val`) and the leader (`leader`, default `none`). `end_tab: true` adds a tab after a text run:
-
-```ruby
-docx.p do
-  tabs [2880]
-  text 'column at 0', end_tab: true
-  text 'column at 2880 twips (2in)'
-end
-
-docx.p tabs: [2880, 5760] do
-  text 'column at 0', end_tab: true
-  text 'column at 2in', end_tab: true
-  text 'column at 4in'
-end
-
-docx.p tabs: [{ pos: 9000, val: :right, leader: :dot }] do
-  text 'Chapter 1', end_tab: true
-  text '7'
-end
-```
-
-### Using raw OOXML
-
-Sometimes you really want to copy & paste raw OOXML into your `word/document.xml`. Although this might open a Pandora's Box full of subtle nightmares, here's how you could do it:
-
-```ruby
-# this inserts a paragraph styled as Heading3
-docx.raw_xml <<-EOXML
-<w:p>
-  <w:pPr>
-    <w:pStyle w:val="Heading3"/>
-    <w:spacing w:before="0" w:after="0"/>
-    <w:contextualSpacing/>
-    <w:rPr/>
-  </w:pPr>
-  <w:r>
-    <w:rPr/>
-    <w:t>My heading</w:t>
-  </w:r>
-</w:p>
-EOXML
-```
 
 
 ## Template Rendering

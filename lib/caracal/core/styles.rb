@@ -68,6 +68,8 @@ module Caracal
               { id: 'Title',      name: 'title',       font: 'Palatino', size: 60 },
               { id: 'Subtitle',   name: 'subtitle',    font: 'Arial',    size: 28, top: 60 },
               { id: 'Caption',    name: 'caption',     font: 'Arial',    size: 22, bottom: 120, top: 120, bold: true, type: :paragraph  },
+              { id: 'FootnoteText',      name: 'footnote text',      font: 'Arial', size: 16, line: 240, type: :paragraph },
+              { id: 'FootnoteReference', name: 'footnote reference', type: 'character', vertical_align: :superscript },
               { id: 'Hyperlink',  name: 'hyperlink',   type: 'character', underline: true, color: '0000ff' }
             ]
           end

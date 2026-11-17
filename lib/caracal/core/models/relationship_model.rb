@@ -21,6 +21,7 @@ module Caracal
           font:       'http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable',
           header:     'http://schemas.openxmlformats.org/officeDocument/2006/relationships/header',
           footer:     'http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer',
+          footnotes:  'http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes',
           image:      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image',
           link:       'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink',
           numbering:  'http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering',

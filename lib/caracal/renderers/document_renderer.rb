@@ -518,6 +518,20 @@ module Caracal
         field_run.call { w.fldChar 'w:fldCharType' => 'end' }
       end
 
+      # A footnote's number: in the text, the reference to the footnote;
+      # at the start of the footnote, its mark.
+      def render_footnotereference(xml, model, **options)
+        w = xml['w']
+        w.r run_options do
+          render_run_attributes(xml, model, skip_empty: true)
+          if model.mark?
+            w.footnoteRef
+          else
+            w.footnoteReference 'w:id' => document.footnotes.id_for(model.footnote)
+          end
+        end
+      end
+
       def render_table(xml, model, **options)
         w = xml['w']
         tbl_look = table_look_options(model)

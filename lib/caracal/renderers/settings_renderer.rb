@@ -24,6 +24,12 @@ module Caracal
             w.autoHyphenation 'w:val' => '1' # Automatically Hyphenate Document Contents When Displayed
             w.consecutiveHyphenLimit 'w:val' => 2 #    Maximum Number of Consecutively Hyphenated Lines
             w.updateFields 'w:val' => 'true' if toc? # Word fills in the TOC on open
+            if footnotes?
+              w.footnotePr do # the separators in footnotes.xml
+                w.footnote 'w:id' => -1
+                w.footnote 'w:id' => 0
+              end
+            end
             w.compat do # see http://www.datypic.com/sc/ooxml/e-w_compat-1.html for options
               w.doNotExpandShiftReturn unless document.justify_lines_before_breaks?
               w.compatSetting 'w:val' => '14', 'w:name' => 'compatibilityMode', 'w:uri' => 'http://schemas.microsoft.com/office/word'
@@ -42,6 +48,10 @@ module Caracal
 
       def toc?
         document.contents.any? {|model| model.is_a? Caracal::Core::Models::TableOfContentModel }
+      end
+
+      def footnotes?
+        document.relationships_by_type(:footnotes).any?
       end
 
       def root_options

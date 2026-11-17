@@ -28,6 +28,7 @@ module Caracal
         alias_method :link_bgcolor,         :text_bgcolor
         alias_method :link_highlight_color, :text_highlight_color
         alias_method :link_vertical_align,  :text_vertical_align
+        alias_method :link_lang,            :text_lang
 
         # initialization
         def initialize(options={}, &block)
@@ -49,7 +50,7 @@ module Caracal
         #========== VALIDATION ============================
 
         def valid?
-          [:content, :href].all? {|a| validate_presence a } and self.valid_highlight_color?
+          [:content, :href].all? {|a| validate_presence a } and self.valid_highlight_color? and self.valid_lang?
         end
 
         private

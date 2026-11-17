@@ -7,7 +7,7 @@ module Caracal
     module Models
       module HasRunAttributes
 
-        OWN_ATTRS = [:font, :size, :bold, :italic, :underline, :caps, :small_caps, :strike, :rtl, :highlight_color, :vertical_align, :whitespace]
+        OWN_ATTRS = [:font, :size, :bold, :italic, :underline, :caps, :small_caps, :strike, :rtl, :highlight_color, :vertical_align, :whitespace, :lang]
         ATTRS = OWN_ATTRS +
             HasBackground::ATTRS +
             HasColor::ATTRS +
@@ -16,6 +16,7 @@ module Caracal
         VERTICAL_ALIGNS   = %i(subscript superscript baseline)
         HIGHLIGHT_COLORS  = %w(black blue cyan green magenta red yellow white darkBlue darkCyan
             darkGreen darkMagenta darkRed darkYellow darkGray lightGray none)
+        LANGUAGE_TAG      = /\A[a-zA-Z]{1,8}(-[a-zA-Z0-9]{1,8})*\z/ # xsd:language, e.g. en-GB
 
         def self.included(base)
           base.include HasBackground
@@ -24,6 +25,7 @@ module Caracal
 
           base.has_string_attribute :font
           base.has_string_attribute :highlight_color
+          base.has_string_attribute :lang
 
           base.has_symbol_attribute :vertical_align
           base.has_symbol_attribute :whitespace
@@ -57,6 +59,7 @@ module Caracal
             bgstyle:         self.send("#{self.class.attr_prefix}_bgstyle"),
             vertical_align:  self.send("#{self.class.attr_prefix}_vertical_align"),
             rtl:             self.send("#{self.class.attr_prefix}_rtl"),
+            lang:            self.send("#{self.class.attr_prefix}_lang"),
           }.compact
           attrs[:hide_mark] = self.send("#{self.class.attr_prefix}_hide_mark") if self.respond_to? "#{self.class.attr_prefix}_hide_mark"
           OpenStruct.new attrs
@@ -66,7 +69,17 @@ module Caracal
 
         def valid_run_attributes?
           self.valid_whitespace? and self.valid_vertical_align? and self.valid_caps? and self.valid_highlight_color? and
-              self.valid_borders?
+              self.valid_borders? and self.valid_lang?
+        end
+
+        def valid_lang?
+          lang = self.send "#{self.class.attr_prefix}_lang"
+          if lang.nil? or lang.match? LANGUAGE_TAG
+            true
+          else
+            self.errors << {message: "#{lang.inspect} is not a language tag such as en-GB", model: self, attribute: :lang, value: lang}
+            false
+          end
         end
 
         def valid_highlight_color?

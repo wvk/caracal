@@ -99,7 +99,8 @@ module Caracal
             theme_bgcolor:   self.style_theme_bgcolor,
             bgstyle:         self.style_bgstyle,
             vertical_align:  self.style_vertical_align,
-            highlight_color: self.style_highlight_color
+            highlight_color: self.style_highlight_color,
+            lang:            self.style_lang
           }.compact
           OpenStruct.new attrs
         end

@@ -145,7 +145,7 @@ describe Caracal::Core::Models::TextModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:bgcolor, :bold, :color, :content, :font, :highlight_color, :italic, :size, :style, :underline, :vertical_align, :end_tab, :theme_bgcolor, :bgstyle, :theme_color, :whitespace, :rtl, :caps, :small_caps, :strike, :border, :border_bottom, :border_color, :border_horizontal, :border_left, :border_line, :border_right, :border_size, :border_spacing, :border_theme_color, :border_top, :border_vertical].sort }
+      let(:expected) { [:bgcolor, :bold, :color, :content, :font, :highlight_color, :italic, :size, :style, :underline, :vertical_align, :end_tab, :theme_bgcolor, :bgstyle, :theme_color, :whitespace, :rtl, :caps, :small_caps, :strike, :border, :border_bottom, :border_color, :border_horizontal, :border_left, :border_line, :border_right, :border_size, :border_spacing, :border_theme_color, :border_top, :border_vertical, :lang].sort }
 
       it { expect(actual).to eq expected }
     end

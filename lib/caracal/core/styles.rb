@@ -101,6 +101,22 @@ module Caracal
             model
           end
 
+          # The document's language, a language tag such as 'en-GB', written
+          # into the document defaults. Called without a value, returns it.
+          def language(*args)
+            return @language if args.empty?
+
+            self.language = args.first
+          end
+
+          def language=(value)
+            unless value.nil? or value.to_s.match? Caracal::Core::Models::HasRunAttributes::LANGUAGE_TAG
+              raise Caracal::Errors::InvalidModelError, "language: #{value.inspect} is not a language tag such as en-GB"
+            end
+
+            @language = value&.to_s
+          end
+
           #============== GETTERS =============================
 
           def styles

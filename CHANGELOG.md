@@ -13,6 +13,7 @@
   * `justify_lines_before_breaks false` leaves justified lines that end in a line break at their natural width (upstream #42).
   * `title`, `subject`, `creator`, `keywords`, `description`, `last_modified_by`, `created` and `modified` set the document properties in `docProps/core.xml`; the title still defaults to the file name (#16).
   * `font` embeds obfuscated `.odttf` files, such as a Word template's, de-obfuscated with their `key`: one GUID for all styles or one per style (#17).
+  * `lang` sets the language of paragraphs, text runs, links and styles; `docx.language` sets the document's default language (#15).
 
 * Bug fixes
   * Tables in headers and footers take the document's page width; they used US Letter's.

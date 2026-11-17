@@ -175,7 +175,7 @@ describe Caracal::Core::Models::LinkModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:content, :href, :end_tab, :internal, :style, :font, :color, :theme_color, :size, :bold, :highlight_color, :italic, :underline, :bgstyle, :bgcolor, :theme_bgcolor, :vertical_align, :whitespace, :strike, :small_caps, :caps, :rtl, :border, :border_bottom, :border_color, :border_horizontal, :border_left, :border_line, :border_right, :border_size, :border_spacing, :border_theme_color, :border_top, :border_vertical].sort }
+      let(:expected) { [:content, :href, :end_tab, :internal, :style, :font, :color, :theme_color, :size, :bold, :highlight_color, :italic, :underline, :bgstyle, :bgcolor, :theme_bgcolor, :vertical_align, :whitespace, :strike, :small_caps, :caps, :rtl, :border, :border_bottom, :border_color, :border_horizontal, :border_left, :border_line, :border_right, :border_size, :border_spacing, :border_theme_color, :border_top, :border_vertical, :lang].sort }
 
       it { expect(actual).to eq expected }
     end

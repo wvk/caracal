@@ -121,6 +121,10 @@ module Caracal
 
           # then, try apply to contents
           contents.each do |model|
+            # a nested table's options (width, align, layout, style, ...) are
+            # table options, not the cell's. it fits the cell in calculate_width.
+            next if model.is_a? TableModel
+
             if model.respond_to? :apply_styles
               model.apply_styles options , reverse: reverse
             else

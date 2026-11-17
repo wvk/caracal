@@ -258,6 +258,74 @@ describe Caracal::Renderers::DocumentRenderer do
     end
   end
 
+  describe 'nested table width' do
+    let(:outer_tc_widths) { xml.xpath('/w:document/w:body/w:tbl/w:tr/w:tc/w:tcPr/w:tcW/@w:w', ns).map {|w| w.value.to_i } }
+    let(:inner_tbl)       { xml.at_xpath('//w:tbl//w:tbl', ns) }
+    let(:inner_tbl_width) { inner_tbl.at_xpath('w:tblPr/w:tblW/@w:w', ns).value.to_i }
+    let(:inner_grid)      { inner_tbl.xpath('w:tblGrid/w:gridCol/@w:w', ns).map {|w| w.value.to_i } }
+
+    # README "Nested Tables": the cell is 6000 wide with margins left 0 and right 200
+    describe 'in a cell sized with cell_style' do
+      let(:document) do
+        Caracal::Document.new do |docx|
+          inner = Caracal::Core::Models::TableCellModel.new margins: { left: 0, right: 200 } do
+            table [['a', 'b', 'c']], border_size: 4
+          end
+          docx.table [[inner, 'x']] do
+            cell_style cols[0], width: 6000
+          end
+        end
+      end
+
+      it { expect(outer_tc_widths).to eq [6000, 3360] }
+      it { expect(inner_tbl_width).to eq 5800 }
+      it { expect(inner_grid.sum).to eq 5800 }
+    end
+
+    describe 'with width and margins from cell_style' do
+      let(:document) do
+        Caracal::Document.new do |docx|
+          inner = Caracal::Core::Models::TableCellModel.new { table [['inner']] }
+          docx.table [[inner, 'x']] do
+            cell_style cols[0], width: 6000, margins: { left: 100, right: 200 }
+          end
+        end
+      end
+
+      it { expect(outer_tc_widths).to eq [6000, 3360] }
+      it { expect(inner_tbl_width).to eq 5700 }
+      it { expect(inner_grid).to eq [5700] }
+    end
+
+    describe 'with table options in cell_style' do
+      let(:document) do
+        Caracal::Document.new do |docx|
+          inner = Caracal::Core::Models::TableCellModel.new { table [['inner']] }
+          docx.table [[inner, 'x']] do
+            cell_style cols[0], width: 6000, align: :right, layout: :autofit
+          end
+        end
+      end
+
+      it { expect(inner_tbl.at_xpath('w:tblPr/w:jc/@w:val', ns).value).to eq 'center' }
+      it { expect(inner_tbl.at_xpath('w:tblPr/w:tblLayout/@w:type', ns).value).to eq 'fixed' }
+    end
+
+    describe 'with a width of its own' do
+      let(:document) do
+        Caracal::Document.new do |docx|
+          inner = Caracal::Core::Models::TableCellModel.new { table [['inner']], width: 3000 }
+          docx.table [[inner, 'x']] do
+            cell_style cols[0], width: 6000
+          end
+        end
+      end
+
+      it { expect(outer_tc_widths).to eq [6000, 3360] }
+      it { expect(inner_tbl_width).to eq 3000 }
+    end
+  end
+
   describe 'row heights' do
     let(:document) do
       Caracal::Document.new do |docx|

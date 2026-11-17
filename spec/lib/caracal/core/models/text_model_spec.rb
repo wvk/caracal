@@ -13,6 +13,7 @@ describe Caracal::Core::Models::TextModel do
       bgcolor         'cccccc'
       vertical_align  :subscript
       highlight_color 'yellow'
+      rtl             true
     end
   end
 
@@ -49,7 +50,7 @@ describe Caracal::Core::Models::TextModel do
 
     # .run_attributes
     describe '.run_attributes' do
-      let(:expected) { { font: 'Courier New', color: '666666', size: 20, bold: false, italic: false, underline: true, bgcolor: 'cccccc', highlight_color: 'yellow', vertical_align: :subscript } }
+      let(:expected) { { font: 'Courier New', color: '666666', size: 20, bold: false, italic: false, underline: true, bgcolor: 'cccccc', highlight_color: 'yellow', vertical_align: :subscript, rtl: true } }
 
       it { expect(subject.run_attributes.to_h).to eq expected }
     end

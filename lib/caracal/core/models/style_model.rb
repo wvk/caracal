@@ -61,11 +61,11 @@ module Caracal
             @style_base    = nil
           else
             @style_default = false
-            @style_base    ||= DEFAULT_STYLE_BASE
+            @style_base    ||= self.class::DEFAULT_STYLE_BASE
           end
 
           @style_type      ||= DEFAULT_STYLE_TYPE
-          @style_next      = DEFAULT_STYLE_NEXT
+          @style_next      = self.class::DEFAULT_STYLE_NEXT
           @style_top       ||= DEFAULT_STYLE_TOP
           @style_bottom    ||= DEFAULT_STYLE_BOTTOM
           @style_left      ||= DEFAULT_STYLE_LEFT

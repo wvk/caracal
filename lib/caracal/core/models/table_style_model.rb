@@ -11,7 +11,8 @@ module Caracal
         CONTENT_VERTICAL_ALIGNS  = %i(top center bottom)
 
         DEFAULT_STYLE_TYPE = :table
-        DEFAULT_STYLE_BASE = 'TableNormal'
+        DEFAULT_STYLE_BASE = 'TableNormal' # a table style's basedOn must name a table style
+        DEFAULT_STYLE_NEXT = nil           # w:next names the style of the paragraph after one in this style
 
         use_prefix :style
 

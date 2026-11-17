@@ -39,6 +39,35 @@ describe 'table styles' do
     end
   end
 
+  describe 'base and next style' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.style id: 'Plain',   name: 'plain',   type: :table
+        docx.style id: 'Derived', name: 'derived', type: :table, base: 'Plain'
+        docx.style id: 'Para',    name: 'para'
+        docx.style id: 'Char',    name: 'char',    type: :character
+      end
+    end
+
+    def style(id)
+      styles.at_xpath("//w:style[@w:styleId='#{id}']", ns)
+    end
+
+    def value(id, name)
+      style(id).at_xpath("w:#{name}/@w:val", ns)&.value
+    end
+
+    it { expect(value 'Plain', 'basedOn').to eq 'TableNormal' }
+    it { expect(value 'Derived', 'basedOn').to eq 'Plain' }
+    it { expect(%w(Plain Derived TableNormal).map {|id| style(id).at_xpath('w:next', ns) }).to all(be_nil) }
+    it { expect(value 'Para', 'basedOn').to eq 'Normal' }
+    it { expect(value 'Para', 'next').to eq 'Normal' }
+    it { expect(value 'Char', 'basedOn').to be_nil }
+    it { expect(value 'Char', 'next').to be_nil }
+    it { expect(value 'TableNormal', 'name').to eq 'Normal Table' }
+    it { expect(style('TableNormal').at_xpath('w:basedOn', ns)).to be_nil }
+  end
+
   describe 'with conditional formats' do
     let(:document) do
       Caracal::Document.new do |docx|

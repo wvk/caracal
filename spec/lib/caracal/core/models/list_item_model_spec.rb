@@ -242,7 +242,7 @@ describe Caracal::Core::Models::ListItemModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:align, :bgcolor, :bgstyle, :bold, :border, :border_color, :border_line, :border_size, :border_spacing, :border_theme_color, :bottom, :bottom, :color, :content, :italic, :keep_lines, :keep_next, :left, :level, :line, :right, :size, :style, :tabs, :theme_bgcolor, :theme_color, :top, :top, :type, :underline, :widow_control, :border_bottom, :border_horizontal, :border_vertical, :border_top, :border_left, :border_right, :vertical_align, :whitespace, :small_caps, :strike, :rtl, :highlight_color, :font, :caps, :hide_mark, :line_rule, :bidi].sort }
+      let(:expected) { [:align, :bgcolor, :bgstyle, :bold, :border, :border_color, :border_line, :border_size, :border_spacing, :border_theme_color, :bottom, :bottom, :color, :content, :italic, :keep_lines, :keep_next, :left, :level, :line, :right, :size, :style, :tabs, :theme_bgcolor, :theme_color, :top, :top, :type, :underline, :widow_control, :border_bottom, :border_horizontal, :border_vertical, :border_top, :border_left, :border_right, :vertical_align, :whitespace, :small_caps, :strike, :rtl, :highlight_color, :font, :caps, :hide_mark, :line_rule, :bidi, :lang].sort }
 
       it { expect(actual).to eq expected }
     end

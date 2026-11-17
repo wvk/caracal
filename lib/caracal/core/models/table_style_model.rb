@@ -62,7 +62,8 @@ module Caracal
             caps:            self.style_caps,
             small_caps:      self.style_small_caps,
             vertical_align:  self.style_vertical_align,
-            highlight_color: self.style_highlight_color
+            highlight_color: self.style_highlight_color,
+            lang:            self.style_lang
           }.compact
           OpenStruct.new attrs
         end

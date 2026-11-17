@@ -22,7 +22,7 @@ module Caracal
 
             w.docDefaults do
               w.rPrDefault do
-                render_run_attributes w, s, skip_empty: false
+                render_run_attributes w, s, skip_empty: false, lang: document.language
               end
 
               w.pPrDefault do

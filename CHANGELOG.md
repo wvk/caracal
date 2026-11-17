@@ -19,6 +19,7 @@
   * `frame` places paragraphs, lists and tables at a fixed position as a text box, with the anchor options of anchored images; the body text wraps around it or it floats over the text (#14).
   * `section` gives the content of its block its own page size, margins, columns, headers and footers, such as a landscape page in a portrait document; a section without its own headers and footers shows the previous section's (#12).
   * `rake ooxml` validates every document the specs render with Microsoft's Open XML SDK, in Docker; CI runs it (#49).
+  * `ol start: 3` numbers a list's items from 3; other lists start at their list style's `start` (#43).
 
 * Bug fixes
   * `numbering.xml` defines the numberings of a list shown in several parts, such as a header and its first-page copy; the earlier parts pointed at numberings it left out (#37).

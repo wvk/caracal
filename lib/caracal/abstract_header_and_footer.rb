@@ -85,6 +85,10 @@ module Caracal
       document.list_numberings
     end
 
+    def list_starts
+      document.list_starts
+    end
+
     def iframe_numberings
       document.iframe_numberings
     end

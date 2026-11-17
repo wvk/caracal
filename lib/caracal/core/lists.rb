@@ -15,6 +15,8 @@ module Caracal
             model = Caracal::Core::Models::ListModel.new options, &block
             if model.valid?
               contents << model
+            elsif model.errors.any?
+              raise Caracal::Errors::InvalidModelError, model.errors.inspect
             else
               raise Caracal::Errors::InvalidModelError, 'Ordered lists require at least one list item.'
             end
@@ -27,6 +29,8 @@ module Caracal
             model = Caracal::Core::Models::ListModel.new options, &block
             if model.valid?
               contents << model
+            elsif model.errors.any?
+              raise Caracal::Errors::InvalidModelError, model.errors.inspect
             else
               raise Caracal::Errors::InvalidModelError, 'Unordered lists require at least one list item.'
             end
@@ -38,6 +42,12 @@ module Caracal
           # Each maps a list level to its list type.
           def list_numberings
             @list_numberings ||= {}
+          end
+
+          # The start numbers of the top-level lists rendered so far that
+          # set one, by numbering id.
+          def list_starts
+            @list_starts ||= {}
           end
 
         end

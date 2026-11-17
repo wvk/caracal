@@ -928,6 +928,15 @@ docx.ol do
 end
 ```
 
+`start` numbers a list's items from the given number, 0 or more, e.g. to continue a list after an interruption; other lists start at their list style's `start` (see List Styles). `start` applies to top-level lists; a nested list given `start` raises `Caracal::Errors::InvalidModelError`.
+
+```ruby
+docx.ol start: 3 do
+  li 'Third step'
+  li 'Fourth step'
+end
+```
+
 Similarly, unordered lists can be added using the `ul` and `li` methods.
 
 ```ruby

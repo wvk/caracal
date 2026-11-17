@@ -104,6 +104,23 @@ describe 'headers and footers' do
       end
     end
 
+    it 'starts a list in a header shown in several parts at its start' do
+      docx = Caracal::Document.new do
+        header { ol(start: 4) { li 'header item' } }
+        page_numbers true, first_page: false
+        p 'body'
+      end
+      rendered  = parts docx
+      headers   = rendered.keys.grep(%r{\Aword/header\d+\.xml\z})
+      used      = headers.map {|part| Nokogiri::XML(rendered.fetch part).at_xpath('//w:numPr/w:numId/@w:val', ns).value }
+      numbering = Nokogiri::XML rendered.fetch('word/numbering.xml')
+
+      expect(used.uniq.size).to eq 2
+      used.each do |id|
+        expect(numbering.at_xpath("//w:num[@w:numId='#{ id }']/w:lvlOverride[@w:ilvl='0']/w:startOverride/@w:val", ns).value).to eq '4'
+      end
+    end
+
     it 'renders bookmarks and raw xml' do
       docx = Caracal::Document.new do
         header do

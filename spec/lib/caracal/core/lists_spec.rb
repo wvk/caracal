@@ -24,6 +24,24 @@ describe Caracal::Core::Lists do
       it { expect(subject.contents.last).to be_a(Caracal::Core::Models::ListModel) }
     end
     
+    describe '.ol with start' do
+      it { expect(subject.ol(start: 3) { li 'Item 3' }.list_start).to eq 3 }
+      it { expect(subject.ol { start 3; li 'Item 3' }.list_start).to eq 3 }
+      it { expect(subject.ol { li 'Item 1' }.list_start).to be_nil }
+
+      it 'raises for a negative start' do
+        expect { subject.ol(start: -1) { li 'Item' } }.to raise_error(Caracal::Errors::InvalidModelError, /start must be 0 or more/)
+      end
+
+      it 'raises for a nested list with a start' do
+        expect { subject.ol { li('Item') { ol(start: 3) { li 'Sub item' } } } }.to raise_error(Caracal::Errors::InvalidModelError, /start applies to top-level lists/)
+      end
+
+      it 'raises for a list without items' do
+        expect { subject.ol(start: 3) }.to raise_error(Caracal::Errors::InvalidModelError, /require at least one list item/)
+      end
+    end
+
     # .ul
     describe '.ul' do
       let!(:size) { subject.contents.size }

@@ -1215,7 +1215,7 @@ docx.iframe url: 'https://www.example.com/snippet.docx'
 docx.iframe data: File.binread('my/path/to/snippet.docx')
 ```
 
-Caracal carries over paragraphs, tables and images; they take this document's styles and list numbering. Iframes also work in table cells.
+Caracal carries over paragraphs, tables, images and links; they take this document's styles and list numbering. Iframes also work in table cells.
 
 **Only embed documents you trust.** Caracal parses the file you supply and copies its markup into your output, so the embedded document controls part of the result. To keep a small crafted file from expanding into a large one in memory, Caracal refuses an entry of the embedded document that declares or holds more than `Caracal::Core::Models::IFrameModel.max_entry_size` bytes (50MB by default) with an `InvalidModelError`, and stops reading it at that limit. Set it to another number of bytes, or to `nil` to turn the check off. See [Security](#security).
 

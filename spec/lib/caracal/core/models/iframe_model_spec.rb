@@ -85,6 +85,25 @@ describe Caracal::Core::Models::IFrameModel do
 
         it { expect(model.namespaces).not_to be_empty }
       end
+      describe 'when the document has hyperlinks' do
+        let(:model) do
+          data = Caracal::Document.new do
+            bookmark_start id: 'b', name: 'target'
+            p 'target'
+            bookmark_end id: 'b'
+            p { link 'external', 'https://embedded.example/' }
+            p { link 'again', 'https://embedded.example/' }
+            p { link 'internal', 'target', internal: true }
+          end.render.string
+          described_class.new data: data, document: document
+        end
+
+        before { model.preprocess! }
+
+        it 'collects each external target once' do
+          expect(model.relationships).to eq [{ id: 'rId6', type: 'link', target: 'https://embedded.example/' }]
+        end
+      end
     end
 
   end

@@ -28,6 +28,7 @@
   * Border styles outside `ST_Border` and tab alignments outside `ST_TabJc` raise `Caracal::Errors::InvalidModelError`; a tab stop without `val` is start-aligned (#8).
   * Text given to `p` and `h1`–`h6` leads the paragraph, ahead of runs added in its block, as with `li` (#10).
   * Images of an iframe keep their order when the part showing it already has relationships; two of them could swap (#3).
+  * Links of an iframe point at their own targets; they pointed at whatever relationship of the part showing the iframe had their id (#1).
 
 #### v2.0.0
 

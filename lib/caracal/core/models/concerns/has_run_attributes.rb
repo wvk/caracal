@@ -65,7 +65,8 @@ module Caracal
         private
 
         def valid_run_attributes?
-          self.valid_whitespace? and self.valid_vertical_align? and self.valid_caps? and self.valid_highlight_color?
+          self.valid_whitespace? and self.valid_vertical_align? and self.valid_caps? and self.valid_highlight_color? and
+              self.valid_borders?
         end
 
         def valid_highlight_color?

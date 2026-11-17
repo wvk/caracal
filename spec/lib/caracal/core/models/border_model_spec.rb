@@ -144,6 +144,18 @@ describe Caracal::Core::Models::BorderModel do
           it { expect(subject.valid?).to eq false }
         end
       end
+      [:nil, :none, :dotDash, :apples].each do |line|
+        describe "when line is #{ line }" do
+          before { subject.line line }
+
+          it { expect(subject.valid?).to eq true }
+        end
+      end
+      describe 'when line is not an ST_Border value' do
+        before { subject.line :dot_dash }
+
+        it { expect(subject.valid?).to eq false }
+      end
     end
 
   end

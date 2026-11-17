@@ -23,6 +23,7 @@
   * `cell_style` options such as `width`, `align` and `layout` stay on the cell; a nested table fits the cell's width minus its left and right margins (#6).
   * Headers and footers declare the namespaces and `mc:Ignorable` prefixes of their iframes, such as Word's `w14` (#5).
   * `iframe` stops reading an entry of the embedded document at `IFrameModel.max_entry_size` bytes, whatever size the entry declares; it trusted the declared size (#11).
+  * Border styles outside `ST_Border` and tab alignments outside `ST_TabJc` raise `Caracal::Errors::InvalidModelError`; a tab stop without `val` is start-aligned (#8).
 
 #### v2.0.0
 

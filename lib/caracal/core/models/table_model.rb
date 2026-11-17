@@ -279,11 +279,20 @@ module Caracal
           validate_inclusion :layout, within: TABLE_LAYOUTS
         end
 
+        # the cells' border errors are added to the table's
+        def valid_cell_borders?
+          invalid = cells.compact.reject(&:valid_borders?)
+          invalid.each {|cell| errors.concat cell.errors }
+          invalid.empty?
+        end
+
         def valid?
           cells.all?{|c| c.nil? or c.is_a? Caracal::Core::Models::TableCellModel } and
               self.valid_bgstyle? and
               self.valid_align? and
-              self.valid_layout?
+              self.valid_layout? and
+              self.valid_borders? and
+              self.valid_cell_borders?
         end
 
         private

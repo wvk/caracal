@@ -25,6 +25,8 @@ module Caracal
           attr_reader :page_margin_bottom
           attr_reader :page_margin_left
           attr_reader :page_margin_right
+          attr_reader :page_column_count
+          attr_reader :page_column_spacing
 
 
           #-------------------------------------------------------------
@@ -69,6 +71,27 @@ module Caracal
             else
               raise Caracal::Errors::InvalidModelError, 'page_size method requires non-zero :width and :height options.'
             end
+          end
+
+          # Sets the text in this many columns, `spacing` twips apart.
+          def page_columns(count, spacing: 720)
+            unless count.is_a? Integer and count.between?(1, 45) and spacing.is_a? Integer and spacing >= 0
+              raise Caracal::Errors::InvalidModelError, 'page_columns takes a column count of 1 to 45 and a spacing of 0 or more twips.'
+            end
+            unless (count - 1) * spacing < page_width - page_margin_left - page_margin_right
+              raise Caracal::Errors::InvalidModelError, 'page columns must fit between the page margins.'
+            end
+
+            @page_column_count   = count
+            @page_column_spacing = spacing
+          end
+
+          # The width of a line of text: the space between the page
+          # margins, or one column of it.
+          def page_content_width
+            width = page_width - page_margin_left - page_margin_right
+            count = page_column_count || 1
+            (width - (count - 1) * page_column_spacing.to_i) / count
           end
 
           private

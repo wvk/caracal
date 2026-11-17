@@ -1,5 +1,6 @@
 require 'caracal/core/models/base_model'
 require 'caracal/core/models/bookmark_model'
+require 'caracal/core/models/column_break_model'
 require 'caracal/core/models/link_model'
 require 'caracal/core/models/text_model'
 require 'caracal/core/models/theme_color_model'
@@ -174,6 +175,12 @@ module Caracal
         # .page
         def page
           model = Caracal::Core::Models::PageBreakModel.new wrap: false
+          runs << model
+          model
+        end
+
+        def column_break
+          model = Caracal::Core::Models::ColumnBreakModel.new wrap: false
           runs << model
           model
         end

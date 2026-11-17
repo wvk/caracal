@@ -23,4 +23,44 @@ describe Caracal::Renderers::DocumentRenderer do
       it { expect(pg_sz["w:#{attr}"]).to eq value }
     end
   end
+
+  describe 'page columns' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        docx.page_numbers true, start: 3
+        docx.page_columns 2, spacing: 360
+        docx.table [['x']]
+        docx.p 'left'
+        docx.column_break
+        docx.p do
+          text 'right'
+          column_break
+          text 'left again'
+        end
+      end
+    end
+    let(:xml)  { Nokogiri::XML(described_class.render(document)) }
+    let(:cols) { xml.at_xpath('//w:sectPr/w:cols', ns) }
+
+    it { expect([cols['w:num'], cols['w:space']]).to eq %w(2 360) }
+    it { expect(cols.at_xpath('preceding-sibling::*[1]', ns).name).to eq 'pgNumType' }
+    it { expect(document.page_content_width).to eq 4500 }
+    it { expect(xml.at_xpath('//w:tblW/@w:w', ns).value).to eq '4500' }
+    it { expect(xml.xpath('//w:body/w:p/w:r/w:br[@w:type="column"]', ns).size).to eq 2 }
+    it { expect(xml.at_xpath('//w:p[w:r/w:t="right"]/w:r[2]/w:br/@w:type', ns).value).to eq 'column' }
+
+    describe 'with one column' do
+      let(:document) { Caracal::Document.new {|docx| docx.page_columns 1 } }
+
+      it { expect(cols).to be_nil }
+    end
+
+    it 'rejects columns that do not fit between the margins' do
+      expect { Caracal::Document.new {|docx| docx.page_columns 2, spacing: 9360 } }.to raise_error Caracal::Errors::InvalidModelError
+    end
+
+    it 'rejects a count outside 1 to 45' do
+      expect { Caracal::Document.new {|docx| docx.page_columns 0 } }.to raise_error Caracal::Errors::InvalidModelError
+    end
+  end
 end

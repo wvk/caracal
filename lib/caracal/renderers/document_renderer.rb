@@ -38,6 +38,7 @@ module Caracal
                 w.pgSz page_size_options
                 w.pgMar page_margin_options
                 w.pgNumType 'w:start' => document.page_number_start unless document.page_number_start.nil?
+                w.cols 'w:num' => document.page_column_count, 'w:space' => document.page_column_spacing if document.page_column_count.to_i > 1
 
                 w.titlePg if document.title_page?
               end
@@ -414,19 +415,23 @@ module Caracal
         end
       end
 
-      def render_pagebreak(xml, model, **options)
+      def render_pagebreak(xml, model, type: 'page', **options)
         w = xml['w']
         if model.page_break_wrap
           w.p paragraph_options do
             w.r run_options do
-              w.br 'w:type' => 'page'
+              w.br 'w:type' => type
             end
           end
         else
           w.r run_options do
-            w.br 'w:type' => 'page'
+            w.br 'w:type' => type
           end
         end
+      end
+
+      def render_columnbreak(xml, model, **options)
+        render_pagebreak xml, model, type: 'column'
       end
 
       def render_paragraph(xml, model, **options)

@@ -18,8 +18,7 @@ module Caracal
             table_model = Caracal::Core::Models::TableModel.new options.merge(document: @document || self), &block
 
             if self.respond_to? :page_width
-              available_container_width = self.page_width - self.page_margin_left - self.page_margin_right
-              table_model.calculate_width available_container_width, self
+              table_model.calculate_width self.page_content_width, self
             end
 
             if table_model.valid?

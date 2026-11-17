@@ -35,6 +35,7 @@ module Caracal
       end
 
       def render_pagebreak(xml, model); end
+      def render_columnbreak(xml, model); end
 
       #-------------------------------------------------------------
       # Private Methods

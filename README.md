@@ -323,6 +323,21 @@ end
 All attributes require positive integer values. The margins on either axis must sum to less than the page size on that axis (e.g., `left` + `right` < page width); `page_margins` and `page_size` raise `Caracal::Errors::InvalidModelError` otherwise.
 
 
+### Page Columns
+
+Text can be set in up to 45 columns using the `page_columns` method. `column_break` continues the text at the top of the next column, at the document level or inside a paragraph.
+
+```ruby
+docx.page_columns 2, spacing: 360   # two columns, 360 twips apart. spacing defaults to 720.
+
+docx.p 'First column.'
+docx.column_break
+docx.p 'Second column.'
+```
+
+Rules fit one column. Tables added after `page_columns` default to the width of one column.
+
+
 ### Page Breaks
 
 Page breaks can be added via the `page` method.  The method accepts no parameters.

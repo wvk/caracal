@@ -1,4 +1,5 @@
 require 'caracal/core/models/page_break_model'
+require 'caracal/core/models/column_break_model'
 
 
 module Caracal
@@ -17,6 +18,12 @@ module Caracal
 
           def page
             model = Caracal::Core::Models::PageBreakModel.new
+            contents << model
+            model
+          end
+
+          def column_break
+            model = Caracal::Core::Models::ColumnBreakModel.new
             contents << model
             model
           end

@@ -24,6 +24,12 @@ module Caracal
         has_integer_attribute :bottom # spacing below, twips
         has_integer_attribute :height # exact height of the rule's paragraph, twips
 
+        # falls back to the default, so that a rule's own alignment can be
+        # told apart from none (see #apply_styles)
+        def border_align
+          @border_align || DEFAULT_BORDER_ALIGN
+        end
+
         # aliases
         alias_method :rule_color,    :border_color
         alias_method :rule_size,     :border_size
@@ -38,9 +44,12 @@ module Caracal
         # the width available to the rule, set for rules in table cells
         attr_reader :rule_container_width
 
-        def initialize(options={}, &block)
-          @border_align = DEFAULT_BORDER_ALIGN
-          super options, &block
+        # A table cell passes its options on to its contents. A rule takes
+        # the cell's alignment unless it has its own. The cell's other
+        # options, such as width, size and color, mean other things for a
+        # rule.
+        def apply_styles(opts={}, reverse: false)
+          opts.each {|k, v| align v if k.to_sym == :align and not given? :align }
         end
 
         def calculate_width(container_width, _container)

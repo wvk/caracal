@@ -20,6 +20,7 @@
 
 * Bug fixes
   * `numbering.xml` defines the numberings of a list shown in several parts, such as a header and its first-page copy; the earlier parts pointed at numberings it left out (#37).
+  * Rules and images in a cell keep their own options when `cell_style` styles the cell, and take only its `align`, when they have none of their own. They took its `width`, `align`, `size`, `color` and `line`, which mean other things for them (#39).
   * Tables in headers and footers take the document's page width; they used US Letter's.
   * `p` and `li` write `keep_lines` and `widow_control`; `left` and `right` indent `p`, `li` and paragraph styles (#18).
   * `toc` writes its heading only when given a `legend`; its error for invalid levels names the range 1 to 6 (#9).

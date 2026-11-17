@@ -26,6 +26,28 @@ describe 'rule rendering' do
   it { expect(rules[3].xpath('w:pPr/*', ns).map(&:name)).to eq %w(pBdr spacing ind) }
   it { expect(rules[3].at_xpath('w:pPr/w:spacing', ns).attributes.transform_values(&:value)).to eq('before' => '0', 'after' => '120', 'line' => '60', 'lineRule' => 'exact') }
 
+  describe 'in cells styled with cell_style' do
+    let(:document) do
+      Caracal::Document.new do |docx|
+        own  = Caracal::Core::Models::TableCellModel.new { hr width: 3000, align: :left }
+        bare = Caracal::Core::Models::TableCellModel.new { hr width: 3000 }
+        docx.table [[own, bare]] do
+          cell_style cols[0], width: 6000, align: :right, size: 28, color: 'ff0000', line: 360
+          cell_style cols[1], width: 6000, align: :right
+        end
+      end
+    end
+    let(:borders) { rules.map {|p| p.at_xpath('w:pPr/w:pBdr/w:top', ns).attributes.transform_values(&:value) } }
+
+    it "keeps a rule's own width and alignment, and takes the cell's alignment for a rule without one" do
+      expect(rules.map {|p| indents p }).to eq [%w(0 3000), %w(3000 0)]
+    end
+
+    it "keeps the rule's color, size and line" do
+      expect(borders).to all(include 'color' => 'auto', 'sz' => '4', 'val' => 'single')
+    end
+  end
+
   it 'rejects an unknown alignment' do
     expect { Caracal::Document.new {|docx| docx.hr align: :both } }.to raise_error Caracal::Errors::InvalidModelError
   end

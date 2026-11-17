@@ -1100,7 +1100,7 @@ docx.table data, border_size: 4 do
 end
 ```
 
-Table cells are styled with `cell_style` inside the table's block. It applies the options to the `TableCellModel` instances in its first argument, a cell or an array of cells, and skips options they lack.
+Table cells are styled with `cell_style` inside the table's block. It applies the options to the `TableCellModel` instances in its first argument, a cell or an array of cells, and skips options they lack. Options such as `align`, `bold` and `color` also reach the paragraphs in the cells that don't set them. Rules and images take only `align`, when they have none of their own; nested tables take none.
 
 *As a convenience, the table provides the methods `rows`, `cols`, and `cells` to facilitate building the first argument.*
 

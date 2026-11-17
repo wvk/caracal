@@ -20,8 +20,7 @@ module Caracal
             model = Caracal::Core::Models::TableOfContentModel.new options, &block
             unless model.valid?
               raise Caracal::Errors::InvalidModelError, \
-                'Table of contents start_level and end_level must be between 0 and 6, \
-                with end_level equal to or greater than start_level'
+                'Table of contents start_level and end_level must be between 1 and 6, with end_level equal to or greater than start_level.'
             end
             contents << model
             model

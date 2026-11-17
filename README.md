@@ -730,6 +730,8 @@ docx.toc do
 end
 ```
 
+A legend appears as a heading in the TOCHeading style above the entries; without a legend there is no heading. `start_level` and `end_level` are heading levels from 1 to 6, with `end_level` equal to or greater than `start_level`.
+
 To start the table of contents on a new page, add `docx.page` before it.
 
 ### Rules

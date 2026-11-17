@@ -246,7 +246,7 @@ Caracal requires Ruby 3.2 or later.
 Version 2 is installed from GitHub; the `caracal` gem on rubygems.org is the original project's 1.x line. Add this line to your application's Gemfile:
 
 ```ruby
-gem 'caracal', github: 'wvk/caracal', tag: 'v2.0.0'
+gem 'caracal', github: 'wvk/caracal'
 ```
 
 Then execute:

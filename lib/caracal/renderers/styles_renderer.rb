@@ -92,7 +92,7 @@ module Caracal
       private
 
       def render_table_cell_style(w, model)
-        render_style w, model, 'table' do
+        render_style w, model, 'table', next_style: nil do # w:next applies to paragraph styles only
           # run properties
           render_run_attributes w, model, skip_empty: true
 
@@ -184,7 +184,7 @@ module Caracal
       end
 
       def render_table_style(w, model)
-        render_style w, model, 'table' do
+        render_style w, model, 'table', next_style: nil do # w:next applies to paragraph styles only
           # paragraph properties
           w.pPr do
             w.jc 'w:val' => model.style_align.to_s unless model.style_align.nil?

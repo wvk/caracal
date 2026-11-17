@@ -734,8 +734,15 @@ docx.hr do
   line    :double    # sets the line style, a Word border style such as single, double or dotted. defaults to single.
   size    8          # sets the thickness of the line. units in 1/8 points. defaults to 4.
   spacing 4          # sets the spacing below the line. units in points. defaults to 1.
+  width   2880       # sets the length of the line. units in twips. defaults to the full width.
+  align   :center    # places a shorter line. accepts :left, :center and :right. defaults to :center.
+  top     120        # sets the spacing above the rule. units in twips.
+  bottom  120        # sets the spacing below the rule. units in twips.
+  height  60         # sets the exact height of the rule's paragraph. units in twips.
 end
 ```
+
+Without `top`, `bottom` and `height`, a rule takes the spacing and line height of the Normal style.
 
 
 ### Line Breaks

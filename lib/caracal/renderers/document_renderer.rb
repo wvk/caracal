@@ -461,6 +461,10 @@ module Caracal
 
       def render_rule(xml, model, **options)
         options = { 'w:color' => model.rule_color, 'w:sz' => model.rule_size, 'w:val' => model.rule_line, 'w:space' => model.rule_spacing }
+        spacing = { 'w:before' => model.rule_top, 'w:after' => model.rule_bottom, 'w:line' => model.rule_height }.compact
+        spacing['w:lineRule'] = 'exact' if model.rule_height
+        available = model.rule_container_width || (document.page_content_width if document.respond_to? :page_content_width)
+        indents   = model.indents available
         w = xml['w']
 
         w.p paragraph_options do
@@ -468,6 +472,8 @@ module Caracal
             w.pBdr do
               w.top options
             end
+            w.spacing spacing if spacing.any?
+            w.ind 'w:start' => indents[:start], 'w:end' => indents[:end] if indents
           end
         end
       end

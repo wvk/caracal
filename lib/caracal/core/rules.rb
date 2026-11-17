@@ -22,7 +22,7 @@ module Caracal
             if model.valid?
               contents << model
             else
-              raise Caracal::Errors::InvalidModelError, 'Horizontal rules require non-zero :size and :spacing values.'
+              raise Caracal::Errors::InvalidModelError, model.errors.inspect
             end
             model
           end

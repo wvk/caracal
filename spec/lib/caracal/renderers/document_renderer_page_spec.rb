@@ -30,6 +30,7 @@ describe Caracal::Renderers::DocumentRenderer do
         docx.page_numbers true, start: 3
         docx.page_columns 2, spacing: 360
         docx.table [['x']]
+        docx.hr width: 1000
         docx.p 'left'
         docx.column_break
         docx.p do
@@ -48,6 +49,11 @@ describe Caracal::Renderers::DocumentRenderer do
     it { expect(xml.at_xpath('//w:tblW/@w:w', ns).value).to eq '4500' }
     it { expect(xml.xpath('//w:body/w:p/w:r/w:br[@w:type="column"]', ns).size).to eq 2 }
     it { expect(xml.at_xpath('//w:p[w:r/w:t="right"]/w:r[2]/w:br/@w:type', ns).value).to eq 'column' }
+
+    it 'places a rule in a column' do
+      ind = xml.at_xpath('//w:p[w:pPr/w:pBdr]/w:pPr/w:ind', ns)
+      expect([ind['w:start'], ind['w:end']]).to eq %w(1750 1750)
+    end
 
     describe 'with one column' do
       let(:document) { Caracal::Document.new {|docx| docx.page_columns 1 } }

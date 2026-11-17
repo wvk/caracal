@@ -108,7 +108,7 @@ describe Caracal::Core::Models::RuleModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:color, :theme_color, :size, :spacing, :line, :type].sort }
+      let(:expected) { [:color, :theme_color, :size, :spacing, :line, :type, :width, :align, :top, :bottom, :height].sort }
 
       it { expect(actual).to eq expected }
     end

@@ -108,9 +108,9 @@ module Caracal
           fragment.pop
 
           model.relationships.each do |r_hash|
-            id    = r_hash.delete(:id)              # we can't update the fragment until
-            model = document.relationship(r_hash)   # the parent document assigns the embedded
-            index = model.relationship_id           # relationship an id.
+            id    = r_hash[:id]                               # we can't update the fragment until
+            model = document.relationship(r_hash.except(:id)) # the parent document assigns the embedded
+            index = model.relationship_id                     # relationship an id.
 
             r_node  = fragment.at_xpath("//a:blip[@r:embed='#{id}']", { a: ns.t('a'), r: ns.t('r') })
             if (r_attr = r_node.attributes['embed'])

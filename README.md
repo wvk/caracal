@@ -243,10 +243,10 @@ Caracal reads http(s) URLs with `URI.open` and everything else with `File.binrea
 
 Caracal requires Ruby 3.2 or later.
 
-Add this line to your application's Gemfile:
+Version 2 is installed from GitHub; the `caracal` gem on rubygems.org is the original project's 1.x line. Add this line to your application's Gemfile:
 
 ```ruby
-gem 'caracal'
+gem 'caracal', github: 'wvk/caracal', tag: 'v2.0.0'
 ```
 
 Then execute:

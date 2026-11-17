@@ -29,6 +29,34 @@ describe 'table of contents rendering' do
     end
   end
 
+  describe 'heading' do
+    def headings(xml)
+      xml.xpath("//w:p[w:pPr/w:pStyle/@w:val='TOCHeading']", ns)
+    end
+
+    it 'shows the legend' do
+      xml = document_xml {|docx| docx.toc legend: 'Contents'; docx.h1 'Introduction' }
+      expect(headings(xml).map(&:text)).to eq ['Contents']
+    end
+
+    it 'is omitted without a legend' do
+      xml = document_xml {|docx| docx.toc; docx.h1 'Introduction' }
+      expect(headings(xml)).to be_empty
+    end
+
+    it 'is omitted with an empty legend' do
+      xml = document_xml {|docx| docx.toc legend: ''; docx.h1 'Introduction' }
+      expect(headings(xml)).to be_empty
+    end
+
+    it 'leaves the TOC field first in the body without a legend' do
+      xml = document_xml {|docx| docx.toc; docx.h1 'Introduction' }
+      first = xml.at_xpath('//w:body/w:p[1]', ns)
+      expect(first.at_xpath('w:r[1]/w:fldChar/@w:fldCharType', ns)&.value).to eq 'begin'
+      expect(first.at_xpath('w:r/w:instrText', ns)&.text).to include 'TOC'
+    end
+  end
+
   describe 'page breaks' do
     it 'adds none before the TOC' do
       xml = document_xml {|docx| docx.toc legend: 'Contents'; docx.h1 'Introduction' }

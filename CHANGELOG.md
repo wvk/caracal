@@ -15,6 +15,7 @@
 * Bug fixes
   * Tables in headers and footers take the document's page width; they used US Letter's.
   * `p` and `li` write `keep_lines` and `widow_control`; `left` and `right` indent `p`, `li` and paragraph styles (#18).
+  * `toc` writes its heading only when given a `legend`; its error for invalid levels names the range 1 to 6 (#9).
 
 #### v2.0.0
 

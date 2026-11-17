@@ -73,7 +73,7 @@ module Caracal
         #=============== SUB-METHODS ===========================
 
         def ol(options={}, &block)
-          options.merge! type: :ordered, level: list_item_level + 1
+          options.merge! type: :ordered, level: nested_list_level
 
           model = Caracal::Core::Models::ListModel.new(options, &block)
           if model.valid?
@@ -85,7 +85,7 @@ module Caracal
         end
 
         def ul(options={}, &block)
-          options.merge! type: :unordered, level: list_item_level + 1
+          options.merge! type: :unordered, level: nested_list_level
 
           model = Caracal::Core::Models::ListModel.new(options, &block)
           if model.valid?
@@ -127,6 +127,16 @@ module Caracal
         def content_added
           runs.unshift runs.pop
           nested_lists.each {|pair| pair[0] += 1 }
+        end
+
+        # The level of a list nested in this item, within the nine levels
+        # that list numbering has.
+        def nested_list_level
+          level = list_item_level + 1
+          if level > ListModel::MAX_LEVEL
+            raise Caracal::Errors::InvalidModelError, "Lists nest at most nine levels deep (levels 0 to #{ListModel::MAX_LEVEL})."
+          end
+          level
         end
 
         # A copy of this item holding only the given runs.

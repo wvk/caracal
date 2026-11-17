@@ -44,7 +44,8 @@ module Caracal
               { prefix: 'xmlns:pic',  href: 'http://schemas.openxmlformats.org/drawingml/2006/picture'                },
               { prefix: 'xmlns:c',    href: 'http://schemas.openxmlformats.org/drawingml/2006/chart'                  },
               { prefix: 'xmlns:lc',   href: 'http://schemas.openxmlformats.org/drawingml/2006/lockedCanvas'           },
-              { prefix: 'xmlns:dgm',  href: 'http://schemas.openxmlformats.org/drawingml/2006/diagram'                }
+              { prefix: 'xmlns:dgm',  href: 'http://schemas.openxmlformats.org/drawingml/2006/diagram'                },
+              { prefix: 'xmlns:wps',  href: 'http://schemas.microsoft.com/office/word/2010/wordprocessingShape'       }
             ]
           end
 

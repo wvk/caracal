@@ -9,6 +9,7 @@ require 'caracal/core/core_properties'
 require 'caracal/core/custom_properties'
 require 'caracal/core/file_name'
 require 'caracal/core/fonts'
+require 'caracal/core/frames'
 require 'caracal/core/iframes'
 require 'caracal/core/ignorables'
 require 'caracal/core/images'
@@ -69,6 +70,7 @@ module Caracal
     include Caracal::Core::Theme
 
     include Caracal::Core::Bookmarks
+    include Caracal::Core::Frames
     include Caracal::Core::IFrames
     include Caracal::Core::Images
     include Caracal::Core::Lists

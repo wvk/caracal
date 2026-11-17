@@ -16,6 +16,7 @@
   * `lang` sets the language of paragraphs, text runs, links and styles; `docx.language` sets the document's default language (#15).
   * `footnote` adds a numbered footnote to paragraphs and list items; its text takes runs and links and uses the new `FootnoteText` and `FootnoteReference` styles (#13).
   * `frame` places paragraphs, lists and tables at a fixed position as a text box, with the anchor options of anchored images; the body text wraps around it or it floats over the text (#14).
+  * `section` gives the content of its block its own page size, margins, columns, headers and footers, such as a landscape page in a portrait document; a section without its own headers and footers shows the previous section's (#12).
 
 * Bug fixes
   * Tables in headers and footers take the document's page width; they used US Letter's.

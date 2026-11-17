@@ -27,6 +27,7 @@ module Caracal
           attr_reader :page_number_number_size
           attr_reader :page_number_show
           attr_reader :page_number_start
+          attr_reader :page_number_first_page
 
 
           #-------------------------------------------------------------
@@ -48,6 +49,7 @@ module Caracal
               @page_number_number_size  = model.page_number_number_size
               @page_number_show         = model.page_number_show
               @page_number_start        = model.page_number_start
+              @page_number_first_page   = model.page_number_first_page
             else
               raise Caracal::Errors::InvalidModelError, "page_numbers: #{model.errors.map {|e| e[:message] }.join ', '}"
             end

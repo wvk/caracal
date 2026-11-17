@@ -248,7 +248,7 @@ describe Caracal::Core::Models::TableModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)     { subject.send(:option_keys).sort }
-      let(:expected)  { [:data, :align, :width, :column_widths, :border_color, :border_line, :border_size, :border_spacing, :border_top, :border_bottom, :border_left, :border_right, :border_horizontal, :border_vertical, :repeat_header, :bgcolor, :bgstyle, :border, :border_theme_color, :caption, :col_band_size, :indent, :layout, :row_band_size, :style, :theme_bgcolor].sort }
+      let(:expected)  { [:data, :align, :width, :column_widths, :border_color, :border_line, :border_size, :border_spacing, :border_top, :border_bottom, :border_left, :border_right, :border_horizontal, :border_vertical, :repeat_header, :header_rows, :bgcolor, :bgstyle, :border, :border_theme_color, :caption, :col_band_size, :indent, :layout, :row_band_size, :style, :theme_bgcolor].sort }
 
       it { expect(actual).to eq expected }
     end

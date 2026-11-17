@@ -105,17 +105,17 @@ module Caracal
       docx.save
     end
 
-    HEADER_FOOTER_TYPES = %i(default first)
-
-    # Returns the header of the given type, evaluating the block on it.
-    # Type :first is the header of a different first page.
-    def header(type: :default, &block)
-      header_or_footer headers, Header, type, &block
+    # Returns the header, evaluating the block on it. With first: true it is
+    # the header of the first page only; without a block that leaves the
+    # first page's header blank.
+    def header(first: false, &block)
+      header_or_footer headers, Header, first, &block
     end
 
-    # Returns the footer of the given type, evaluating the block on it.
-    def footer(type: :default, &block)
-      header_or_footer footers, Footer, type, &block
+    # Returns the footer, evaluating the block on it. With first: true it is
+    # the footer of the first page only.
+    def footer(first: false, &block)
+      header_or_footer footers, Footer, first, &block
     end
 
     def headers
@@ -126,14 +126,11 @@ module Caracal
       @footers ||= {}
     end
 
-    # Gives the first page its own header and footer, which stay blank
-    # unless defined with `header type: :first` or `footer type: :first`.
-    def different_first_page(value = true)
-      @different_first_page = value
-    end
-
-    def different_first_page?
-      !!(@different_first_page or headers.key? :first or footers.key? :first)
+    # Whether the first page has its own header and footer (Word's
+    # "Different First Page"): it has when a first-page header or footer is
+    # given, or the page number is left off the first page.
+    def title_page?
+      !!(headers.key? :first or footers.key? :first or (page_number_show and not page_number_first_page))
     end
 
     #------------------------------------------------------
@@ -228,13 +225,11 @@ module Caracal
     #------------------------------------------------------
     private
 
-    def header_or_footer(parts, klass, type, &block)
-      type = type.to_sym
-      unless HEADER_FOOTER_TYPES.include? type
-        raise Caracal::Errors::InvalidModelError, "#{klass.name.split('::').last.downcase} type must be one of #{HEADER_FOOTER_TYPES.inspect}"
-      end
-
-      part = parts[type] ||= klass.new(index: parts.size + 1, type: type, document: self).tap {|hf| relationship hf.relationship_params }
+    # Default parts are header1.xml and footer1.xml, first-page parts
+    # header2.xml and footer2.xml.
+    def header_or_footer(parts, klass, first, &block)
+      type = first ? :first : :default
+      part = parts[type] ||= klass.new(index: (first ? 2 : 1), type: type, document: self)
       part.configure(&block)
     end
 
@@ -252,16 +247,44 @@ module Caracal
       end
     end
 
-    # Page numbers are appended to the default footer, which is created if
-    # necessary. A different first page gets (blank) first-page parts.
+    # Decides which header and footer parts the document writes. The page
+    # number goes below the default footer's content, which is created if
+    # necessary, and on the first page too unless first_page: false. A first
+    # page without its own header or footer shows the default one's content.
     def prepare_headers_and_footers
       footer if page_number_show
-      footers[:default]&.page_number_paragraph = page_number_paragraph
 
-      if different_first_page?
-        header type: :first
-        footer type: :first
+      parts = [headers[:default], footers[:default]]
+      if title_page?
+        parts << (headers[:first] || first_page_copy(Header, headers[:default]))
+        parts << (footers[:first] || first_page_copy(Footer, footers[:default]))
       end
+      parts.compact!
+
+      parts.grep(Footer).each do |part|
+        shown = (part.type == :default or page_number_first_page)
+        part.page_number_paragraph = (page_number_paragraph if shown)
+      end
+
+      # keep the relationships of parts still written, so renderings agree
+      wanted = parts.to_h {|part| [part.relationship_params[:target], part] }
+      %i(header footer).each do |kind|
+        relationships_by_type(kind).each do |rel|
+          relationships.delete rel unless wanted[rel.relationship_target].equal? rel.owner
+        end
+      end
+      parts.each {|part| relationship part.relationship_params }
+    end
+
+    # A first-page part showing the given default part's content, or nil
+    # when there is nothing to show.
+    def first_page_copy(klass, source)
+      return if source.nil?
+      return if source.contents.empty? and not (klass == Footer and page_number_show and page_number_first_page)
+
+      copies = (@first_page_copies ||= {})
+      copies[klass] = klass.new(index: 2, type: :first, document: self, source: source) unless copies[klass]&.source.equal? source
+      copies[klass]
     end
 
     #============ RENDERERS ===============================

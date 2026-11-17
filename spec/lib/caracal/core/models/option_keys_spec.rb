@@ -6,6 +6,8 @@ require 'spec_helper'
 describe 'model options' do
   it { expect(Caracal::Core::Models::ParagraphModel.new(keep_next: true).paragraph_keep_next).to eq true }
   it { expect(Caracal::Core::Models::TableModel.new(data: [['a'], ['b']], repeat_header: 1).table_repeat_header).to eq 1 }
+  it { expect(Caracal::Core::Models::TableModel.new(data: [['a'], ['b']], header_rows: 1).table_repeat_header).to eq 1 }
+  it { expect(Caracal::Core::Models::TableModel.new(data: [['a'], ['b']]) { header_rows 2 }.table_header_rows).to eq 2 }
   it { expect(Caracal::Core::Models::ListStyleModel.new(restart: 0).style_restart).to eq 0 }
   it { expect(Caracal::Core::Models::ImageModel.new(url: 'logo.png', ppi: 300, width: 1, height: 1).image_ppi).to eq 300 }
 

@@ -554,9 +554,6 @@ describe Caracal::Document do
       end
     end
 
-    # Upstream's first: true and first_page: false, translated to
-    # header/footer type: :first and different_first_page. A different
-    # first page here shows only what is set for it, without page numbers.
     describe 'a different first page' do
       def refs(files, kind)
         section(files).xpath("w:#{ kind }Reference", W_NS).map do |ref|
@@ -573,10 +570,6 @@ describe Caracal::Document do
         !strict_xml(files["word/#{ target }"]).at_xpath('//w:instrText', W_NS).nil?
       end
 
-      def target_of(files, kind, type)
-        refs(files, kind).to_h.fetch(type)
-      end
-
       describe 'when nothing is set for the first page' do
         let(:files) { parts(described_class.new('test.docx') { header { p 'Report' }; page_numbers true }) }
 
@@ -590,7 +583,7 @@ describe Caracal::Document do
         let(:files) do
           parts(described_class.new('test.docx') do
             header { p 'Report' }
-            header(type: :first) { p 'Cover' }
+            header(first: true) { p 'Cover' }
             p 'body'
           end)
         end
@@ -608,22 +601,49 @@ describe Caracal::Document do
         end
       end
 
-      describe 'with different_first_page only' do
+      describe 'with a blank first-page header' do
+        let(:files) do
+          parts(described_class.new('test.docx') do
+            header { p 'Report' }
+            header first: true
+          end)
+        end
+
+        # upstream leaves the first-page reference out; here it refers to a blank part
+        it 'shows no header on the first page' do
+          expect(section(files).at_xpath('w:titlePg', W_NS)).not_to be_nil
+          expect(refs(files, 'header')).to eq [['default', 'header1.xml'], ['first', 'header2.xml']]
+          expect(text_of(files, 'header2.xml')).to eq ''
+          expect_consistent_package(files)
+        end
+      end
+
+      describe 'with the page number off the first page' do
         let(:files) do
           parts(described_class.new('test.docx') do
             header { p 'Report' }
             footer { p 'Confidential' }
-            page_numbers true
-            different_first_page
+            page_numbers true, first_page: false
           end)
         end
 
-        it 'leaves the first page blank and numbers the other pages' do
+        it 'keeps the header and footer content on the first page without the number' do
+          expect(refs(files, 'header')).to eq [['default', 'header1.xml'], ['first', 'header2.xml']]
+          expect(refs(files, 'footer')).to eq [['default', 'footer1.xml'], ['first', 'footer2.xml']]
+          expect(text_of(files, 'header2.xml')).to eq 'Report'
+          expect(text_of(files, 'footer2.xml')).to eq 'Confidential'
+          expect(field?(files, 'footer2.xml')).to eq false
+          expect(field?(files, 'footer1.xml')).to eq true
+          expect_consistent_package(files)
+        end
+      end
+
+      describe 'with only page numbers, off the first page' do
+        let(:files) { parts(described_class.new('test.docx') { page_numbers true, first_page: false }) }
+
+        it 'leaves the first page footer empty' do
           expect(section(files).at_xpath('w:titlePg', W_NS)).not_to be_nil
-          expect(text_of(files, target_of(files, 'header', 'first'))).to eq ''
-          expect(text_of(files, target_of(files, 'footer', 'first'))).to eq ''
-          expect(field?(files, target_of(files, 'footer', 'first'))).to eq false
-          expect(field?(files, target_of(files, 'footer', 'default'))).to eq true
+          expect(refs(files, 'footer')).to eq [['default', 'footer1.xml']]
           expect_consistent_package(files)
         end
       end
@@ -631,23 +651,21 @@ describe Caracal::Document do
       describe 'with a first-page footer and page numbers' do
         let(:files) do
           parts(described_class.new('test.docx') do
-            footer(type: :first) { p 'Draft' }
+            footer(first: true) { p 'Draft' }
             page_numbers true
           end)
         end
 
-        it 'keeps the page number off the first-page footer' do
-          expect(text_of(files, target_of(files, 'footer', 'first'))).to eq 'Draft'
-          expect(field?(files, target_of(files, 'footer', 'first'))).to eq false
-          expect(field?(files, target_of(files, 'footer', 'default'))).to eq true
-          expect_consistent_package(files)
+        it 'adds the page number to the first-page footer too' do
+          expect(text_of(files, 'footer2.xml')).to start_with('Draft')
+          expect(field?(files, 'footer2.xml')).to eq true
         end
       end
 
       it 'renders the same package twice' do
         docx = described_class.new('test.docx') do
           header { p 'Report' }
-          header(type: :first) { img 'logo.png', data: "\x89PNG\r\n\x1A\nrest".b, width: 10, height: 10 }
+          header(first: true) { img 'logo.png', data: "\x89PNG\r\n\x1A\nrest".b, width: 10, height: 10 }
         end
 
         expect(parts(docx).keys.sort).to eq parts(docx).keys.sort

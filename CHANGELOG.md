@@ -2,7 +2,7 @@
 
 * Breaking changes
   * Require Ruby 3.2 and Tilt 2.0; ActiveSupport is not needed.
-  * Headers and footers appear on the first page. Use `docx.different_first_page` or `docx.header type: :first` for a different first page.
+  * Headers, footers and the page number appear on the first page. For a different first page, use upstream caracal's API: `header first: true`, `footer first: true` and `page_numbers first_page: false`. A first page without its own header or footer shows the default one.
   * `page_numbers` writes into the document footer; `docx.footer.page_numbers` is removed.
   * `line` is a minimum line height (`lineRule atLeast`). Use `line_rule: :exact` or `:auto` for the previous behaviours.
   * Any border option draws a single ½ pt line by default.
@@ -37,6 +37,7 @@
   * Merged from upstream caracal 1.5.0 and 1.6.0 (@dlauer and contributors):
     * `page_numbers start:` sets the number of the first page
     * `cant_split` keeps table rows from breaking across pages
+    * `header_rows`, an alias of `repeat_header`
     * Iframes in table cells
     * Text after a nested list renders after it; an item can hold several nested lists
     * `IFrameModel.max_entry_size` (50MB by default) caps entries read from embedded documents

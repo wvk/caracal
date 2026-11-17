@@ -39,7 +39,7 @@ module Caracal
                 w.pgMar page_margin_options
                 w.pgNumType 'w:start' => document.page_number_start unless document.page_number_start.nil?
 
-                w.titlePg if document.different_first_page?
+                w.titlePg if document.title_page?
               end
 
             end

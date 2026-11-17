@@ -27,6 +27,9 @@ module Caracal
         has_symbol_attribute :align, default: :center
 
         has_integer_attribute :repeat_header, default: 0
+        # upstream caracal's name for repeat_header
+        alias_method :header_rows, :repeat_header
+        alias_method :table_header_rows, :table_repeat_header
         has_integer_attribute :row_band_size, default: 1
         has_integer_attribute :col_band_size, default: 1
         has_integer_attribute :width
@@ -278,7 +281,7 @@ module Caracal
           k << HasBackground::ATTRS
           k << HasBorders::ATTRS
           k << [:column_widths]
-          k << [:repeat_header, :row_band_size, :col_band_size]
+          k << [:repeat_header, :header_rows, :row_band_size, :col_band_size]
           k.flatten
         end
 

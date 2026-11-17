@@ -355,6 +355,8 @@ docx.page_numbers true, start: 0   # the cover page is page 0, so the next page 
 docx.page_numbers start: 12        # number from 12 without the built-in page number
 ```
 
+The page number appears on the first page too unless you pass `first_page: false`; see [Different First Page](#different-first-page).
+
 
 ### Fonts
 
@@ -756,7 +758,7 @@ docx.table [['Header 1','Header 2'],['Cell 1', 'Cell 2']] do
   border_size    4          # sets the border width. defaults to 4. units in 1/8 points.
   border_spacing 4          # sets the cell spacing (units in twips) and the spacing around the border (units in points). defaults to 0.
   column_widths  [80, 120]  # sets the column widths and, unless `width` is given, the table width. defaults to auto. units in twips.
-  repeat_header  1		      # sets the number of header rows that is repeated on each page. defaults to 0.
+  repeat_header  1          # sets the number of header rows that is repeated on each page. defaults to 0. header_rows is an alias.
 end
 ```
 
@@ -960,15 +962,22 @@ docx.header.hr
 docx.footer.p 'Footers work the same way.', align: :center
 ```
 
-To give the first page its own header and footer, use `type: :first`; page numbers are not added there. `different_first_page` leaves the first page blank instead.
+#### Different First Page
+
+Pass `first: true` to give the first page its own header or footer, such as a cover page. Without a block, it leaves the first page's header or footer blank. Use `first_page: false` to leave the page number off the first page.
 
 ```ruby
-docx.header type: :first do
-  p 'First page header'
+docx.header first: true do       # replaces the header on the first page only
+  p 'Annual Report 2026', align: :center, size: 36
 end
 
-docx.different_first_page
+docx.header first: true          # no header on the first page
+docx.footer first: true          # no footer content on the first page
+
+docx.page_numbers true, first_page: false   # no page number on the first page
 ```
+
+When the first page has its own header or footer, any part you don't set for it shows the default one. So `first_page: false` on its own hides only the page number, and the default header and footer content still appear.
 
 
 ### Table of contents

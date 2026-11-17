@@ -180,6 +180,17 @@ module Caracal
 
         #=============== SETTERS ==============================
 
+        # Keeps one row, or each of several rows, from breaking across a
+        # page, e.g. `cant_split rows[1...-1]`.
+        def cant_split(models)
+          models = [models] if rows.include? models
+          models.each {|row| cant_split_rows << rows.index(row) }
+        end
+
+        def cant_split?(row_index)
+          cant_split_rows.include? row_index
+        end
+
         # column widths
         def column_widths(value)
           @table_column_widths = value.map &:to_i if value.is_a? Array
@@ -255,6 +266,10 @@ module Caracal
           share, rest = [total, 0].max.divmod cols.size
           cols.each {|i| widths[i] = share }
           widths[cols.last] += rest
+        end
+
+        def cant_split_rows
+          @cant_split_rows ||= []
         end
 
         def option_keys

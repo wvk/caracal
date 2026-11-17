@@ -1,6 +1,6 @@
-require 'open-uri'
 require 'tempfile'
 require 'caracal/core/models/base_model'
+require 'caracal/errors'
 
 module Caracal
   module Core
@@ -9,6 +9,8 @@ module Caracal
       # This class handles block options passed to the img method.
       class IFrameModel < BaseModel
         use_prefix :iframe
+
+        DEFAULT_MAX_ENTRY_SIZE = 50 * 1024 * 1024   # 50MB
 
         has_string_attribute :url
         has_string_attribute :data
@@ -25,24 +27,47 @@ module Caracal
           super options, &block
         end
 
+        # The largest single entry Caracal will read out of an embedded
+        # document. Zip entries expand to many times their stored size, so
+        # without a limit a small file can exhaust memory. Set to nil to
+        # disable the check.
+        def self.max_entry_size
+          defined?(@max_entry_size) ? @max_entry_size : DEFAULT_MAX_ENTRY_SIZE
+        end
+
+        def self.max_entry_size=(value)
+          @max_entry_size = value
+        end
+
+        # Reads a single entry from an embedded document, refusing anything
+        # larger than max_entry_size.
+        def self.read_entry(entry)
+          limit = max_entry_size
+          if limit and entry.size > limit
+            raise Caracal::Errors::InvalidModelError, "iframe entry #{entry.name} is #{entry.size} bytes, over the #{limit} byte limit."
+          end
+
+          entry.get_input_stream.read
+        end
+
         #=============== PROCESSING =======================
 
         def preprocess!
           ::Zip::File.open(file) do |zip|
             # locate relationships xml
             entry      = zip.glob('word/_rels/document.xml.rels').first
-            content    = entry.get_input_stream.read
+            content    = self.class.read_entry entry
             rel_xml    = Nokogiri::XML(content)
 
             # locate document xml
             entry      = zip.glob('word/document.xml').first
-            content    = entry.get_input_stream.read
+            content    = self.class.read_entry entry
             doc_xml    = Nokogiri::XML(content)
 
             # master nodesets
             rel_nodes = rel_xml.children.first.children
             doc_root  = doc_xml.at_xpath('//w:document')
-            pic_nodes = doc_xml.xpath('//pic:pic', { pic: document.namespaces.t('pic') })
+            pic_nodes = doc_xml.xpath('//pic:pic', { pic: 'http://schemas.openxmlformats.org/drawingml/2006/picture' })
 
             # namespaces
             @iframe_namespaces = doc_root.namespaces
@@ -71,7 +96,7 @@ module Caracal
               p_node  = node.children[0].children[0]
               p_id    = p_node.attributes['id'].to_s.to_i
               p_name  = p_node.attributes['name'].to_s
-              p_data  = zip.glob(r_media).first.get_input_stream.read
+              p_data  = self.class.read_entry zip.glob(r_media).first
 
               # register relationship
               array << { id: r_id, type: 'image', target: p_name, data: p_data }
@@ -85,10 +110,11 @@ module Caracal
 
         def file
           @file ||= begin
-            file = Tempfile.new 'iframe'
+            content = iframe_url.to_s.empty? ? iframe_data : Caracal::Utilities.read_resource(iframe_url)
+            file    = Tempfile.new ['iframe', '.docx']
             file.binmode
-            file.write(iframe_url.nil? ? iframe_data : url_content)
-            file.rewind
+            file.write content
+            file.close    # flushes the write; rubyzip reopens by path
             file
           end
         end
@@ -116,15 +142,6 @@ module Caracal
         end
 
         private
-
-        # NOTICE: this potentially opens a web resource!
-        def url_content
-          if iframe_url.match? %r{\A[a-z][a-z0-9+.-]*://}i
-            URI.open(iframe_url, 'rb') { |io| io.read }
-          else
-            File.binread iframe_url
-          end
-        end
 
         def option_keys
           [:url, :data]

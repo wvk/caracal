@@ -28,6 +28,15 @@ module Caracal
           style:      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles',
           theme:      'http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme'
         }
+        IMAGE_SIGNATURES = {
+          "\x89PNG\r\n\x1A\n".b => 'png',
+          "\xFF\xD8\xFF".b      => 'jpeg',
+          'GIF8'.b              => 'gif',
+          'BM'.b                => 'bmp',
+          "II*\x00".b           => 'tiff',
+          "MM\x00*".b           => 'tiff'
+        }
+        IMAGE_EXTENSIONS = %w(png jpeg jpg gif bmp tif tiff svg)
 
         has_integer_attribute :id
 
@@ -59,15 +68,27 @@ module Caracal
         def formatted_target
           case relationship_type
           when :image
-            ext = relationship_target.to_s.split('.').last
-            ext = ext.split('?').first
             # named by key, so parts with their own ids (headers, footers) share one media folder
-            "media/image-#{Digest::SHA256.hexdigest(relationship_key)[0, 16]}.#{ext}"
+            "media/image-#{Digest::SHA256.hexdigest(relationship_key)[0, 16]}.#{image_extension}"
           when :theme
             "theme/theme1.xml"
           else
             relationship_target
           end
+        end
+
+        # Prefers the type detected from the image bytes, then the extension
+        # of the target's path (ignoring any query string or fragment), and
+        # falls back to png so the part name is always valid.
+        def image_extension
+          data = relationship_data.to_s.b
+          if (match = IMAGE_SIGNATURES.find {|signature, _| data.start_with? signature })
+            return match.last
+          end
+
+          path = relationship_target.to_s.split(/[?#]/).first.to_s
+          ext  = File.extname(path).delete('.').downcase
+          IMAGE_EXTENSIONS.include?(ext) ? ext : 'png'
         end
 
         def formatted_type

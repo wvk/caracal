@@ -16,6 +16,7 @@ module Caracal
         has_string_attribute :label
         has_integer_attribute :label_size  # in half points
         has_integer_attribute :number_size # in half points
+        has_integer_attribute :start       # number of the first page
 
         PAGE_NUMBER_ALIGNS = [:left, :center, :right]
 
@@ -55,6 +56,7 @@ module Caracal
 
         def valid?
           validate('size and label_size/number_size are mutually exclusive') { not (@size_given and @specific_size_given) } and
+            validate('start must not be negative') { page_number_start.nil? or page_number_start >= 0 } and
             (not page_number_show or validate_inclusion :align, within: PAGE_NUMBER_ALIGNS)
         end
 
@@ -66,7 +68,7 @@ module Caracal
         end
 
         def option_keys
-          [:align, :label, :label_size, :number_size, :show]
+          [:align, :label, :label_size, :number_size, :show, :size, :start]
         end
 
       end

@@ -9,6 +9,12 @@ module Caracal
 
         has_string_attribute :name
 
+        # A symbol names a field type, e.g. :page or :numpages; a string is
+        # written as given, so it can carry switches.
+        def name(value)
+          @field_name = value.is_a?(Symbol) ? value.to_s.upcase : value&.to_s
+        end
+
         #========== VALIDATION ============================
 
         def valid?

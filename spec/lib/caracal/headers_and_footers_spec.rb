@@ -190,7 +190,7 @@ describe 'headers and footers' do
       expect(paragraph.at_xpath('w:pPr/w:jc/@w:val', ns).value).to eq 'right'
       expect(paragraph.xpath('w:r/w:t', ns).map(&:text)).to eq ['Page ']
       expect(paragraph.at_xpath('w:r[w:t]/w:rPr/w:sz/@w:val', ns).value).to eq '24'
-      expect(paragraph.at_xpath('w:r/w:instrText', ns).text).to eq 'PAGE'
+      expect(paragraph.at_xpath('w:r/w:instrText', ns).text.strip).to eq 'PAGE'
       expect(paragraph.at_xpath('w:r[w:instrText]/w:rPr/w:sz/@w:val', ns).value).to eq '20'
     end
 
@@ -199,7 +199,7 @@ describe 'headers and footers' do
       paragraph = page_number_paragraph docx
       expect(paragraph.at_xpath('w:pPr/w:jc/@w:val', ns).value).to eq 'center'
       expect(paragraph.xpath('w:r/w:t', ns)).to be_empty
-      expect(paragraph.at_xpath('w:r/w:instrText', ns).text).to eq 'PAGE'
+      expect(paragraph.at_xpath('w:r/w:instrText', ns).text.strip).to eq 'PAGE'
     end
 
     it 'supports the block form' do
@@ -207,7 +207,7 @@ describe 'headers and footers' do
       docx.page_numbers(true) { align :left; label 'Seite'; size 18 }
       paragraph = page_number_paragraph docx
       expect(paragraph.at_xpath('w:pPr/w:jc/@w:val', ns).value).to eq 'left'
-      expect(paragraph.xpath('w:r/w:rPr/w:sz/@w:val', ns).map(&:value)).to eq %w(18 18)
+      expect(paragraph.xpath('w:r/w:rPr/w:sz/@w:val', ns).map(&:value)).to eq %w(18 18 18 18 18)  # label and the four field runs
     end
 
     it 'appends to footer contents regardless of call order' do
@@ -221,7 +221,7 @@ describe 'headers and footers' do
         footer = xml docx, 'word/footer1.xml'
         expect(footer.xpath('//w:p', ns).size).to eq 2
         expect(footer.at_xpath('//w:p[1]//w:t', ns).text).to eq 'footer text'
-        expect(footer.at_xpath('//w:p[2]//w:instrText', ns).text).to eq 'PAGE'
+        expect(footer.at_xpath('//w:p[2]//w:instrText', ns).text.strip).to eq 'PAGE'
         expect(footer_rels docx).to eq ['footer1.xml']
       end
     end

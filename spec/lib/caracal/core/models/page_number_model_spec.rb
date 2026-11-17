@@ -85,6 +85,12 @@ describe Caracal::Core::Models::PageNumberModel do
       it { expect(subject.page_number_number_size).to eq 32 }
     end
 
+    # .start
+    describe '.start' do
+      it { expect(described_class.new.page_number_start).to be_nil }
+      it { expect(described_class.new(start: '3').page_number_start).to eq 3 }
+    end
+
 
     #=============== VALIDATIONS ==========================
 
@@ -118,6 +124,12 @@ describe Caracal::Core::Models::PageNumberModel do
         it { expect(described_class.new(size: 20).valid?).to eq true }
         it { expect(described_class.new(label_size: 24, number_size: 20).valid?).to eq true }
       end
+      describe 'when start is negative' do
+        it { expect(described_class.new(start: -1).valid?).to eq false }
+      end
+      describe 'when start is zero' do
+        it { expect(described_class.new(start: 0).valid?).to eq true }
+      end
     end
 
   end
@@ -132,7 +144,7 @@ describe Caracal::Core::Models::PageNumberModel do
     # .option_keys
     describe '.option_keys' do
       let(:actual)   { subject.send(:option_keys).sort }
-      let(:expected) { [:align, :label, :label_size, :number_size, :show].sort }
+      let(:expected) { [:align, :label, :label_size, :number_size, :show, :size, :start].sort }
 
       it { expect(actual).to eq expected }
     end

@@ -31,10 +31,9 @@ Gem::Specification.new do |s|
       # fixes deprecation, ostruct will be removed from ruby 3.4
       s.add_runtime_dependency(%q<ostruct>.freeze, ["~> 0.6"])
     end
-    s.add_runtime_dependency(%q<nokogiri>.freeze, ["~> 1.6"])
-    s.add_runtime_dependency(%q<rubyzip>.freeze, [">= 1.1.0", "< 3.0"])
+    s.add_runtime_dependency(%q<nokogiri>.freeze, [">= 1.16.2", "< 2.0"])
+    s.add_runtime_dependency(%q<rubyzip>.freeze, [">= 1.1.6", "< 4.0"])
     s.add_runtime_dependency(%q<tilt>.freeze, [">= 2.0"])
-    s.add_development_dependency(%q<bundler>.freeze, ["~> 2.0"])
     s.add_development_dependency(%q<rake>.freeze, ["~> 13.0"])
     s.add_development_dependency(%q<rspec>.freeze, ["~> 3.0"])
   else
@@ -42,11 +41,9 @@ Gem::Specification.new do |s|
       # fixes deprecation, ostruct will be removed from ruby 3.4
       s.add_dependency(%q<ostruct>.freeze, ["~> 0.6"])
     end
-    s.add_dependency(%q<nokogiri>.freeze, ["~> 1.6"])
-    s.add_dependency(%q<rubyzip>.freeze, [">= 1.1.0", "< 3.0"])
-    s.add_dependency(%q<zip-zip>.freeze, [">= 1.0.0"])
+    s.add_dependency(%q<nokogiri>.freeze, [">= 1.16.2", "< 2.0"])
+    s.add_dependency(%q<rubyzip>.freeze, [">= 1.1.6", "< 4.0"])
     s.add_dependency(%q<tilt>.freeze, [">= 2.0"])
-    s.add_dependency(%q<bundler>.freeze, ["~> 2.0"])
     s.add_dependency(%q<rake>.freeze, ["~> 13.0"])
     s.add_dependency(%q<rspec>.freeze, ["~> 3.0"])
   end

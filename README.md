@@ -223,6 +223,19 @@ All Caracal models perform basic validations on their attributes, but this is, w
 In forthcoming versions of Caracal, we'll be looking to expand the `InvalidModelError` class to provide broader error reporting abilities across the entire library.
 
 
+## Security
+
+Caracal reads whatever path or URL you hand it. Both `img` and `iframe` accept a local filesystem path or an http(s) URL, and Caracal reads or fetches it while building or rendering the document.
+
+**Treat those values as trusted input.** If a path or URL can be influenced by an end user, validate it before passing it to Caracal:
+
+* **Local paths** are read with the permissions of your application's process. Any file that process can read can be embedded in the generated document, so `docx.img '/etc/passwd', width: 10, height: 10` embeds the contents of that file.
+* **URLs** are fetched from your application's network position, and redirects are followed. A user-supplied URL can therefore reach internal services, `localhost`, or cloud metadata endpoints that are not otherwise reachable from outside.
+* **Documents embedded with `iframe`** are parsed, and their markup is copied into your output. Only embed documents you trust. See [IFrames](#iframes).
+
+Caracal reads http(s) URLs with `URI.open` and everything else with `File.binread`, so a path is always read as a file. It leaves restricting paths, hosts and directories to your application, which knows what is legitimate: an allowlist of permitted directories or hosts, or never passing user-supplied values through to Caracal.
+
+
 ## Installation
 
 Caracal requires Ruby 3.2 or later.
@@ -334,6 +347,13 @@ docx.page_numbers true, label: 'Page', size: 24  # size sets the label and numbe
 ```
 
 The `size` option and the `label_size` and `number_size` options are mutually exclusive.
+
+The `start` option sets the number of the first page, which is useful when the document continues another one, or has a cover page you don't want counted. It also applies to `field :page` in a custom footer, so it can be set without showing the built-in page number:
+
+```ruby
+docx.page_numbers true, start: 0   # the cover page is page 0, so the next page is page 1
+docx.page_numbers start: 12        # number from 12 without the built-in page number
+```
 
 
 ### Fonts
@@ -636,7 +656,7 @@ docx.ul do
 end
 ```
 
-Lists can nested as many levels deep as you wish and mixed in any combination.
+Lists can nested as many levels deep as you wish and mixed in any combination. Text added after a nested list renders after it, as an unnumbered paragraph aligned with the item's text, and an item can hold several nested lists.
 
 ```ruby
 docx.ul do
@@ -650,6 +670,7 @@ docx.ul do
         end
       end
     end
+    text 'More about the second item.'
   end
 end
 ```
@@ -778,6 +799,15 @@ end
 ```
 
 *Note: content of cells 21 and 24 will disappear*
+
+Rows marked with `cant_split` move to the next page as a whole instead of breaking across a page break. It takes a row or an array of rows.
+
+```ruby
+docx.table [['11', '22'], ['14', '25'], ['64', '23']] do
+  cant_split rows[1]       # one row
+  cant_split rows[1...-1]  # or several
+end
+```
 
 #### Table Styles
 
@@ -991,16 +1021,24 @@ will not operate as expected in the parent Caracal document.
 
 Again, this feature is considered experimental.  Use at your own risk/discretion.
 
+Iframes can also be placed in table cells.
+
+**Only embed documents you trust.** Caracal parses the file you supply and copies its markup into your output, so the embedded document controls part of the result. To keep a small crafted file from expanding into a large one in memory, Caracal refuses any entry of the embedded document larger than `Caracal::Core::Models::IFrameModel.max_entry_size` (50MB by default) with an `InvalidModelError`. Set it to another number of bytes, or to `nil` to turn the check off. See [Security](#security).
+
 ### Using Fields
 
-You can use fields like page numbers and current dates. Formatting field values is currently not yet supported.
+You can use fields like page numbers and current dates. A symbol names the field, e.g. `:page` or `:numpages`; a string is written as the field instruction as given, so it can carry switches.
 
 ```ruby
 docx.p do
   text 'current page is '
-  field :Page
+  field :page
   text ' / '
-  field :NumPages
+  field :numpages
+end
+
+docx.p do
+  field 'DATE \\@ "yyyy-MM-dd"'
 end
 ```
 

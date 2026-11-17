@@ -49,6 +49,36 @@ describe Caracal::Core::Models::TableModel do
 
   describe 'public method tests' do
 
+    # .cant_split and .cant_split?
+    describe '.cant_split and .cant_split?' do
+      it { expect(subject.cant_split?(0)).to eq false }
+
+      describe "when the first row can't split" do
+        before { subject.cant_split subject.rows[0] }
+
+        it { expect(subject.cant_split?(0)).to eq true }
+        it { expect(subject.cant_split?(1)).to eq false }
+      end
+
+      describe "when no row can split" do
+        before { subject.cant_split subject.rows }
+
+        it { expect(subject.cant_split?(0)).to eq true }
+        it { expect(subject.cant_split?(1)).to eq true }
+      end
+
+      it 'renders cantSplit in the row properties' do
+        docx = Caracal::Document.new
+        docx.table [['a'], ['b']] do
+          cant_split rows[1]
+        end
+        xml = Nokogiri::XML(Caracal::Renderers::DocumentRenderer.render(docx))
+        ns  = { 'w' => 'http://schemas.openxmlformats.org/wordprocessingml/2006/main' }
+
+        expect(xml.xpath('//w:tr', ns).map {|tr| tr.at_xpath('w:trPr/w:cantSplit', ns).nil? }).to eq [true, false]
+      end
+    end
+
     #=============== DATA ACCESSORS ====================
 
     describe 'data tests' do

@@ -1347,7 +1347,7 @@ Caracal includes [Tilt](https://github.com/jeremyevans/tilt) integration to faci
 Tilt.new('report.docx.caracal').render
 ```
 
-Rails integration can be added via the [Caracal-Rails](https://github.com/urvin-compliance/caracal-rails) gem.
+Rails integration can be added via the [Caracal-Rails](https://github.com/wvk/caracal-rails) gem.
 
 
 ## Using Variables
